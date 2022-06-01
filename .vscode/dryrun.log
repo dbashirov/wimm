@@ -1,0 +1,5 @@
+make: Entering directory `/Users/damirbasirov/go/src/wimm'
+make: Leaving directory `/Users/damirbasirov/go/src/wimm'
+ 
+Makefile:1: *** missing separator.  Stop.
+
