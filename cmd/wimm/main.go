@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	model "wimm/internal/model/wimm"
 	"wimm/pkg/test"
 
 	_ "github.com/lib/pq"
@@ -82,4 +83,6 @@ func main() {
 	// 	fmt.Println(u.id, u.name, u.age)
 	// }
 
+	typeWallet := model.TypeExpense
+	fmt.Println(typeWallet)
 }
