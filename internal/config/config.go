@@ -1,11 +1,11 @@
 package config
 
 type StorageConfig struct {
-	Host     string
-	Port     string
-	Database string
-	Username string
-	Password string
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Database string `yaml:"database"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 type Config struct {
