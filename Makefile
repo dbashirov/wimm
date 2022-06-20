@@ -1,5 +1,5 @@
 .PHONY: build
 build:
-	go build -v ./cmd/wimm
+	go build -v ./cmd
 
 .DEFAULT_GOAL := build 

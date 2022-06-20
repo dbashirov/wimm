@@ -6,13 +6,9 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # PARTICULAR PURPOSE.
 
 # This program built for i386-apple-darwin11.3.0
- 
-Makefile:1: *** missing separator.  Stop.
 
+# Make data base, printed on Sun Jun 19 18:29:25 2022
 
-# Make data base, printed on Wed Jun  1 08:38:03 2022
-
- 
 # Variables
 
 # automatic
@@ -32,7 +28,7 @@ CURDIR := /Users/damirbasirov/go/src/wimm
 # makefile
 SHELL = /bin/sh
 # environment
-VSCODE_NLS_CONFIG = {"locale":"ru","availableLanguages":{"*":"ru"},"_languagePackId":"6c87e287770fa80b3245e0a037b935fb.ru","_translationsConfigFile":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/tcf.json","_cacheRoot":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru","_resolvedLanguagePackCoreLocation":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5","_corruptedFile":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/corrupted.info","_languagePackSupport":true}
+VSCODE_NLS_CONFIG = {"locale":"ru","availableLanguages":{"*":"ru"},"_languagePackId":"6c87e287770fa80b3245e0a037b935fb.ru","_translationsConfigFile":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/tcf.json","_cacheRoot":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru","_resolvedLanguagePackCoreLocation":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/4af164ea3a06f701fe3e89a2bcbb421d2026b68f","_corruptedFile":"/Users/damirbasirov/Library/Application Support/Code/clp/6c87e287770fa80b3245e0a037b935fb.ru/corrupted.info","_languagePackSupport":true}
 # environment
 _ = /usr/bin/make
 # makefile (from `Makefile', line 1)
@@ -48,7 +44,7 @@ INFOPATH = /opt/homebrew/share/info:
 # environment
 P9K_SSH = 0
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /var/folders/7m/smpl0h557x99626hwz1852rm0000gn/T/vscode-ipc-cce07be9-e5ce-41ec-b2b2-cdf7cca56f2f.sock
+VSCODE_IPC_HOOK_EXTHOST = /var/folders/7m/smpl0h557x99626hwz1852rm0000gn/T/vscode-ipc-801e8f6d-edb9-4f19-acea-feaff17e3890.sock
 # environment
 VSCODE_CWD = /
 # environment
@@ -60,19 +56,20 @@ LSCOLORS = Gxfxcxdxbxegedabagacad
 # environment
 GOPATH = /Users/damirbasirov/go
 # environment
+LaunchInstanceID = 79A70C0A-956E-47A5-88F0-E902B23F9874
+# environment
 VSCODE_LOG_STACK = false
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
 .FEATURES := target-specific order-only second-expansion else-if archives jobserver check-symlink
 # environment
-SSH_AUTH_SOCK = /private/tmp/com.apple.launchd.FScSnvqwAB/Listeners
+SSH_AUTH_SOCK = /private/tmp/com.apple.launchd.U3nJjciGq9/Listeners
 # automatic
 %F = $(notdir $%)
 # environment
 VSCODE_PIPE_LOGGING = true
 # environment
- 
 PWD = /Users/damirbasirov/go/src/wimm
 # environment
 HOMEBREW_CELLAR = /opt/homebrew/Cellar
@@ -87,11 +84,11 @@ HOME = /Users/damirbasirov
 # default
 MAKEFILEPATH = $(shell /usr/bin/xcode-select -print-path 2>/dev/null || echo /Developer)/Makefiles
 # environment
-VSCODE_CODE_CACHE_PATH = /Users/damirbasirov/Library/Application Support/Code/CachedData/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5
+VSCODE_CODE_CACHE_PATH = /Users/damirbasirov/Library/Application Support/Code/CachedData/4af164ea3a06f701fe3e89a2bcbb421d2026b68f
 # environment
 LOGNAME = damirbasirov
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # environment
 ZSH = /Users/damirbasirov/.oh-my-zsh
 # environment
@@ -110,8 +107,8 @@ SHLVL = 1
 MAKE_VERSION := 3.81
 # environment
 USER = damirbasirov
-# makefile
-.DEFAULT_GOAL := 
+# makefile (from `Makefile', line 5)
+.DEFAULT_GOAL := build 
 # environment
 LESS = -R
 # automatic
@@ -125,7 +122,7 @@ TMPDIR = /var/folders/7m/smpl0h557x99626hwz1852rm0000gn/T/
 # automatic
 *F = $(notdir $*)
 # environment
-VSCODE_IPC_HOOK = /Users/damirbasirov/Library/Application Support/Code/1.67.2-main.sock
+VSCODE_IPC_HOOK = /Users/damirbasirov/Library/Application Support/Code/1.68.0-main.sock
 # makefile
 MAKEFLAGS = Rrqp
 # environment
@@ -133,7 +130,7 @@ MFLAGS = -Rrqp
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
-XPC_SERVICE_NAME = application.com.microsoft.VSCode.22521441.22521447
+XPC_SERVICE_NAME = application.com.microsoft.VSCode.23734960.23734966
 # environment
 HOMEBREW_PREFIX = /opt/homebrew
 # automatic
@@ -154,6 +151,8 @@ MAKEFILES :=
 PAGER = less
 # environment
 LC_ALL = C
+# environment
+SECURITYSESSIONID = 186ac
 # automatic
 ^F = $(notdir $^)
 # default
@@ -163,9 +162,9 @@ MAKELEVEL := 0
 # environment
 LANG = C
 # environment
-VSCODE_PID = 24932
+VSCODE_PID = 2747
 # variable set hash-table stats:
-# Load=74/1024=7%, Rehash=0, Collisions=2/87=2%
+# Load=76/1024=7%, Rehash=0, Collisions=2/100=2%
 
 # Pattern-specific Variable Values
 
@@ -173,9 +172,9 @@ VSCODE_PID = 24932
 
 # Directories
 
-# . (device 16777234, inode 21558424): 10 files, no impossibilities.
+# . (device 16777234, inode 21558424): 14 files, no impossibilities.
 
-# 10 files, no impossibilities in 1 directories.
+# 14 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -186,6 +185,13 @@ VSCODE_PID = 24932
 # Not a target:
 all:
 #  Command-line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has not been updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+.PHONY: build
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -198,9 +204,21 @@ all:
 
 # Not a target:
 Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-15 08:51:07
+#  File has been updated.
+#  Successfully updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+build:
+#  Phony target (prerequisite of .PHONY).
 #  Implicit rule search has not been done.
-#  Modification time never checked.
+#  File does not exist.
 #  File has not been updated.
+#  commands to execute (from `Makefile', line 3):
+	go build -v ./cmd
+	
 
 # Not a target:
 .DEFAULT:
@@ -209,7 +227,7 @@ Makefile:
 #  File has not been updated.
 
 # files hash-table stats:
-# Load=4/1024=0%, Rehash=0, Collisions=0/5=0%
+# Load=6/1024=1%, Rehash=0, Collisions=0/19=0%
 # VPATH Search Paths
 
 # No `vpath' search paths.
@@ -221,6 +239,8 @@ Makefile:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Wed Jun  1 08:38:03 2022
+# Finished Make data base on Sun Jun 19 18:29:25 2022
 
  
+make: *** No rule to make target `all'.  Stop.
+

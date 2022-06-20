@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"wimm/internal/config"
+	"wimm/config"
 	"wimm/pkg/utils"
 
 	"github.com/jackc/pgconn"
@@ -23,7 +23,7 @@ type Client interface {
 func NewClient(ctx context.Context, sc config.StorageConfig, maxAttempts int) (pool *pgxpool.Pool, err error) {
 	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s sslmode=disable", sc.Host, sc.Port, sc.Database, sc.Username)
 
-	err = utils.DoWithTries(func() error {
+	err = repeatable.DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 

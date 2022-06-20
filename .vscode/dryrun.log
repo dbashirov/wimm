@@ -1,5 +1,5 @@
+make --dry-run --always-make --keep-going --print-directory
 make: Entering directory `/Users/damirbasirov/go/src/wimm'
+go build -v ./cmd
 make: Leaving directory `/Users/damirbasirov/go/src/wimm'
  
-Makefile:1: *** missing separator.  Stop.
-

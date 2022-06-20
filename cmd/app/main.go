@@ -1,12 +1,17 @@
 package main
 
 import (
+	// "context"
 	"context"
+	"wimm/config"
+	"wimm/pkg/client/postgresql"
+
+	// "wimm/pkg/client/postgresql"
+
 	// "database/sql"
 	"fmt"
-	"os"
-
-	"github.com/jackc/pgx/v4"
+	// "os"
+	// "github.com/jackc/pgx/v4"
 	// _ "github.com/lib/pq"
 )
 
@@ -55,7 +60,7 @@ type gUser struct {
 func main() {
 
 	// Initialize connection string.
-	var connectionString string = fmt.Sprintf("host=%s port=%d dbname=%s user=%s sslmode=disable", HOST, PORT, DATABASE, USER)
+	// var connectionString string = fmt.Sprintf("host=%s port=%d dbname=%s user=%s sslmode=disable", HOST, PORT, DATABASE, USER)
 
 	// // Initialize connection object.
 	// db, err := sql.Open("postgres", connectionString)
@@ -85,33 +90,44 @@ func main() {
 	// typeWallet := model.TypeExpense
 	// fmt.Println(typeWallet)
 
+	// pgx.....
 	// conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	conn, err := pgx.Connect(context.Background(), connectionString)
+	// conn, err := pgx.Connect(context.Background(), connectionString)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// defer conn.Close(context.Background())
+
+	// users := []gUser{}
+
+	// rows, err := conn.Query(context.Background(), "SELECT * FROM USERS")
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// for rows.Next() {
+	// 	u := gUser{}
+	// 	err := rows.Scan(&u.id, &u.name, &u.age)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		continue
+	// 	}
+	// 	users = append(users, u)
+	// }
+
+	// for _, u := range users {
+	// 	fmt.Println(u.id, u.name, u.age)
+	// }
+
+	sc, err := config.GetConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	defer conn.Close(context.Background())
-
-	users := []gUser{}
-
-	rows, err := conn.Query(context.Background(), "SELECT * FROM USERS")
+	pool, err := postgresql.NewClient(context.Background(), sc.Storage, 5)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Postgresql connection error: %s\n", err)
 	}
-	for rows.Next() {
-		u := gUser{}
-		err := rows.Scan(&u.id, &u.name, &u.age)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		users = append(users, u)
-	}
-
-	for _, u := range users {
-		fmt.Println(u.id, u.name, u.age)
-	}
+	fmt.Println(pool)
 
 }

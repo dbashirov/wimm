@@ -2,7 +2,7 @@ module wimm
 
 go 1.18
 
-require github.com/lib/pq v1.10.6
+// require github.com/lib/pq v1.10.6
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -17,4 +17,5 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
