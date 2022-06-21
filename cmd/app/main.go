@@ -4,6 +4,8 @@ import (
 	// "context"
 	"context"
 	"wimm/config"
+	userModel "wimm/internal/user"
+	user "wimm/internal/user/db"
 	"wimm/pkg/client/postgresql"
 
 	// "wimm/pkg/client/postgresql"
@@ -30,11 +32,11 @@ const (
 // 	}
 // }
 
-type gUser struct {
-	id   int
-	name string
-	age  uint16
-}
+// type gUser struct {
+// 	id   int
+// 	name string
+// 	age  uint16
+// }
 
 // func addUser(db *sql.DB, name string, id, age int) {
 // 	sql_statement := "INSERT INTO users (id, name, age) VALUES ($1, $2, $3);"
@@ -124,10 +126,20 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	pool, err := postgresql.NewClient(context.Background(), sc.Storage, 5)
+	pool, err := postgresql.NewClient(context.TODO(), sc.Storage, 5)
 	if err != nil {
 		fmt.Printf("Postgresql connection error: %s\n", err)
 	}
-	fmt.Println(pool)
+	// fmt.Println(pool)
+	repository := user.NewRepository(pool)
+	u := userModel.User{
+		Username: "admin",
+		Email:    "admin@mail.com",
+	}
+
+	err = repository.Create(context.TODO(), &u)
+	if err != nil {
+		fmt.Printf("User creation error: %s\n", err)
+	}
 
 }
