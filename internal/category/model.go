@@ -6,7 +6,7 @@ import (
 )
 
 type Category struct {
-	Id         int                `json:"id"`
+	ID         int                `json:"id"`
 	Title      string             `json:"title"`
 	User       user.User          `json:"user"`
 	TypeWallet model.TypeOfWallet `json:"typeWallet"`

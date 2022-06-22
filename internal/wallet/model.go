@@ -6,7 +6,7 @@ import (
 )
 
 type Wallet struct {
-	Id          int               `json:"id"`
+	ID          int               `json:"id"`
 	Currency    currency.Currency `json:"currency"`
 	User        user.User         `json:"user"`
 	Title       string            `json:"title"`

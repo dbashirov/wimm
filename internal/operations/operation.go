@@ -9,7 +9,7 @@ import (
 )
 
 type Operation struct {
-	Id              int                   `json:"id"`
+	ID              int                   `json:"id"`
 	TypeOperation   model.TypeOfOperation `json:"typeOfOpeartion"`
 	Date            time.Time             `json:"date"`
 	User            user.User             `json:"user"`

@@ -10,7 +10,7 @@ type repository struct {
 	client postgresql.Client
 }
 
-func (r *repository) Create(ctx context.Context, user *user.User) error {
+func (r *repository) Create(ctx context.Context, u *user.User) error {
 	q := `
 		INSERT INTO users
 			(username, email)
@@ -18,7 +18,7 @@ func (r *repository) Create(ctx context.Context, user *user.User) error {
 			($1, $2)
 		RETURNING id
 	`
-	if err := r.client.QueryRow(ctx, q, user.Username, user.Email).Scan(&user.Id); err != nil {
+	if err := r.client.QueryRow(ctx, q, u.Username, u.Email).Scan(&u.ID); err != nil {
 		return err
 	}
 	return nil

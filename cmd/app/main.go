@@ -133,8 +133,8 @@ func main() {
 	// fmt.Println(pool)
 	repository := user.NewRepository(pool)
 	u := userModel.User{
-		Username: "admin",
-		Email:    "admin@mail.com",
+		Username: "user1",
+		Email:    "user1@mail.com",
 	}
 
 	err = repository.Create(context.TODO(), &u)
