@@ -3,6 +3,7 @@ package main
 import (
 	// "context"
 	"context"
+	// "errors"
 	"wimm/config"
 	userModel "wimm/internal/user"
 	user "wimm/internal/user/db"
@@ -130,11 +131,14 @@ func main() {
 	if err != nil {
 		fmt.Printf("Postgresql connection error: %s\n", err)
 	}
+	defer pool.Close()
+
 	// fmt.Println(pool)
 	repository := user.NewRepository(pool)
 	u := userModel.User{
-		Username: "user1",
-		Email:    "user1@mail.com",
+		Username: "user4",
+		Email:    "user4@mail.com",
+		Password: "qweasd",
 	}
 
 	err = repository.Create(context.TODO(), &u)
