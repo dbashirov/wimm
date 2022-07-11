@@ -140,10 +140,16 @@ func main() {
 		Email:    "user4@mail.com",
 		Password: "qweasd",
 	}
+	fmt.Println(u)
 
-	err = repository.Create(context.TODO(), &u)
+	// err = repository.Create(context.TODO(), &u)
+	// if err != nil {
+	// 	fmt.Printf("User creation error: %s\n", err)
+	// }
+	users, err := repository.GetAll(context.TODO())
 	if err != nil {
-		fmt.Printf("User creation error: %s\n", err)
+		fmt.Printf("Error receiving users: %s\n", err)
 	}
+	fmt.Println(users)
 
 }

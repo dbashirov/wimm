@@ -39,6 +39,34 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*user.User,
 	panic("implement me")
 }
 
+func (r *repository) GetAll(ctx context.Context) ([]user.User, error) {
+	q := `
+		SELECT id, username, email FROM users;
+	`
+	rows, err := r.client.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	users := make([]user.User, 0)
+
+	for rows.Next() {
+		var u user.User
+
+		err = rows.Scan(&u.ID, &u.Username, &u.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func NewRepository(client postgresql.Client) user.Repository {
 	return &repository{
 		client: client,
