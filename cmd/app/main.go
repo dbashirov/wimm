@@ -2,12 +2,10 @@ package main
 
 import (
 	// "context"
-	"context"
+
 	// "errors"
 	"wimm/config"
-	userModel "wimm/internal/user"
-	user "wimm/internal/user/db"
-	"wimm/pkg/client/postgresql"
+	"wimm/internal/apiserver"
 
 	// "wimm/pkg/client/postgresql"
 
@@ -127,29 +125,33 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	pool, err := postgresql.NewClient(context.TODO(), sc.Storage, 5)
+	err = apiserver.Start(sc)
 	if err != nil {
-		fmt.Printf("Postgresql connection error: %s\n", err)
+		fmt.Printf("Error start: %s\n", err)
 	}
-	defer pool.Close()
+	// pool, err := postgresql.NewClient(context.TODO(), sc.Storage, 5)
+	// if err != nil {
+	// 	fmt.Printf("Postgresql connection error: %s\n", err)
+	// }
+	// defer pool.Close()
 
-	// fmt.Println(pool)
-	repository := user.NewRepository(pool)
-	u := userModel.User{
-		Username: "user4",
-		Email:    "user4@mail.com",
-		Password: "qweasd",
-	}
-	fmt.Println(u)
+	// // fmt.Println(pool)
+	// repository := user.NewRepository(pool)
+	// u := userModel.User{
+	// 	Username: "user4",
+	// 	Email:    "user4@mail.com",
+	// 	Password: "qweasd",
+	// }
+	// fmt.Println(u)
 
 	// err = repository.Create(context.TODO(), &u)
 	// if err != nil {
 	// 	fmt.Printf("User creation error: %s\n", err)
 	// }
-	users, err := repository.GetAll(context.TODO())
-	if err != nil {
-		fmt.Printf("Error receiving users: %s\n", err)
-	}
-	fmt.Println(users)
+	// users, err := repository.GetAll(context.TODO())
+	// if err != nil {
+	// 	fmt.Printf("Error receiving users: %s\n", err)
+	// }
+	// fmt.Println(users)
 
 }
