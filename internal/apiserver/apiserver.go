@@ -40,7 +40,7 @@ func Start(cfg *config.Config) error {
 
 	server := &http.Server{
 		Handler:      router,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
