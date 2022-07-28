@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"wimm/internal/handlers"
 	"wimm/internal/middleware"
+	"wimm/internal/store"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -16,10 +17,10 @@ const (
 )
 
 type handler struct {
-	repository Repository
+	repository store.UserRepository
 }
 
-func NewHandler(repository Repository) handlers.Handler {
+func NewHandler(repository store.UserRepository) handlers.Handler {
 	return &handler{
 		repository: repository,
 	}

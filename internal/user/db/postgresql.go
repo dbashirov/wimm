@@ -67,8 +67,8 @@ func (r *repository) GetAll(ctx context.Context) ([]user.User, error) {
 	return users, nil
 }
 
-func NewRepository(client postgresql.Client) user.Repository {
-	return &repository{
-		client: client,
-	}
-}
+// func NewRepository(client postgresql.Client) user.UserRepository {
+// 	return &repository{
+// 		client: client,
+// 	}
+// }

@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"time"
 	"wimm/config"
+	"wimm/internal/store"
 	user2 "wimm/internal/user"
-	user "wimm/internal/user/db"
+
+	// user "wimm/internal/user/db"
 	"wimm/pkg/client/postgresql"
 
 	"github.com/julienschmidt/httprouter"
@@ -22,7 +24,7 @@ func Start(cfg *config.Config) error {
 	}
 	defer pool.Close()
 
-	repository := user.NewRepository(pool)
+	repository := store.NewRepository(pool)
 	router := httprouter.New()
 
 	// users, err := repository.GetAll(context.TODO())
