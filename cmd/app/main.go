@@ -121,11 +121,11 @@ func main() {
 	// 	fmt.Println(u.id, u.name, u.age)
 	// }
 
-	sc, err := config.GetConfig()
+	cs, err := config.GetConfig()
 	if err != nil {
 		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	err = apiserver.Start(sc)
+	err = apiserver.Start(cs)
 	if err != nil {
 		fmt.Printf("Error start: %s\n", err)
 	}
