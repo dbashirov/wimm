@@ -2,6 +2,7 @@ package sqlstore
 
 import (
 	"context"
+	"fmt"
 	"wimm/internal/user"
 )
 
@@ -46,6 +47,7 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]user.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("2")
 	users := make([]user.User, 0)
 
 	for rows.Next() {
@@ -58,7 +60,7 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]user.User, error) {
 
 		users = append(users, u)
 	}
-
+	fmt.Println("3")
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}

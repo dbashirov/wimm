@@ -2,18 +2,18 @@ package apiserver
 
 import (
 	"context"
-	"fmt"
-	"net"
+	// "fmt"
+	// "net"
 	"net/http"
-	"time"
+	// "time"
 	"wimm/config"
-	"wimm/internal/store"
-	user2 "wimm/internal/user"
+	// "wimm/internal/store"
+	"wimm/internal/store/sqlstore"
+	// user2 "wimm/internal/user"
 
 	// user "wimm/internal/user/db"
 	"wimm/pkg/client/postgresql"
-
-	"github.com/julienschmidt/httprouter"
+	// "github.com/julienschmidt/httprouter"
 )
 
 func Start(cfg *config.Config) error {
@@ -24,30 +24,33 @@ func Start(cfg *config.Config) error {
 	}
 	defer pool.Close()
 
-	repository := store.NewRepository(pool)
-	router := httprouter.New()
+	// repository := store.NewRepository(pool)
+	// router := httprouter.New()
 
 	// users, err := repository.GetAll(context.TODO())
 	// if err != nil {
 	// 	return err
 	// }
 
-	userHandler := user2.NewHandler(repository)
-	userHandler.Register(router)
+	// userHandler := user2.NewHandler(repository)
+	// userHandler.Register(router)
 
-	listener, listenErr := net.Listen("tcp", ":8080")
-	if listenErr != nil {
-		fmt.Println(listenErr)
-	}
+	// listener, listenErr := net.Listen("tcp", ":8080")
+	// if listenErr != nil {
+	// 	fmt.Println(listenErr)
+	// }
 
-	server := &http.Server{
-		Handler:      router,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
+	// server := &http.Server{
+	// 	Handler:      router,
+	// 	WriteTimeout: 15 * time.Second,
+	// 	ReadTimeout:  15 * time.Second,
+	// }
 
-	server.Serve(listener)
+	// server.Serve(listener)
 
-	return nil
+	store := sqlstore.New(pool)
+	srv := newServer(store)
+
+	return http.ListenAndServe(":8080", srv)
 
 }
