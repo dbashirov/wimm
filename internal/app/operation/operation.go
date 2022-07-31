@@ -2,10 +2,10 @@ package operations
 
 import (
 	"time"
-	"wimm/internal/category"
-	"wimm/internal/types"
-	"wimm/internal/user"
-	"wimm/internal/wallet"
+	"wimm/internal/app/category"
+	"wimm/internal/app/types"
+	"wimm/internal/app/user"
+	"wimm/internal/app/wallet"
 )
 
 type Operation struct {

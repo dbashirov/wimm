@@ -4,7 +4,7 @@ import (
 	// "context"
 
 	// "errors"
-	"wimm/config"
+	"wimm/configs"
 	"wimm/internal/apiserver"
 
 	// "wimm/pkg/client/postgresql"

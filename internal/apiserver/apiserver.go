@@ -6,7 +6,7 @@ import (
 	// "net"
 	"net/http"
 	// "time"
-	"wimm/config"
+	"wimm/configs"
 	// "wimm/internal/store"
 	"wimm/internal/store/sqlstore"
 	// user2 "wimm/internal/user"

@@ -1,8 +1,8 @@
 package wallet
 
 import (
-	"wimm/internal/currency"
-	"wimm/internal/user"
+	"wimm/internal/app/currency"
+	"wimm/internal/app/user"
 )
 
 type Wallet struct {

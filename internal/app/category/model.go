@@ -1,8 +1,8 @@
 package category
 
 import (
-	"wimm/internal/types"
-	"wimm/internal/user"
+	"wimm/internal/app/types"
+	"wimm/internal/app/user"
 )
 
 type Category struct {

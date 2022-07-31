@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	"wimm/internal/user"
+	"wimm/internal/app/user"
 )
 
 type UserRepository interface {

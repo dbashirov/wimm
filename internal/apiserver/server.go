@@ -3,7 +3,6 @@ package apiserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"wimm/internal/store"
 
@@ -32,13 +31,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
-	fmt.Println("4")
 	s.router.HandleFunc("/users", s.GetList()).Methods("GET")
 }
 
 func (s *server) GetList() http.HandlerFunc {
 
-	fmt.Println("1")
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		users, err := s.store.User().GetAll(context.TODO())
