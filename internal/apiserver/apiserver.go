@@ -2,18 +2,10 @@ package apiserver
 
 import (
 	"context"
-	// "fmt"
-	// "net"
 	"net/http"
-	// "time"
-	"wimm/configs"
-	// "wimm/internal/store"
+	config "wimm/configs"
 	"wimm/internal/store/sqlstore"
-	// user2 "wimm/internal/user"
-
-	// user "wimm/internal/user/db"
 	"wimm/pkg/client/postgresql"
-	// "github.com/julienschmidt/httprouter"
 )
 
 func Start(cfg *config.Config) error {
@@ -51,6 +43,6 @@ func Start(cfg *config.Config) error {
 	store := sqlstore.New(pool)
 	srv := newServer(store)
 
-	return http.ListenAndServe(":8080", srv)
+	return http.ListenAndServe(cfg.Server.Port, srv)
 
 }

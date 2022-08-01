@@ -14,15 +14,20 @@ type StorageConfig struct {
 	Password string `yaml:"password"`
 }
 
+type Server struct {
+	Port string `yaml:"port"`
+}
+
 type Config struct {
 	Storage StorageConfig `yaml:"storage"`
+	Server  Server        `yaml:"server"`
 }
 
 // var sc *Config
 
 func GetConfig() (*Config, error) {
 	sc := &Config{}
-	yamlFile, err := ioutil.ReadFile("config/config.yml")
+	yamlFile, err := ioutil.ReadFile("configs/config.yml")
 	if err != nil {
 		return nil, err
 	}
