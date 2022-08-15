@@ -31,10 +31,21 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
-	s.router.HandleFunc("/users", s.GetList()).Methods("GET")
+	s.router.HandleFunc("/users", s.GetListUsers()).Methods("GET")
 }
 
-func (s *server) GetList() http.HandlerFunc {
+func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
+	s.respond(w, r, code, map[string]string{"error": err.Error()})
+}
+
+func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	w.WriteHeader(code)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
+func (s *server) GetListUsers() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -53,16 +64,5 @@ func (s *server) GetList() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(allBytes)
 
-	}
-}
-
-func (s *server) error(w http.ResponseWriter, r *http.Request, code int, err error) {
-	s.respond(w, r, code, map[string]string{"error": err.Error()})
-}
-
-func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-	w.WriteHeader(code)
-	if data != nil {
-		json.NewEncoder(w).Encode(data)
 	}
 }

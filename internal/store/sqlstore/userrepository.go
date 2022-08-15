@@ -2,7 +2,7 @@ package sqlstore
 
 import (
 	"context"
-	"wimm/internal/app/user"
+	"wimm/internal/domain/user"
 )
 
 type UserRepository struct {
