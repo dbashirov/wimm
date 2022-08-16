@@ -2,7 +2,7 @@ package v1
 
 import (
 	"context"
-	"wimm/internal/domain/user"
+	"wimm/internal/domain/entity"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 )
 
 type UserUsecase interface {
-	ListAllUsers(ctx context.Context) ([]user.User, error)
+	ListAllUsers(ctx context.Context) ([]entity.User, error)
 }
 
 type userHandler struct {
