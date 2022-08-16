@@ -33,7 +33,6 @@ func (r *repository) Create(ctx context.Context, u *model.User) error {
 
 func (r *repository) Find(ctx context.Context, id int) (*model.User, error) {
 	panic("implement me")
-	// u := &user
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
