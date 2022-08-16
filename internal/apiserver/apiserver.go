@@ -7,31 +7,33 @@ import (
 	"net/http"
 	"time"
 	config "wimm/configs"
+	user2 "wimm/internal/user"
+	user "wimm/internal/user/repository"
 	"wimm/pkg/client/postgresql"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func Start(cfg *config.Config) error {
+func Start(cfg *config.Config) {
 
 	pool, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
 	if err != nil {
-		return err
+		return 
 	}
 	defer pool.Close()
 
-	repository := store.NewRepository(pool)
+	userRepository := user.NewRepository(pool)
 	router := httprouter.New()
 
-	users, err := repository.GetAll(context.TODO())
-	if err != nil {
-		return err
-	}
+	// users, err := userRepository.GetAll(context.TODO())
+	// if err != nil {
+	// 	return err
+	// }
 
-	userHandler := user2.NewHandler(repository)
+	userHandler := user2.NewHandler(userRepository)
 	userHandler.Register(router)
 
-	listener, listenErr := net.Listen("tcp", ":8080")
+	listener, listenErr := net.Listen("tcp", cfg.Server.Port)
 	if listenErr != nil {
 		fmt.Println(listenErr)
 	}

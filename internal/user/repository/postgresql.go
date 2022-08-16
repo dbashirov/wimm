@@ -3,11 +3,12 @@ package user
 import (
 	"context"
 	"wimm/internal/model"
+	"wimm/internal/user"
 	"wimm/pkg/client/postgresql"
 )
 
 type repository struct {
-	db *postgresql.Client
+	db postgresql.Client
 }
 
 func (r *repository) Create(ctx context.Context, u *model.User) error {
@@ -66,8 +67,8 @@ func (r *repository) GetAll(ctx context.Context) ([]model.User, error) {
 	return users, nil
 }
 
-func NewRepository(client postgresql.Client) repository {
+func NewRepository(db postgresql.Client) user.Repository {
 	return &repository{
-		client: client,
+		db: db,
 	}
 }

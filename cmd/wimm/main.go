@@ -125,10 +125,10 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	err = apiserver.Start(cs)
-	if err != nil {
-		fmt.Printf("Error start: %s\n", err)
-	}
+	apiserver.Start(cs)
+	// if err != nil {
+	// 	fmt.Printf("Error start: %s\n", err)
+	// }
 	// pool, err := postgresql.NewClient(context.TODO(), sc.Storage, 5)
 	// if err != nil {
 	// 	fmt.Printf("Postgresql connection error: %s\n", err)
