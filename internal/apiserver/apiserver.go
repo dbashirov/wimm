@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 	config "wimm/configs"
+	category2 "wimm/internal/category"
+	category "wimm/internal/category/repository"
 	user2 "wimm/internal/user"
 	user "wimm/internal/user/repository"
 	"wimm/pkg/client/postgresql"
@@ -18,21 +20,23 @@ func Start(cfg *config.Config) {
 
 	pool, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
 	if err != nil {
-		return 
+		return
 	}
 	defer pool.Close()
 
-	userRepository := user.NewRepository(pool)
 	router := httprouter.New()
 
-	// users, err := userRepository.GetAll(context.TODO())
-	// if err != nil {
-	// 	return err
-	// }
-
+	// Работа с пользователями
+	userRepository := user.NewRepository(pool)
 	userHandler := user2.NewHandler(userRepository)
 	userHandler.Register(router)
 
+	// Категории
+	categoryRepository := category.NewRepository(pool)
+	categoryHandler := category2.NewHandler(categoryRepository)
+	categoryHandler.Register(router)
+
+	// Запуск сервера
 	listener, listenErr := net.Listen("tcp", cfg.Server.Port)
 	if listenErr != nil {
 		fmt.Println(listenErr)

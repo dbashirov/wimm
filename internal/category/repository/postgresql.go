@@ -11,8 +11,21 @@ type repository struct {
 	db postgresql.Client
 }
 
-func (r *repository) Create(ctx context.Context, u *model.Category) error {
-	panic("implement me")
+func (r *repository) Create(ctx context.Context, c *model.Category) error {
+
+	q := `
+		INSERT INTO categories
+			(title, id_user, type_wallet)
+		VALUES
+			($1, $2, $3)
+		RETURNING id
+	`
+	if err := r.db.QueryRow(ctx, q, c.Title, c.User.ID, c.TypeWallet).Scan(&c.ID); err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func (r *repository) Find(ctx context.Context, id int) (*model.Category, error) {
