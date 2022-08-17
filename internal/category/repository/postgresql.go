@@ -11,6 +11,12 @@ type repository struct {
 	db postgresql.Client
 }
 
+func NewRepository(db postgresql.Client) category.Repository {
+	return &repository{
+		db: db,
+	}
+}
+
 func (r *repository) Create(ctx context.Context, c *model.Category) error {
 
 	q := `
@@ -34,7 +40,7 @@ func (r *repository) Find(ctx context.Context, id int) (*model.Category, error) 
 
 func (r *repository) GetAll(ctx context.Context) ([]model.Category, error) {
 	q := `
-		SELECT id, title, user, typeWallet FROM users;
+		SELECT id, title FROM categories;
 	`
 	rows, err := r.db.Query(ctx, q)
 	if err != nil {
@@ -45,7 +51,7 @@ func (r *repository) GetAll(ctx context.Context) ([]model.Category, error) {
 	for rows.Next() {
 		var c model.Category
 
-		err = rows.Scan(&c.ID, &c.Title, &c.User, &c.TypeWallet)
+		err = rows.Scan(&c.ID, &c.Title)
 		if err != nil {
 			return nil, err
 		}
@@ -57,10 +63,4 @@ func (r *repository) GetAll(ctx context.Context) ([]model.Category, error) {
 	}
 
 	return categories, nil
-}
-
-func NewRepository(db postgresql.Client) category.Repository {
-	return &repository{
-		db: db,
-	}
 }
