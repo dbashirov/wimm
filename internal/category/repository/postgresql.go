@@ -21,12 +21,12 @@ func (r *repository) Create(ctx context.Context, c *model.Category) error {
 
 	q := `
 		INSERT INTO categories
-			(title, id_user, type_wallet)
+			(title, id_user, type)
 		VALUES
 			($1, $2, $3)
 		RETURNING id
 	`
-	if err := r.db.QueryRow(ctx, q, c.Title, c.User.ID, c.TypeWallet).Scan(&c.ID); err != nil {
+	if err := r.db.QueryRow(ctx, q, c.Title, c.User.ID, c.Type.EnumIndex()).Scan(&c.ID); err != nil {
 		return err
 	}
 
@@ -35,12 +35,20 @@ func (r *repository) Create(ctx context.Context, c *model.Category) error {
 }
 
 func (r *repository) Find(ctx context.Context, id int) (*model.Category, error) {
-	panic("implement me")
+	q := `
+		SELECT id, title, type FROM categories WHERE id = $1;
+	`
+	var c model.Category
+	err := r.db.QueryRow(ctx, q, id).Scan(&c.ID, &c.Title, &c.Type)
+	if err != nil {
+		return &model.Category{}, err
+	}
+	return &c, nil
 }
 
 func (r *repository) GetAll(ctx context.Context) ([]model.Category, error) {
 	q := `
-		SELECT id, title FROM categories;
+		SELECT id, title, type FROM categories;
 	`
 	rows, err := r.db.Query(ctx, q)
 	if err != nil {
@@ -51,7 +59,7 @@ func (r *repository) GetAll(ctx context.Context) ([]model.Category, error) {
 	for rows.Next() {
 		var c model.Category
 
-		err = rows.Scan(&c.ID, &c.Title)
+		err = rows.Scan(&c.ID, &c.Title, &c.Type)
 		if err != nil {
 			return nil, err
 		}

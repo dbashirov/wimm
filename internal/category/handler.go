@@ -12,6 +12,7 @@ import (
 
 const (
 	categoriesURL = "/categories"
+	categoryURL   = "/category/:uuid"
 )
 
 type handler struct {
