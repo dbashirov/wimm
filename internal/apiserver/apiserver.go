@@ -38,7 +38,7 @@ func Start(cfg *config.Config) {
 	categoryHandler.Register(router)
 
 	// Добавляем тестовые данные
-	addTestData(userRepository, categoryRepository)
+	// addTestData(userRepository, categoryRepository)
 
 	// Запуск сервера
 	listener, listenErr := net.Listen("tcp", cfg.Server.Port)
@@ -60,8 +60,8 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 
 	// Создаем пользователья
 	u := model.User{
-		Username: "user2",
-		Email:    "user2@mail.com",
+		Username: "user3",
+		Email:    "user3@mail.com",
 		Password: "qweasd",
 	}
 	err := ur.Create(context.TODO(), &u)
@@ -72,7 +72,7 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 
 	// Создаем категорию
 	c := model.Category{
-		Title: "Тест 2",
+		Title: "Тест 3",
 		User:  u,
 		Type:  model.TypeExpense,
 	}
