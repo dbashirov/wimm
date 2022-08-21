@@ -32,11 +32,27 @@ func (r *repository) Create(ctx context.Context, u *model.User) error {
 }
 
 func (r *repository) Find(ctx context.Context, id int) (*model.User, error) {
-	panic("implement me")
+	q := `
+		SELECT id, username, email FROM users WHERE id = $1;
+	`
+	var u model.User
+	err := r.db.QueryRow(ctx, q, id).Scan(&u.ID, &u.Username, &u.Email)
+	if err != nil {
+		return &model.User{}, err
+	}
+	return &u, nil
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
-	panic("implement me")
+	q := `
+		SELECT id, username, email FROM users WHERE email = $1;
+	`
+	var u model.User
+	err := r.db.QueryRow(ctx, q, email).Scan(&u.ID, &u.Username, &u.Email)
+	if err != nil {
+		return &model.User{}, err
+	}
+	return &u, nil
 }
 
 func (r *repository) GetAll(ctx context.Context) ([]model.User, error) {
