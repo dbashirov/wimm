@@ -11,7 +11,7 @@ type Operation struct {
 	User            User            `json:"user"`
 	Sum             float64         `json:"sum"`
 	Wallet          Wallet          `json:"wallet"`
-	Description     string          `json:"description"`
-	Category        Category        `json:"category"`
-	WalletRecipient Wallet          `json:"walletRecipient"`
+	Description     string          `json:"description,omitempty"`
+	Category        Category        `json:"category,omitempty"`
+	WalletRecipient Wallet          `json:"walletRecipient,omitempty"`
 }
