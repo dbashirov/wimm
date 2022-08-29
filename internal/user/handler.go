@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"wimm/internal/handlers"
 	"wimm/internal/middleware"
+	"wimm/internal/model"
 
 	// "wimm/internal/store"
 
@@ -32,6 +33,7 @@ func NewHandler(repository Repository) handlers.Handler {
 
 func (h *handler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, usersURL, middleware.Middleware(h.GetList))
+	router.HandlerFunc(http.MethodPost, usersURL, middleware.Middleware(h.CreateUser))
 	router.HandlerFunc(http.MethodGet, userURL, middleware.Middleware(h.Find))
 	router.HandlerFunc(http.MethodGet, userEmailURL, middleware.Middleware(h.FindByEmail))
 }
@@ -104,5 +106,18 @@ func (h *handler) FindByEmail(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(http.StatusOK)
 	w.Write(allBytes)
 
+	return nil
+}
+
+func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) error {
+	fmt.Println("Create user")
+	var u model.User
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		w.WriteHeader(400)
+		return err
+	}
+	if err := h.repository.Create(r.Context(), u); err != nil {
+		return err
+	}
 	return nil
 }

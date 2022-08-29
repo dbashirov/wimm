@@ -11,7 +11,7 @@ type repository struct {
 	db postgresql.Client
 }
 
-func (r *repository) Create(ctx context.Context, u *model.User) error {
+func (r *repository) Create(ctx context.Context, u model.User) error {
 
 	if err := u.BeforeCreate(); err != nil {
 		return err

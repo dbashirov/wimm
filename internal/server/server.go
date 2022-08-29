@@ -1,4 +1,4 @@
-package apiserver
+package server
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 	"time"
-	config "wimm/configs"
+	"wimm/config"
 	category2 "wimm/internal/category"
 	category "wimm/internal/category/repository"
 	"wimm/internal/model"
@@ -64,7 +64,7 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 		Email:    "user3@mail.com",
 		Password: "qweasd",
 	}
-	err := ur.Create(context.TODO(), &u)
+	err := ur.Create(context.TODO(), u)
 	if err != nil {
 		fmt.Printf("User creation error: %s\n", err)
 		return

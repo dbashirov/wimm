@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-	config "wimm/configs"
+	"wimm/config"
 	repeatable "wimm/pkg/utils"
 
 	"github.com/jackc/pgconn"

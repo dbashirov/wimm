@@ -10,6 +10,13 @@ type User struct {
 	EncryptedPassword string `json:"encrypted_password"`
 }
 
+type CreateUserDTO struct {
+	Username       string `json:"username"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	RepeatPassword string `json:"repeat_password"`
+}
+
 func (u *User) BeforeCreate() error {
 	if len(u.Password) > 0 {
 		enc, err := encryptString(u.Password)
