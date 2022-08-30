@@ -1,15 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"wimm/config"
 	"wimm/internal/app"
 )
 
 func main() {
-	cs, err := config.GetConfig()
+	log.Print("config initializing")
+	cfg, err := config.GetConfig()
 	if err != nil {
-		fmt.Printf("Unmarshal config error: #%v ", err)
+		log.Fatalf("Unmarshal config error: #%v ", err)
 	}
-	app.Start(cs)
+
+	a, err := app.NewApp(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Running Application")
+	a.Run()
 }

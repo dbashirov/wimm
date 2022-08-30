@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -14,45 +14,69 @@ import (
 	user "wimm/internal/user/repository"
 	"wimm/pkg/client/postgresql"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
 )
 
-func Start(cfg *config.Config) {
+type App struct {
+	cfg        *config.Config
+	pgClient   *pgxpool.Pool
+	router     *httprouter.Router
+	httpServer *http.Server
+}
 
-	pool, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
-	if err != nil {
-		return
-	}
-	defer pool.Close()
+func NewApp(cfg *config.Config) (App, error) {
 
+	log.Println("router initializing")
 	router := httprouter.New()
 
+	pgClient, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// defer pool.Close()
+
+	return App{
+		cfg:      cfg,
+		pgClient: pgClient,
+		router:   router,
+	}, nil
+}
+
+func (a *App) Run() {
+	a.StartHTTP()
+}
+
+func (a *App) StartHTTP() {
+
 	// Работа с пользователями
-	userRepository := user.NewRepository(pool)
+	userRepository := user.NewRepository(a.pgClient)
 	userHandler := user2.NewHandler(userRepository)
-	userHandler.Register(router)
+	userHandler.Register(a.router)
 
 	// Категории
-	categoryRepository := category.NewRepository(pool)
+	categoryRepository := category.NewRepository(a.pgClient)
 	categoryHandler := category2.NewHandler(categoryRepository)
-	categoryHandler.Register(router)
+	categoryHandler.Register(a.router)
 
 	// Добавляем тестовые данные
 	// addTestData(userRepository, categoryRepository)
 
 	// Запуск сервера
-	listener, listenErr := net.Listen("tcp", cfg.Server.Port)
+	listener, listenErr := net.Listen("tcp", a.cfg.Server.Port)
 	if listenErr != nil {
-		fmt.Println(listenErr)
+		log.Fatal(listenErr)
 	}
 
-	server := &http.Server{
-		Handler:      router,
+	a.httpServer = &http.Server{
+		Handler:      a.router,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	server.Serve(listener)
+	log.Println("application completely initialized and started")
+
+	a.httpServer.Serve(listener)
 
 }
 
@@ -66,7 +90,7 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 	}
 	err := ur.Create(context.TODO(), u)
 	if err != nil {
-		fmt.Printf("User creation error: %s\n", err)
+		log.Printf("User creation error: %s\n", err)
 		return
 	}
 
@@ -78,6 +102,6 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 	}
 	err = cr.Create(context.TODO(), &c)
 	if err != nil {
-		fmt.Printf("Category creation error: %s\n", err)
+		log.Printf("Category creation error: %s\n", err)
 	}
 }
