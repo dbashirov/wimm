@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"wimm/internal/domain/category/storage"
 	"wimm/internal/handlers"
 	"wimm/internal/middleware"
 
@@ -17,10 +18,10 @@ const (
 )
 
 type handler struct {
-	repository Repository
+	repository storage.Repository
 }
 
-func NewHandler(repository Repository) handlers.Handler {
+func NewHandler(repository storage.Repository) handlers.Handler {
 	return &handler{
 		repository: repository,
 	}

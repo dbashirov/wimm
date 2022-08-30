@@ -1,9 +1,8 @@
-package user
+package storage
 
 import (
 	"context"
-	"wimm/internal/model"
-	"wimm/internal/user"
+	"wimm/internal/domain/user/model"
 	"wimm/pkg/client/postgresql"
 )
 
@@ -82,7 +81,7 @@ func (r *repository) GetAll(ctx context.Context) ([]model.User, error) {
 	return users, nil
 }
 
-func NewRepository(db postgresql.Client) user.Repository {
+func NewRepository(db postgresql.Client) Repository {
 	return &repository{
 		db: db,
 	}

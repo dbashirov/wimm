@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"wimm/internal/domain/user/model"
+	user "wimm/internal/domain/user/storage"
 	"wimm/internal/handlers"
 	"wimm/internal/middleware"
-	"wimm/internal/model"
 
 	// "wimm/internal/store"
 
@@ -22,10 +23,10 @@ const (
 )
 
 type handler struct {
-	repository Repository
+	repository user.Repository
 }
 
-func NewHandler(repository Repository) handlers.Handler {
+func NewHandler(repository user.Repository) handlers.Handler {
 	return &handler{
 		repository: repository,
 	}

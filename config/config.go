@@ -27,7 +27,7 @@ type Config struct {
 
 func GetConfig() (*Config, error) {
 	sc := &Config{}
-	yamlFile, err := ioutil.ReadFile("configs/config.yml")
+	yamlFile, err := ioutil.ReadFile("config/config.yml")
 	if err != nil {
 		return nil, err
 	}

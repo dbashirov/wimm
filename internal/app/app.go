@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"time"
 	"wimm/config"
-	category2 "wimm/internal/category"
-	category "wimm/internal/category/repository"
-	"wimm/internal/model"
-	user2 "wimm/internal/user"
-	user "wimm/internal/user/repository"
+	category2 "wimm/internal/domain/category"
+	modelCategory "wimm/internal/domain/category/model"
+	category "wimm/internal/domain/category/storage"
+	"wimm/internal/domain/types/model"
+	user2 "wimm/internal/domain/user"
+	modelUser "wimm/internal/domain/user/model"
+	user "wimm/internal/domain/user/storage"
 	"wimm/pkg/client/postgresql"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -80,10 +82,10 @@ func (a *App) StartHTTP() {
 
 }
 
-func addTestData(ur user2.Repository, cr category2.Repository) {
+func addTestData(ur user.Repository, cr category.Repository) {
 
 	// Создаем пользователья
-	u := model.User{
+	u := modelUser.User{
 		Username: "user3",
 		Email:    "user3@mail.com",
 		Password: "qweasd",
@@ -95,7 +97,7 @@ func addTestData(ur user2.Repository, cr category2.Repository) {
 	}
 
 	// Создаем категорию
-	c := model.Category{
+	c := modelCategory.Category{
 		Title: "Тест 3",
 		User:  u,
 		Type:  model.TypeExpense,

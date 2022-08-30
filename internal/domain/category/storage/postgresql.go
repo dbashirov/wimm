@@ -1,9 +1,8 @@
-package category
+package storage
 
 import (
 	"context"
-	"wimm/internal/category"
-	"wimm/internal/model"
+	"wimm/internal/domain/category/model"
 	"wimm/pkg/client/postgresql"
 )
 
@@ -11,7 +10,7 @@ type repository struct {
 	db postgresql.Client
 }
 
-func NewRepository(db postgresql.Client) category.Repository {
+func NewRepository(db postgresql.Client) Repository {
 	return &repository{
 		db: db,
 	}

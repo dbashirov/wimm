@@ -1,8 +1,8 @@
-package user
+package storage
 
 import (
 	"context"
-	"wimm/internal/model"
+	"wimm/internal/domain/user/model"
 )
 
 type Repository interface {

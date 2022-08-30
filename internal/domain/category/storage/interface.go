@@ -1,8 +1,8 @@
-package category
+package storage
 
 import (
 	"context"
-	"wimm/internal/model"
+	"wimm/internal/domain/category/model"
 )
 
 type Repository interface {
