@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"wimm/config"
-	"wimm/internal/server"
+	"wimm/internal/app"
 )
 
 func main() {
@@ -11,5 +11,5 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unmarshal config error: #%v ", err)
 	}
-	server.Start(cs)
+	app.Start(cs)
 }
