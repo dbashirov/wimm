@@ -1,7 +1,9 @@
 package handlers
 
-import "github.com/julienschmidt/httprouter"
+import (
+	"github.com/gorilla/mux"
+)
 
 type Handler interface {
-	Register(router *httprouter.Router)
+	Register(router *mux.Router)
 }

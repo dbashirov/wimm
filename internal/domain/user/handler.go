@@ -13,6 +13,7 @@ import (
 
 	// "wimm/internal/store"
 
+	"github.com/gorilla/mux"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -32,11 +33,11 @@ func NewHandler(repository user.Repository) handlers.Handler {
 	}
 }
 
-func (h *handler) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodGet, usersURL, middleware.Middleware(h.GetList))
-	router.HandlerFunc(http.MethodPost, usersURL, middleware.Middleware(h.CreateUser))
-	router.HandlerFunc(http.MethodGet, userURL, middleware.Middleware(h.Find))
-	router.HandlerFunc(http.MethodGet, userEmailURL, middleware.Middleware(h.FindByEmail))
+func (h *handler) Register(router *mux.Router) {
+	router.HandleFunc(usersURL, middleware.Middleware(h.GetList)).Methods("GET")
+	router.HandleFunc(usersURL, middleware.Middleware(h.CreateUser)).Methods("POST")
+	router.HandleFunc(userURL, middleware.Middleware(h.Find)).Methods("GET")
+	router.HandleFunc(userEmailURL, middleware.Middleware(h.FindByEmail)).Methods("GET")
 }
 
 func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {

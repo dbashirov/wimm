@@ -16,21 +16,22 @@ import (
 	user "wimm/internal/domain/user/storage"
 	"wimm/pkg/client/postgresql"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/julienschmidt/httprouter"
 )
 
 type App struct {
 	cfg        *config.Config
 	pgClient   *pgxpool.Pool
-	router     *httprouter.Router
+	router     *mux.Router
 	httpServer *http.Server
 }
 
 func NewApp(cfg *config.Config) (App, error) {
 
 	log.Println("router initializing")
-	router := httprouter.New()
+	// router := httprouter.New()
+	router := mux.NewRouter()
 
 	pgClient, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
 	if err != nil {
