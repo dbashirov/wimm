@@ -3,6 +3,7 @@ package postgresql
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 	"wimm/config"
 	repeatable "wimm/pkg/utils"
@@ -35,7 +36,7 @@ func NewClient(ctx context.Context, sc config.StorageConfig, maxAttempts int) (p
 	}, 3, 5*time.Second)
 
 	if err != nil {
-		fmt.Println("error do with tries postresql")
+		log.Fatalln("error do with tries postresql")
 	}
 
 	return pool, nil
