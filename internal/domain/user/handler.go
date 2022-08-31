@@ -14,13 +14,12 @@ import (
 	// "wimm/internal/store"
 
 	"github.com/gorilla/mux"
-	"github.com/julienschmidt/httprouter"
 )
 
 const (
 	usersURL     = "/users"
-	userURL      = "/users/:id"
-	userEmailURL = "/useremail/:email"
+	userURL      = "/users/{id:[0-9]+}"
+	userEmailURL = "/users/{email}"
 )
 
 type handler struct {
@@ -60,8 +59,8 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 
 func (h *handler) Find(w http.ResponseWriter, r *http.Request) error {
 
-	params := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
-	idStr := params.ByName("id")
+	vars := mux.Vars(r)
+	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(400)
@@ -87,8 +86,8 @@ func (h *handler) Find(w http.ResponseWriter, r *http.Request) error {
 
 func (h *handler) FindByEmail(w http.ResponseWriter, r *http.Request) error {
 
-	params := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
-	email := params.ByName("email")
+	vars := mux.Vars(r)
+	email := vars["email"]
 	if email == "" {
 		w.WriteHeader(400)
 		return fmt.Errorf("undefined parameter <email>")

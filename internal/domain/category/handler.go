@@ -10,12 +10,11 @@ import (
 	"wimm/internal/middleware"
 
 	"github.com/gorilla/mux"
-	"github.com/julienschmidt/httprouter"
 )
 
 const (
 	categoriesURL = "/categories"
-	categoryURL   = "/category/:id"
+	categoryURL   = "/category/{id:[0-9]+}"
 )
 
 type handler struct {
@@ -53,8 +52,8 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 
 func (h *handler) GetCategory(w http.ResponseWriter, r *http.Request) error {
 
-	params := r.Context().Value(httprouter.ParamsKey).(httprouter.Params)
-	idStr := params.ByName("id")
+	vars := mux.Vars(r)
+	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		w.WriteHeader(400)
