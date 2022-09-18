@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"wimm/internal/domain/user/model"
@@ -13,6 +14,7 @@ import (
 
 	// "wimm/internal/store"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 )
 
@@ -39,12 +41,45 @@ func (h *handler) Register(router *mux.Router) {
 	router.HandleFunc(userEmailURL, middleware.Middleware(h.FindByEmail)).Methods("GET")
 }
 
+// type message struct {
+// 	Status string `json:"status"`
+// }
+
 func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 	users, err := h.repository.GetAll(context.TODO())
 	if err != nil {
 		w.WriteHeader(400)
 		return err
 	}
+	// test+
+	// log.Println(r.Body)
+	// var m message
+	// err = json.NewDecoder(r.Body).Decode(&m)
+	// if err != nil {
+	// 	log.Println("Decode body error")
+	// }
+	// // err = json.Unmarshal([]byte(r.Body), m)
+	// log.Println(m)
+
+	// allM, err := json.Marshal(token)
+	// if err != nil {
+	// 	log.Println("Encode body error")
+	// }
+
+	// w.Write(allM)
+
+	// JWT
+	token := jwt.New(jwt.SigningMethodEdDSA)
+	// tokenString, err := token.SignedString("JWTTSecretKey")
+	// if err != nil {
+	// 	return err
+	// }
+	allM, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+	w.Write(allM)
+	// test-
 
 	allBytes, err := json.Marshal(users)
 	if err != nil {
@@ -111,13 +146,17 @@ func (h *handler) FindByEmail(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) error {
-	fmt.Println("Create user")
+
+	log.Println("Start create user")
 	var u model.User
+
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		log.Println("Error decode JSON in body Request")
 		w.WriteHeader(400)
 		return err
 	}
 	if err := h.repository.Create(r.Context(), u); err != nil {
+		log.Println("User creation error")
 		return err
 	}
 	return nil

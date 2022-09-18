@@ -18,9 +18,14 @@ type Server struct {
 	Port string `yaml:"port"`
 }
 
+type JWT struct {
+	SecretKey string `yaml:"secretKey"`
+}
+
 type Config struct {
 	Storage StorageConfig `yaml:"storage"`
 	Server  Server        `yaml:"server"`
+	JWT     JWT           `yaml:"JWT"`
 }
 
 // var sc *Config

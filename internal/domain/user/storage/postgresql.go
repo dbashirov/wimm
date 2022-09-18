@@ -12,6 +12,10 @@ type repository struct {
 
 func (r *repository) Create(ctx context.Context, u model.User) error {
 
+	if err := u.Validate(); err != nil {
+		return err
+	}
+
 	if err := u.BeforeCreate(); err != nil {
 		return err
 	}

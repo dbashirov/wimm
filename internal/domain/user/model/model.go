@@ -1,13 +1,18 @@
 package model
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type User struct {
 	ID                int    `json:"id"`
-	Username          string `json:"username"`
-	Email             string `json:"email"`
-	Password          string `json:"password"`
-	EncryptedPassword string `json:"encrypted_password"`
+	Username          string `json:"username" validate:"required"`
+	Email             string `json:"email" validate:"required,email"`
+	Password          string `json:"password,omitempty" validate:"required"`
+	EncryptedPassword string `json:"encrypted_password,omitempty" validate:"required"`
 }
 
 type CreateUserDTO struct {
@@ -15,6 +20,13 @@ type CreateUserDTO struct {
 	Email          string `json:"email"`
 	Password       string `json:"password"`
 	RepeatPassword string `json:"repeat_password"`
+}
+
+func (u *User) Validate() error {
+	if u.Password != u.EncryptedPassword {
+		return fmt.Errorf("password do not match")
+	}
+	return validator.New().Struct(u)
 }
 
 func (u *User) BeforeCreate() error {
@@ -26,6 +38,10 @@ func (u *User) BeforeCreate() error {
 		u.EncryptedPassword = enc
 	}
 	return nil
+}
+
+func (u *User) ComparePawwword(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(u.EncryptedPassword), []byte(password)) == nil
 }
 
 func encryptString(s string) (string, error) {
