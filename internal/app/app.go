@@ -27,7 +27,7 @@ type App struct {
 	httpServer *http.Server
 }
 
-func NewApp(cfg *config.Config) (App, error) {
+func NewApp(cfg *config.Config) (*App, error) {
 
 	log.Println("router initializing")
 	// router := httprouter.New()
@@ -39,11 +39,15 @@ func NewApp(cfg *config.Config) (App, error) {
 	}
 	// defer pool.Close()
 
-	return App{
+	a := &App{
 		cfg:      cfg,
 		pgClient: pgClient,
-		router:   router,
-	}, nil
+		router:   router,	
+	}
+
+	a.configureRouter()
+
+	return a, nil
 }
 
 func (a *App) Run() {
@@ -51,16 +55,6 @@ func (a *App) Run() {
 }
 
 func (a *App) StartHTTP() {
-
-	// Работа с пользователями
-	userRepository := user.NewRepository(a.pgClient)
-	userHandler := user2.NewHandler(userRepository)
-	userHandler.Register(a.router)
-
-	// Категории
-	categoryRepository := category.NewRepository(a.pgClient)
-	categoryHandler := category2.NewHandler(categoryRepository)
-	categoryHandler.Register(a.router)
 
 	// Добавляем тестовые данные
 	// addTestData(userRepository, categoryRepository)
@@ -111,6 +105,19 @@ func (a *App) StartHTTP() {
 
 // 	})
 // }
+
+func (a *App) configureRouter() {
+	
+	// Работа с пользователями
+	userRepository := user.NewRepository(a.pgClient)
+	userHandler := user2.NewHandler(userRepository)
+	userHandler.Register(a.router)
+
+	// Категории
+	categoryRepository := category.NewRepository(a.pgClient)
+	categoryHandler := category2.NewHandler(categoryRepository)
+	categoryHandler.Register(a.router)
+}
 
 func addTestData(ur user.Repository, cr category.Repository) {
 

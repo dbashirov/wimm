@@ -159,5 +159,17 @@ func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) error {
 		log.Println("User creation error")
 		return err
 	}
+
+	u.Cleaning()
+	
+	h.respond(w, r, http.StatusCreated, u)
+
 	return nil
+}
+
+func (h *handler) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	w.WriteHeader(code)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}	
 }

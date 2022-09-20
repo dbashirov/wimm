@@ -44,6 +44,11 @@ func (u *User) ComparePawwword(password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(u.EncryptedPassword), []byte(password)) == nil
 }
 
+func (u *User) Cleaning() {
+	u.Password = ""
+	u.EncryptedPassword = ""
+}
+
 func encryptString(s string) (string, error) {
 	b, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.MinCost)
 	if err != nil {
