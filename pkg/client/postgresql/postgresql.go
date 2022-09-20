@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 	"wimm/config"
-	repeatable "wimm/pkg/utils"
+	repeatable "wimm/pkg/utils/repeatable"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"

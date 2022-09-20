@@ -2,22 +2,27 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/http"
 	"time"
 	"wimm/config"
 	category2 "wimm/internal/domain/category"
-	modelCategory "wimm/internal/domain/category/model"
 	category "wimm/internal/domain/category/storage"
-	"wimm/internal/domain/types/model"
 	user2 "wimm/internal/domain/user"
-	modelUser "wimm/internal/domain/user/model"
 	user "wimm/internal/domain/user/storage"
+	"wimm/internal/handlers"
 	"wimm/pkg/client/postgresql"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
+)
+
+var (
+	errIncorrectEmailOrPassword = errors.New("incorrect email or password")
+	errNotAuthenticated         = errors.New("not authenticated")
 )
 
 type App struct {
@@ -30,7 +35,7 @@ type App struct {
 func NewApp(cfg *config.Config) (*App, error) {
 
 	log.Println("router initializing")
-	// router := httprouter.New()
+
 	router := mux.NewRouter()
 
 	pgClient, err := postgresql.NewClient(context.TODO(), cfg.Storage, 5)
@@ -42,7 +47,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	a := &App{
 		cfg:      cfg,
 		pgClient: pgClient,
-		router:   router,	
+		router:   router,
 	}
 
 	a.configureRouter()
@@ -77,6 +82,40 @@ func (a *App) StartHTTP() {
 
 }
 
+func (a *App) configureRouter() {
+
+	// Работа с пользователями
+	userRepository := user.NewRepository(a.pgClient)
+	userHandler := user2.NewHandler(userRepository)
+	userHandler.Register(a.router)
+
+	// Категории
+	categoryRepository := category.NewRepository(a.pgClient)
+	categoryHandler := category2.NewHandler(categoryRepository)
+	categoryHandler.Register(a.router)
+}
+
+func (a *App) handleSessionsCreate() http.HandlerFunc {
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			handlers.Error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		userRepository := user.NewRepository(a.pgClient)
+		u, err := userRepository.FindByEmail(context.Background(), req.Email)
+		if err != nil || !u.ComparePawwword(req.Password) {
+			handlers.Error(w, r, http.StatusUnauthorized, errIncorrectEmailOrPassword)
+			return
+		}
+	}
+}
+
 // TODO: JWT
 // var JwtAuthentication = func(next http.Handler) http.Handler {
 // 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -105,42 +144,3 @@ func (a *App) StartHTTP() {
 
 // 	})
 // }
-
-func (a *App) configureRouter() {
-	
-	// Работа с пользователями
-	userRepository := user.NewRepository(a.pgClient)
-	userHandler := user2.NewHandler(userRepository)
-	userHandler.Register(a.router)
-
-	// Категории
-	categoryRepository := category.NewRepository(a.pgClient)
-	categoryHandler := category2.NewHandler(categoryRepository)
-	categoryHandler.Register(a.router)
-}
-
-func addTestData(ur user.Repository, cr category.Repository) {
-
-	// Создаем пользователья
-	u := modelUser.User{
-		Username: "user3",
-		Email:    "user3@mail.com",
-		Password: "qweasd",
-	}
-	err := ur.Create(context.TODO(), u)
-	if err != nil {
-		log.Printf("User creation error: %s\n", err)
-		return
-	}
-
-	// Создаем категорию
-	c := modelCategory.Category{
-		Title: "Тест 3",
-		User:  u,
-		Type:  model.TypeExpense,
-	}
-	err = cr.Create(context.TODO(), &c)
-	if err != nil {
-		log.Printf("Category creation error: %s\n", err)
-	}
-}

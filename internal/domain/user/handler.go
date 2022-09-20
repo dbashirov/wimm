@@ -48,7 +48,7 @@ func (h *handler) Register(router *mux.Router) {
 func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 	users, err := h.repository.GetAll(context.TODO())
 	if err != nil {
-		h.error(w, r, http.StatusBadRequest, err)
+		handlers.Error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 	// test+
@@ -81,7 +81,7 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 	// w.Write(allM)
 	// test-
 
-	h.respond(w, r, http.StatusOK, users)
+	handlers.Respond(w, r, http.StatusOK, users)
 
 	return nil
 }
@@ -92,17 +92,17 @@ func (h *handler) Find(w http.ResponseWriter, r *http.Request) error {
 	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		h.error(w, r, http.StatusBadRequest, err)
+		handlers.Error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 
 	u, err := h.repository.Find(context.TODO(), id)
 	if err != nil {
-		h.error(w, r, http.StatusBadRequest, err)
+		handlers.Error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 
-	h.respond(w, r, http.StatusOK, u)
+	handlers.Respond(w, r, http.StatusOK, u)
 
 	return nil
 }
@@ -112,17 +112,17 @@ func (h *handler) FindByEmail(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	email := vars["email"]
 	if email == "" {
-		h.error(w, r, http.StatusBadRequest, fmt.Errorf("undefined parameter <email>"))
+		handlers.Error(w, r, http.StatusBadRequest, fmt.Errorf("undefined parameter <email>"))
 		return fmt.Errorf("undefined parameter <email>")
 	}
 
 	u, err := h.repository.FindByEmail(context.TODO(), email)
 	if err != nil {
-		h.error(w, r, http.StatusBadRequest, err)
+		handlers.Error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 
-	h.respond(w, r, http.StatusOK, u)
+	handlers.Respond(w, r, http.StatusOK, u)
 
 	return nil
 }
@@ -132,29 +132,18 @@ func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) error {
 	var u model.User
 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		h.error(w, r, http.StatusBadRequest, err)
+		handlers.Error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 	if err := h.repository.Create(r.Context(), u); err != nil {
 		log.Println("User creation error")
-		h.error(w, r, http.StatusUnprocessableEntity, err)
+		handlers.Error(w, r, http.StatusUnprocessableEntity, err)
 		return err
 	}
 
 	u.Cleaning()
 
-	h.respond(w, r, http.StatusCreated, u)
+	handlers.Respond(w, r, http.StatusCreated, u)
 
 	return nil
-}
-
-func (h *handler) error(w http.ResponseWriter, r *http.Request, code int, err error) {
-	h.respond(w, r, code, map[string]string{"error": err.Error()})
-}
-
-func (h *handler) respond(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-	w.WriteHeader(code)
-	if data != nil {
-		json.NewEncoder(w).Encode(data)
-	}
 }
