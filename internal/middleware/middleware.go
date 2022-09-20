@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ func Middleware(h appHandler) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		err := h(w, r)
 		if err != nil {
-			fmt.Printf("Error handle: %s\n", err)
+			log.Printf("Error handle: %s\n", err)
 		}
 	}
 }
