@@ -83,14 +83,6 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 
 	h.respond(w, r, http.StatusOK, users)
 
-	// allBytes, err := json.Marshal(users)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// w.WriteHeader(http.StatusOK)
-	// w.Write(allBytes)
-
 	return nil
 }
 
@@ -112,14 +104,6 @@ func (h *handler) Find(w http.ResponseWriter, r *http.Request) error {
 
 	h.respond(w, r, http.StatusOK, u)
 
-	// allBytes, err := json.Marshal(u)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// w.WriteHeader(http.StatusOK)
-	// w.Write(allBytes)
-
 	return nil
 }
 
@@ -128,23 +112,17 @@ func (h *handler) FindByEmail(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	email := vars["email"]
 	if email == "" {
-		w.WriteHeader(400)
+		h.error(w, r, http.StatusBadRequest, fmt.Errorf("undefined parameter <email>"))
 		return fmt.Errorf("undefined parameter <email>")
 	}
 
 	u, err := h.repository.FindByEmail(context.TODO(), email)
 	if err != nil {
-		w.WriteHeader(400)
+		h.error(w, r, http.StatusBadRequest, err)
 		return err
 	}
 
-	allBytes, err := json.Marshal(u)
-	if err != nil {
-		return err
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(allBytes)
+	h.respond(w, r, http.StatusOK, u)
 
 	return nil
 }
