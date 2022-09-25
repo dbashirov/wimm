@@ -17,7 +17,12 @@ import (
 	"wimm/pkg/client/postgresql"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v4/pgxpool"
+)
+
+const (
+	sessionName = "wimm"
 )
 
 var (
@@ -26,10 +31,11 @@ var (
 )
 
 type App struct {
-	cfg        *config.Config
-	pgClient   *pgxpool.Pool
-	router     *mux.Router
-	httpServer *http.Server
+	cfg          *config.Config
+	pgClient     *pgxpool.Pool
+	router       *mux.Router
+	httpServer   *http.Server
+	sessionStore sessions.Store
 }
 
 func NewApp(cfg *config.Config) (*App, error) {
@@ -44,10 +50,13 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 	// defer pool.Close()
 
+	sessionStore := sessions.NewCookieStore([]byte(cfg.Session.SessionKey))
+
 	a := &App{
-		cfg:      cfg,
-		pgClient: pgClient,
-		router:   router,
+		cfg:          cfg,
+		pgClient:     pgClient,
+		router:       router,
+		sessionStore: sessionStore,
 	}
 
 	a.configureRouter()
@@ -84,7 +93,7 @@ func (a *App) StartHTTP() {
 
 func (a *App) configureRouter() {
 
-	// Работа с пользователями
+	// Registering user handlers
 	userRepository := user.NewRepository(a.pgClient)
 	userHandler := user2.NewHandler(userRepository)
 	userHandler.Register(a.router)
@@ -113,6 +122,20 @@ func (a *App) handleSessionsCreate() http.HandlerFunc {
 			handlers.Error(w, r, http.StatusUnauthorized, errIncorrectEmailOrPassword)
 			return
 		}
+
+		session, err := a.sessionStore.Get(r, sessionName)
+		if err != nil {
+			handlers.Error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		session.Values["user_id"] = u.ID
+		if err := a.sessionStore.Save(r, w, session); err != nil {
+			handlers.Error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		handlers.Respond(w, r, http.StatusOK, nil)
 	}
 }
 

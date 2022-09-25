@@ -22,10 +22,15 @@ type JWT struct {
 	SecretKey string `yaml:"secretKey"`
 }
 
+type Session struct {
+	SessionKey string `yaml:"sessionKey"`
+}
+
 type Config struct {
 	Storage StorageConfig `yaml:"storage"`
 	Server  Server        `yaml:"server"`
 	JWT     JWT           `yaml:"JWT"`
+	Session Session       `yaml:"session"`
 }
 
 // var sc *Config
