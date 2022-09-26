@@ -35,10 +35,10 @@ func NewHandler(repository user.Repository) handlers.Handler {
 }
 
 func (h *handler) Register(router *mux.Router) {
-	router.HandleFunc(usersURL, middleware.Middleware(h.GetList)).Methods("GET")
-	router.HandleFunc(usersURL, middleware.Middleware(h.CreateUser)).Methods("POST")
-	router.HandleFunc(userURL, middleware.Middleware(h.Find)).Methods("GET")
-	router.HandleFunc(userEmailURL, middleware.Middleware(h.FindByEmail)).Methods("GET")
+	router.HandleFunc(usersURL, middleware.Middleware(h.GetList)).Methods(http.MethodGet)
+	router.HandleFunc(usersURL, middleware.Middleware(h.CreateUser)).Methods(http.MethodPost)
+	router.HandleFunc(userURL, middleware.Middleware(h.Find)).Methods(http.MethodGet)
+	router.HandleFunc(userEmailURL, middleware.Middleware(h.FindByEmail)).Methods(http.MethodGet)
 }
 
 // type message struct {

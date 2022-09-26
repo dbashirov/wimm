@@ -28,8 +28,8 @@ func NewHandler(repository storage.Repository) handlers.Handler {
 }
 
 func (h *handler) Register(router *mux.Router) {
-	router.HandleFunc(categoriesURL, middleware.Middleware(h.GetList)).Methods("GET")
-	router.HandleFunc(categoryURL, middleware.Middleware(h.GetCategory)).Methods("GET")
+	router.HandleFunc(categoriesURL, middleware.Middleware(h.GetList)).Methods(http.MethodGet)
+	router.HandleFunc(categoryURL, middleware.Middleware(h.GetCategory)).Methods(http.MethodGet)
 }
 
 func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
