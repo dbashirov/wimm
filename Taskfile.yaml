@@ -1,0 +1,35 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  # GOMOCACHE: $GOMODCACHE
+
+tasks:
+  default: 
+    deps: [all]
+
+  all:
+    cmds:
+      - task: env-up
+      - task: build  
+      - task: run
+  
+  env-up:
+    desk: "Start Dokcer"
+    cmds:
+      - docker compose -f docker-compose.yml up --always-recreate-deps --detach --build
+
+  env-stop:
+    desk: "Stop Docker"
+    cmds:
+      - docker compose -f docker-compose.yml down
+
+  build:
+    cmds:
+      - go build -o ./bin/wimm -v ./cmd/wimm
+    
+  run:
+    cmds:
+      - ./bin/wimm
+    # silent: true

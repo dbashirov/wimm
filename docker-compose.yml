@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:15.2
+    environment:
+      - POSTGRES_USER=wimm
+      - POSTGRES_PASSWORD=wimm
+      - POSTGRES_DB=wimm
+    container_name: wimm
+    ports:
+      - "5432:5432"

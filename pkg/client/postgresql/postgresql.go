@@ -22,7 +22,7 @@ type Client interface {
 }
 
 func NewClient(ctx context.Context, sc config.StorageConfig, maxAttempts int) (pool *pgxpool.Pool, err error) {
-	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s sslmode=disable", sc.Host, sc.Port, sc.Database, sc.Username)
+	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", sc.Host, sc.Port, sc.Database, sc.Username, sc.Password)
 
 	err = repeatable.DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -33,7 +33,7 @@ func NewClient(ctx context.Context, sc config.StorageConfig, maxAttempts int) (p
 			return err
 		}
 		return nil
-	}, 3, 5*time.Second)
+	}, 3, 1*time.Second)
 
 	if err != nil {
 		log.Fatalln("error do with tries postresql")
