@@ -16,14 +16,16 @@ tasks:
       - task: run
   
   env-up:
-    desk: "Start Dokcer"
+    desk: "Start Docker"
     cmds:
-      - docker compose -f docker-compose.yml up --always-recreate-deps --detach --build
+      - docker-compose -f docker-compose.yml up --always-recreate-deps --detach --build
+      - go run ./cmd/envtool
+      - migrate -path migrations -database "postgresql://wimm:wimm@localhost/wimm?sslmode=disable" up
 
   env-stop:
     desk: "Stop Docker"
     cmds:
-      - docker compose -f docker-compose.yml down
+      - docker-compose -f docker-compose.yml down
 
   build:
     cmds:

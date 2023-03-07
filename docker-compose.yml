@@ -8,5 +8,7 @@ services:
       - POSTGRES_PASSWORD=wimm
       - POSTGRES_DB=wimm
     container_name: wimm
+    expose:
+      - "5432"
     ports:
       - "5432:5432"
