@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"wimm/internal/domain/category/storage"
 	"wimm/internal/handlers"
 	"wimm/internal/middleware"
+	"wimm/internal/model"
 
 	"github.com/gorilla/mux"
 )
@@ -18,10 +18,10 @@ const (
 )
 
 type handler struct {
-	repository storage.Repository
+	repository model.CategoryRepository
 }
 
-func NewHandler(repository storage.Repository) handlers.Handler {
+func NewHandler(repository model.CategoryRepository) handlers.Handler {
 	return &handler{
 		repository: repository,
 	}

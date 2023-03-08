@@ -1,7 +1,7 @@
 package model
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
@@ -12,7 +12,7 @@ type User struct {
 	Username          string `json:"username" validate:"required"`
 	Email             string `json:"email" validate:"required,email"`
 	Password          string `json:"password,omitempty" validate:"required"`
-	EncryptedPassword string `json:"encrypted_password,omitempty" validate:"required"`
+	EncryptedPassword string `json:"-"`
 }
 
 type CreateUserDTO struct {
@@ -22,10 +22,17 @@ type CreateUserDTO struct {
 	RepeatPassword string `json:"repeat_password"`
 }
 
+type UserRepository interface {
+	Create(ctx context.Context, user User) error
+	Find(ctx context.Context, id int) (*User, error)
+	FindByEmail(ctx context.Context, email string) (*User, error)
+	GetAll(ctx context.Context) ([]User, error)
+}
+
 func (u *User) Validate() error {
-	if u.Password != u.EncryptedPassword {
-		return fmt.Errorf("password do not match")
-	}
+	// if u.Password != u.EncryptedPassword {
+	// 	return fmt.Errorf("password do not match")
+	// }
 	return validator.New().Struct(u)
 }
 

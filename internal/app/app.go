@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 	"wimm/config"
-	category2 "wimm/internal/domain/category"
-	category "wimm/internal/domain/category/storage"
-	user2 "wimm/internal/domain/user"
-	user "wimm/internal/domain/user/storage"
+	category "wimm/internal/category"
+	categoryStorage "wimm/internal/category/storage"
 	"wimm/internal/handlers"
+	"wimm/internal/user"
+	userStorage "wimm/internal/user/storage"
 	"wimm/pkg/client/postgresql"
 
 	"github.com/gorilla/mux"
@@ -94,13 +94,13 @@ func (a *App) StartHTTP() {
 func (a *App) configureRouter() {
 
 	// Registering user handlers
-	userRepository := user.NewRepository(a.pgClient)
-	userHandler := user2.NewHandler(userRepository)
+	userRepository := userStorage.NewRepository(a.pgClient)
+	userHandler := user.NewHandler(userRepository)
 	userHandler.Register(a.router)
 
 	// Категории
-	categoryRepository := category.NewRepository(a.pgClient)
-	categoryHandler := category2.NewHandler(categoryRepository)
+	categoryRepository := categoryStorage.NewRepository(a.pgClient)
+	categoryHandler := category.NewHandler(categoryRepository)
 	categoryHandler.Register(a.router)
 }
 
@@ -116,7 +116,7 @@ func (a *App) handleSessionsCreate() http.HandlerFunc {
 			return
 		}
 
-		userRepository := user.NewRepository(a.pgClient)
+		userRepository := userStorage.NewRepository(a.pgClient)
 		u, err := userRepository.FindByEmail(context.Background(), req.Email)
 		if err != nil || !u.ComparePawwword(req.Password) {
 			handlers.Error(w, r, http.StatusUnauthorized, errIncorrectEmailOrPassword)

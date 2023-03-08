@@ -12,7 +12,7 @@ tasks:
   all:
     cmds:
       - task: env-up
-      - task: build  
+      - task: start-app  
       - task: run
   
   env-up:
@@ -26,6 +26,11 @@ tasks:
     desk: "Stop Docker"
     cmds:
       - docker-compose -f docker-compose.yml down
+
+  start-app:
+    cmds:
+      - task: build
+      - task: run
 
   build:
     cmds:
