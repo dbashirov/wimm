@@ -24,10 +24,6 @@ type Client interface {
 func NewClient(ctx context.Context, sc config.StorageConfig, maxAttempts int) (pool *pgxpool.Pool, err error) {
 	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", sc.Host, sc.Port, sc.Database, sc.Username, sc.Password)
 
-	if maxAttempts == 0 {
-		maxAttempts = 3
-	}
-
 	err = repeatable.DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

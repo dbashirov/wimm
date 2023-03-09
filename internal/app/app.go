@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 	"wimm/config"
-	category "wimm/internal/category"
+	"wimm/internal/category"
 	categoryStorage "wimm/internal/category/storage"
 	"wimm/internal/handlers"
 	"wimm/internal/user"
