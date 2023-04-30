@@ -11,7 +11,7 @@
 * PostgreSQL
 * JWT аутентификация
 * Docker (docker-compose)
-* test2
+* test3
 
 Проект собирается и запускается с помощью Task:
 ```
