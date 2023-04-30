@@ -11,7 +11,6 @@
 * PostgreSQL
 * JWT аутентификация
 * Docker (docker-compose)
-* test3
 
 Проект собирается и запускается с помощью <a href="https://taskfile.dev">Task</a>:
 ```
