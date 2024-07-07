@@ -11,9 +11,6 @@ import (
 	"wimm/internal/middleware"
 	"wimm/internal/model"
 
-	// "wimm/internal/store"
-
-	// "github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 )
 
@@ -66,19 +63,6 @@ func (h *handler) GetList(w http.ResponseWriter, r *http.Request) error {
 	// }
 
 	// w.Write(allM)
-
-	// JWT
-	// token := jwt.New(jwt.SigningMethodEdDSA)
-	// // tokenString, err := token.SignedString("JWTTSecretKey")
-	// // if err != nil {
-	// // 	return err
-	// // }
-	// allM, err := json.Marshal(token)
-	// if err != nil {
-	// 	return err
-	// }
-	// w.Write(allM)
-	// test-
 
 	handlers.Respond(w, r, http.StatusOK, users)
 

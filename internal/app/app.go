@@ -48,6 +48,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// TODO: gracefulshutdown
 	// defer pool.Close()
 
 	sessionStore := sessions.NewCookieStore([]byte(cfg.Session.SessionKey))
@@ -73,7 +74,6 @@ func (a *App) StartHTTP() {
 	// Добавляем тестовые данные
 	// addTestData(userRepository, categoryRepository)
 
-	// Запуск сервера
 	listener, listenErr := net.Listen("tcp", a.cfg.Server.Port)
 	if listenErr != nil {
 		log.Fatal(listenErr)
@@ -85,10 +85,11 @@ func (a *App) StartHTTP() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	err := a.httpServer.Serve(listener)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("application completely initialized and started")
-
-	a.httpServer.Serve(listener)
-
 }
 
 func (a *App) configureRouter() {
@@ -138,32 +139,3 @@ func (a *App) handleSessionsCreate() http.HandlerFunc {
 		handlers.Respond(w, r, http.StatusOK, nil)
 	}
 }
-
-// TODO: JWT
-// var JwtAuthentication = func(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-// 		notAuth := []string{"/api/user/new", "/api/user/login"} //Список эндпоинтов, для которых не требуется авторизация
-// 		requestPath := r.URL.Path                               //Текущий путь запроса
-
-// 		//проверяем, не требует ли запрос аутентификации, обслуживаем запрос, если он не нужен
-// 		for _, value := range notAuth {
-// 			if value == requestPath {
-// 				next.ServeHTTP(w, r)
-// 				return
-// 			}
-// 		}
-
-// 		response := make(map[string]interface{})
-// 		tokenHeader := r.Header.Get("Authorization") //Получение токена
-
-// 		if tokenHeader == "" { //Токен отсутствует, возвращаем  403 http-код Unauthorized
-// 			response = util .Message(false, "Missing auth token")
-// 			w.WriteHeader(http.StatusForbidden)
-// 			w.Header().Add("Content-Type", "application/json")
-// 			u.Respond(w, response)
-// 			return
-// 		}
-
-// 	})
-// }

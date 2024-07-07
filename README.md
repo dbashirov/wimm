@@ -9,7 +9,6 @@
 Стек:
 * Golang
 * PostgreSQL
-* JWT аутентификация
 * Docker (docker-compose)
 
 Проект собирается и запускается с помощью <a href="https://taskfile.dev">Task</a>:
