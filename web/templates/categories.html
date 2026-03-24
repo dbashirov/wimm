@@ -1,47 +1,57 @@
 {{define "content"}}
-<h2>Категории</h2>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Категории</h1>
+</div>
 
-<article>
-  <header><strong>Добавить категорию</strong></header>
-  <form hx-post="/categories"
-        hx-target="#categories-tbody"
-        hx-swap="afterbegin"
-        hx-on::after-request="this.reset()">
-    <div class="form-row">
-      <label>
-        Название
-        <input type="text" name="name" placeholder="Продукты" required>
-      </label>
-      <label>
-        Тип
-        <select name="type">
-          <option value="expense">Расход</option>
-          <option value="income">Доход</option>
-        </select>
-      </label>
-      <div class="form-action">
-        <button type="submit">Добавить</button>
+<div class="card bg-base-100 shadow-md mb-4">
+  <div class="card-body">
+    <h3 class="font-semibold text-base mb-3">Добавить категорию</h3>
+    <form hx-post="/categories"
+          hx-target="#categories-tbody"
+          hx-swap="afterbegin"
+          hx-on::after-request="this.reset()">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="form-control flex-1 min-w-40">
+          <label class="label py-1"><span class="label-text font-medium">Название</span></label>
+          <input type="text" name="name" placeholder="Продукты"
+                 class="input input-bordered input-sm" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Тип</span></label>
+          <select name="type" class="select select-bordered select-sm">
+            <option value="expense">Расход</option>
+            <option value="income">Доход</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Добавить</button>
       </div>
-    </div>
-  </form>
-</article>
+    </form>
+  </div>
+</div>
 
-<article>
-  <table>
-    <thead>
-      <tr>
-        <th>Название</th>
-        <th>Тип</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="categories-tbody">
-      {{range .Income}}{{template "category-row" .}}{{end}}
-      {{range .Expense}}{{template "category-row" .}}{{end}}
-    </tbody>
-  </table>
-  {{if and (not .Income) (not .Expense)}}
-  <p>Категории ещё не добавлены.</p>
-  {{end}}
-</article>
+<div class="card bg-base-100 shadow-md">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr class="text-base-content/60">
+          <th>Название</th>
+          <th>Тип</th>
+          <th class="w-24"></th>
+        </tr>
+      </thead>
+      <tbody id="categories-tbody">
+        {{range .Income}}{{template "category-row" .}}{{end}}
+        {{range .Expense}}{{template "category-row" .}}{{end}}
+      </tbody>
+    </table>
+    {{if and (not .Income) (not .Expense)}}
+    <div class="text-center py-12 text-base-content/40">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+      <p>Категории ещё не добавлены</p>
+    </div>
+    {{end}}
+  </div>
+</div>
 {{end}}

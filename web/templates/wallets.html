@@ -1,51 +1,61 @@
 {{define "content"}}
-<h2>Кошельки</h2>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Кошельки</h1>
+</div>
 
-<article>
-  <header><strong>Добавить кошелёк</strong></header>
-  <form hx-post="/wallets"
-        hx-target="#wallets-tbody"
-        hx-swap="afterbegin"
-        hx-on::after-request="this.reset()">
-    <div class="form-row">
-      <label>
-        Название
-        <input type="text" name="name" placeholder="Наличные" required>
-      </label>
-      <label>
-        Валюта
-        <select name="currency">
-          <option value="RUB">RUB</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-          <option value="CNY">CNY</option>
-        </select>
-      </label>
-      <div class="form-action">
-        <button type="submit">Добавить</button>
+<div class="card bg-base-100 shadow-md mb-4">
+  <div class="card-body">
+    <h3 class="font-semibold text-base mb-3">Добавить кошелёк</h3>
+    <form hx-post="/wallets"
+          hx-target="#wallets-tbody"
+          hx-swap="afterbegin"
+          hx-on::after-request="this.reset()">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="form-control flex-1 min-w-40">
+          <label class="label py-1"><span class="label-text font-medium">Название</span></label>
+          <input type="text" name="name" placeholder="Наличные"
+                 class="input input-bordered input-sm" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Валюта</span></label>
+          <select name="currency" class="select select-bordered select-sm">
+            <option value="RUB">RUB</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="CNY">CNY</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Добавить</button>
       </div>
-    </div>
-  </form>
-</article>
+    </form>
+  </div>
+</div>
 
-<article>
-  <table>
-    <thead>
-      <tr>
-        <th>Название</th>
-        <th>Валюта</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="wallets-tbody">
-      {{range .Wallets}}
-      {{template "wallet-row" .}}
-      {{end}}
-    </tbody>
-  </table>
-  {{if not .Wallets}}
-  <p>Кошельки ещё не добавлены.</p>
-  {{end}}
-</article>
+<div class="card bg-base-100 shadow-md">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr class="text-base-content/60">
+          <th>Название</th>
+          <th>Валюта</th>
+          <th class="w-24"></th>
+        </tr>
+      </thead>
+      <tbody id="wallets-tbody">
+        {{range .Wallets}}
+        {{template "wallet-row" .}}
+        {{end}}
+      </tbody>
+    </table>
+    {{if not .Wallets}}
+    <div class="text-center py-12 text-base-content/40">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+      </svg>
+      <p>Кошельки ещё не добавлены</p>
+    </div>
+    {{end}}
+  </div>
+</div>
 {{end}}

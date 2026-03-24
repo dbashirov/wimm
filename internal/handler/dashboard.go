@@ -3,7 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/dbashirov/wimm/internal/model"
 )
+
+type dashboardPageData struct {
+	basePage
+	*model.DashboardData
+}
 
 func (h *Handler) getDashboard(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
@@ -12,7 +19,7 @@ func (h *Handler) getDashboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	h.render(w, "dashboard", data)
+	h.render(w, "dashboard", dashboardPageData{DashboardData: data})
 }
 
 // getDashboardJSON returns dashboard data as JSON for Chart.js

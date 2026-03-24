@@ -9,6 +9,7 @@ import (
 )
 
 type categoriesData struct {
+	basePage
 	Income  []model.Category
 	Expense []model.Category
 	Error   string

@@ -1,14 +1,19 @@
 {{define "category-edit-row"}}
-<tr id="category-{{.ID}}">
+<tr id="category-{{.ID}}" class="bg-base-200">
   <td colspan="3">
-    <form hx-put="/categories/{{.ID}}"
+    <form class="flex flex-wrap gap-2 items-center py-1"
+          hx-put="/categories/{{.ID}}"
           hx-target="closest tr"
-          hx-swap="outerHTML"
-          class="inline-form">
-      <input type="text" name="name" value="{{.Name}}" required>
-      <span class="{{typeClass .Type}}">{{typeLabel .Type}}</span>
-      <button type="submit">Сохранить</button>
-      <button type="button" class="outline secondary"
+          hx-swap="outerHTML">
+      <input type="text" name="name" value="{{.Name}}"
+             class="input input-bordered input-xs flex-1 min-w-32" required>
+      {{if eq .Type "income"}}
+      <span class="badge badge-success badge-sm">↑ Доход</span>
+      {{else}}
+      <span class="badge badge-error badge-sm">↓ Расход</span>
+      {{end}}
+      <button type="submit" class="btn btn-primary btn-xs">Сохранить</button>
+      <button type="button" class="btn btn-ghost btn-xs"
               hx-get="/categories/{{.ID}}"
               hx-target="closest tr"
               hx-swap="outerHTML">Отмена</button>

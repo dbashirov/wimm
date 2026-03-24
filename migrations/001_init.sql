@@ -42,10 +42,3 @@ CREATE TABLE operations (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX operations_user_id_operated_at_idx ON operations(user_id, operated_at DESC);
-
--- +goose Down
-DROP TABLE IF EXISTS operations;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS wallets;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS users;

@@ -1,68 +1,96 @@
 {{define "content"}}
-<h2>Дашборд</h2>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Дашборд</h1>
+  <a href="/operations" class="btn btn-primary btn-sm gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Добавить операцию
+  </a>
+</div>
 
 {{if .WalletBalances}}
-<div class="wallet-grid">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
   {{range .WalletBalances}}
-  <article>
-    <header><strong>{{.Name}}</strong> <small>{{.Currency}}</small></header>
-    <p>Доходы: <span class="income">+{{money .Income}} {{.Currency}}</span></p>
-    <p>Расходы: <span class="expense">-{{money .Expense}} {{.Currency}}</span></p>
-    <p>Баланс:
-      {{if ge .Balance 0.0}}
-        <span class="income"><strong>{{money .Balance}} {{.Currency}}</strong></span>
-      {{else}}
-        <span class="expense"><strong>{{money .Balance}} {{.Currency}}</strong></span>
-      {{end}}
-    </p>
-  </article>
+  <div class="card bg-base-100 shadow-md">
+    <div class="card-body p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-base">{{.Name}}</h3>
+        <span class="badge badge-outline badge-sm">{{.Currency}}</span>
+      </div>
+      <div class="text-2xl font-bold {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
+        {{money .Balance}} {{.Currency}}
+      </div>
+      <div class="flex gap-4 mt-3 text-sm text-base-content/60">
+        <span class="text-success">↑ {{money .Income}}</span>
+        <span class="text-error">↓ {{money .Expense}}</span>
+      </div>
+    </div>
+  </div>
   {{end}}
 </div>
 {{else}}
-<p>Кошельки не добавлены. <a href="/wallets">Добавить кошелёк</a></p>
+<div class="alert mb-6">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
+  </svg>
+  <span>Кошельки не добавлены. <a href="/wallets" class="link link-primary">Добавить кошелёк</a></span>
+</div>
 {{end}}
 
-<div class="charts-grid">
+{{if or .CategoryExpenses .MonthlyTotals}}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   {{if .CategoryExpenses}}
-  <article>
-    <header><strong>Расходы по категориям (текущий месяц)</strong></header>
-    <div class="chart-container">
-      <canvas id="catChart"></canvas>
+  <div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+      <h3 class="card-title text-base font-semibold">Расходы по категориям</h3>
+      <p class="text-xs text-base-content/50 -mt-2 mb-2">Текущий месяц</p>
+      <div class="relative h-64">
+        <canvas id="catChart"></canvas>
+      </div>
     </div>
-  </article>
+  </div>
   {{end}}
 
   {{if .MonthlyTotals}}
-  <article>
-    <header><strong>Доходы и расходы по месяцам</strong></header>
-    <div class="chart-container">
-      <canvas id="monthChart"></canvas>
+  <div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+      <h3 class="card-title text-base font-semibold">Доходы и расходы</h3>
+      <p class="text-xs text-base-content/50 -mt-2 mb-2">Последние 6 месяцев</p>
+      <div class="relative h-64">
+        <canvas id="monthChart"></canvas>
+      </div>
     </div>
-  </article>
+  </div>
   {{end}}
 </div>
 
-{{if or .CategoryExpenses .MonthlyTotals}}
 <script>
 (function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  Chart.defaults.color = isDark ? '#9ca3af' : '#6b7280';
+
   {{if .CategoryExpenses}}
-  const catCtx = document.getElementById('catChart');
-  new Chart(catCtx, {
+  new Chart(document.getElementById('catChart'), {
     type: 'doughnut',
     data: {
       labels: [{{range .CategoryExpenses}}"{{.Name}}",{{end}}],
       datasets: [{
         data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
-        borderWidth: 1
+        borderWidth: 2,
+        borderColor: isDark ? '#1f2937' : '#ffffff',
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } } }
+    }
   });
   {{end}}
 
   {{if .MonthlyTotals}}
-  const monthCtx = document.getElementById('monthChart');
-  new Chart(monthCtx, {
+  new Chart(document.getElementById('monthChart'), {
     type: 'bar',
     data: {
       labels: [{{range .MonthlyTotals}}"{{.Month}}",{{end}}],
@@ -70,16 +98,26 @@
         {
           label: 'Доходы',
           data: [{{range .MonthlyTotals}}{{money .Income}},{{end}}],
-          backgroundColor: 'rgba(34, 197, 94, 0.7)'
+          backgroundColor: 'rgba(34,197,94,0.75)',
+          borderRadius: 4,
         },
         {
           label: 'Расходы',
           data: [{{range .MonthlyTotals}}{{money .Expense}},{{end}}],
-          backgroundColor: 'rgba(239, 68, 68, 0.7)'
+          backgroundColor: 'rgba(239,68,68,0.75)',
+          borderRadius: 4,
         }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } }
+      }
+    }
   });
   {{end}}
 })();

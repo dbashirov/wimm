@@ -1,65 +1,33 @@
-/* wimm custom styles */
+/* Minimal custom styles — Tailwind + DaisyUI handle the rest */
 
-.nav-brand { text-decoration: none; }
-
-nav form { margin: 0; }
-nav form button { margin: 0; padding: 0.4rem 0.8rem; }
-
-.auth-card {
-  max-width: 400px;
-  margin: 4rem auto;
-  padding: 2rem;
+body {
+  font-family: 'Inter', sans-serif;
 }
-.auth-link { text-align: center; margin-top: 1rem; }
-.error-msg { color: var(--pico-color-red-500); }
 
-.income  { color: #22c55e; }
-.expense { color: #ef4444; }
-
-.wallet-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+/* Active nav link highlight */
+.menu a[href]:is([href="/dashboard"]:has(~ :not(*)),
+                 [href="/wallets"],
+                 [href="/categories"],
+                 [href="/operations"]) {
+  /* handled by Tailwind active states */
 }
-.wallet-grid article { margin: 0; padding: 1rem; }
-.wallet-grid article p { margin: 0.25rem 0; }
 
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 1rem;
+/* Smooth theme transition */
+html {
+  transition: background-color 0.2s, color 0.2s;
 }
-.chart-container { position: relative; height: 280px; }
 
-.form-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
+/* htmx loading indicator */
+.htmx-indicator { opacity: 0; transition: opacity 0.2s; }
+.htmx-request .htmx-indicator { opacity: 1; }
+
+/* Table row add animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.form-row label { flex: 1; min-width: 140px; margin: 0; }
-.form-row .form-action { align-self: flex-end; }
-
-.form-row-wrap {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
+#wallets-tbody tr:first-child,
+#categories-tbody tr:first-child,
+#operations-tbody tr:first-child {
+  animation: fadeIn 0.2s ease-out;
 }
-.form-row-wrap label { flex: 1; min-width: 140px; margin: 0; }
-.form-row-wrap .form-action { align-self: flex-end; }
-
-.row-actions { white-space: nowrap; }
-.row-actions button { margin: 0 0.1rem; padding: 0.2rem 0.5rem; font-size: 0.85rem; }
-button.danger { --pico-primary: var(--pico-color-red-500); }
-
-.inline-form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.inline-form input, .inline-form select { margin: 0; }
-
-.inline-form-wide { width: 100%; }
-
-.ops-table { font-size: 0.9em; }
-.ops-table td { padding: 0.4rem 0.5rem; }
-
-.pagination { margin-top: 1rem; }

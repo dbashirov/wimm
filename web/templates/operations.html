@@ -1,141 +1,156 @@
 {{define "content"}}
-<h2>Журнал операций</h2>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Операции</h1>
+</div>
 
-<article>
-  <header><strong>Новая операция</strong></header>
-  <form hx-post="/operations"
-        hx-target="#operations-tbody"
-        hx-swap="afterbegin"
-        hx-on::after-request="this.reset()">
-    <div class="form-row-wrap">
-      <label>
-        Тип
-        <select name="type" id="op-type"
-                hx-get="/categories/options"
-                hx-target="#op-category"
-                hx-trigger="change"
-                hx-include="this">
-          <option value="expense">Расход</option>
-          <option value="income">Доход</option>
-        </select>
-      </label>
-      <label>
-        Сумма
-        <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required>
-      </label>
-      <label>
-        Кошелёк
-        <select name="wallet_id" required>
-          {{range .Wallets}}
-          <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
-          {{end}}
-        </select>
-      </label>
-      <label>
-        Категория
-        <select name="category_id" id="op-category" required>
-          {{range .Categories}}
-          {{if eq .Type "expense"}}
-          <option value="{{.ID}}">{{.Name}}</option>
-          {{end}}
-          {{end}}
-        </select>
-      </label>
-      <label>
-        Дата
-        <input type="date" name="operated_at" required>
-      </label>
-      <label>
-        Описание
-        <input type="text" name="description" placeholder="Необязательно">
-      </label>
-      <div class="form-action">
-        <button type="submit">Добавить</button>
+<!-- Add form -->
+<div class="card bg-base-100 shadow-md mb-4">
+  <div class="card-body">
+    <h3 class="font-semibold text-base mb-3">Новая операция</h3>
+    <form hx-post="/operations"
+          hx-target="#operations-tbody"
+          hx-swap="afterbegin"
+          hx-on::after-request="this.reset()">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Тип</span></label>
+          <select name="type" id="op-type" class="select select-bordered select-sm"
+                  hx-get="/categories/options"
+                  hx-target="#op-category-select"
+                  hx-trigger="change"
+                  hx-include="this">
+            <option value="expense">Расход</option>
+            <option value="income">Доход</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Сумма</span></label>
+          <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
+                 class="input input-bordered input-sm" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Кошелёк</span></label>
+          <select name="wallet_id" class="select select-bordered select-sm" required>
+            {{range .Wallets}}
+            <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Категория</span></label>
+          <select name="category_id" id="op-category-select" class="select select-bordered select-sm" required>
+            {{range .Categories}}{{if eq .Type "expense"}}
+            <option value="{{.ID}}">{{.Name}}</option>
+            {{end}}{{end}}
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Дата</span></label>
+          <input type="date" name="operated_at" class="input input-bordered input-sm" required>
+        </div>
+        <div class="form-control col-span-2 md:col-span-1">
+          <label class="label py-1"><span class="label-text font-medium">Описание</span></label>
+          <input type="text" name="description" placeholder="Необязательно"
+                 class="input input-bordered input-sm">
+        </div>
       </div>
-    </div>
-  </form>
-</article>
-
-<article>
-  <header>
-    <strong>Фильтр</strong>
-    <a href="/operations" role="button" class="outline secondary" style="float:right">Сбросить</a>
-  </header>
-  <form method="GET" action="/operations">
-    <div class="form-row-wrap">
-      <label>
-        Кошелёк
-        <select name="wallet_id">
-          <option value="">Все</option>
-          {{range .Wallets}}
-          <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
-          {{end}}
-        </select>
-      </label>
-      <label>
-        Тип
-        <select name="type">
-          <option value="">Все</option>
-          <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
-          <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
-        </select>
-      </label>
-      <label>
-        Категория
-        <select name="category_id">
-          <option value="">Все</option>
-          {{range .Categories}}
-          <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
-          {{end}}
-        </select>
-      </label>
-      <label>
-        Дата от
-        <input type="date" name="date_from" value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
-      </label>
-      <label>
-        Дата до
-        <input type="date" name="date_to" value="{{if not .Filter.DateTo.IsZero}}{{.Filter.DateTo.Format "2006-01-02"}}{{end}}">
-      </label>
-      <div class="form-action">
-        <button type="submit">Применить</button>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Добавить</button>
       </div>
+    </form>
+  </div>
+</div>
+
+<!-- Filter -->
+<details class="collapse collapse-arrow bg-base-100 shadow-md mb-4">
+  <summary class="collapse-title font-semibold text-sm py-3 min-h-0">Фильтр</summary>
+  <div class="collapse-content pb-4">
+    <form method="GET" action="/operations">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Кошелёк</span></label>
+          <select name="wallet_id" class="select select-bordered select-sm">
+            <option value="">Все</option>
+            {{range .Wallets}}
+            <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Тип</span></label>
+          <select name="type" class="select select-bordered select-sm">
+            <option value="">Все</option>
+            <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
+            <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Категория</span></label>
+          <select name="category_id" class="select select-bordered select-sm">
+            <option value="">Все</option>
+            {{range .Categories}}
+            <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Дата от</span></label>
+          <input type="date" name="date_from" class="input input-bordered input-sm"
+                 value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
+        </div>
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text font-medium">Дата до</span></label>
+          <input type="date" name="date_to" class="input input-bordered input-sm"
+                 value="{{if not .Filter.DateTo.IsZero}}{{.Filter.DateTo.Format "2006-01-02"}}{{end}}">
+        </div>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Применить</button>
+        <a href="/operations" class="btn btn-ghost btn-sm">Сбросить</a>
+      </div>
+    </form>
+  </div>
+</details>
+
+<!-- Table -->
+<div class="card bg-base-100 shadow-md">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr class="text-base-content/60">
+          <th>Дата</th>
+          <th>Тип</th>
+          <th>Сумма</th>
+          <th class="hidden md:table-cell">Кошелёк</th>
+          <th class="hidden md:table-cell">Категория</th>
+          <th class="hidden lg:table-cell">Описание</th>
+          <th class="w-20"></th>
+        </tr>
+      </thead>
+      <tbody id="operations-tbody">
+        {{range .Operations}}
+        {{template "operation-row" .}}
+        {{end}}
+      </tbody>
+    </table>
+    {{if not .Operations}}
+    <div class="text-center py-12 text-base-content/40">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      <p>Операции не найдены</p>
     </div>
-  </form>
-</article>
-
-<article>
-  <table class="ops-table">
-    <thead>
-      <tr>
-        <th>Дата</th>
-        <th>Тип</th>
-        <th>Сумма</th>
-        <th>Кошелёк</th>
-        <th>Категория</th>
-        <th>Описание</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="operations-tbody">
-      {{range .Operations}}
-      {{template "operation-row" .}}
-      {{end}}
-    </tbody>
-  </table>
-  {{if not .Operations}}
-  <p>Операции не найдены.</p>
-  {{end}}
-
-  {{if gt .Page 1}}
-  <div class="pagination">
-    <a href="?page={{add .Page -1}}">← Назад</a>
+    {{end}}
+  </div>
+  {{if or (gt .Page 1) (eq (len .Operations) 50)}}
+  <div class="flex justify-center gap-2 p-4">
+    {{if gt .Page 1}}
+    <a href="?page={{add .Page -1}}" class="btn btn-ghost btn-sm">← Назад</a>
+    {{end}}
+    {{if eq (len .Operations) 50}}
+    <a href="?page={{add .Page 1}}" class="btn btn-ghost btn-sm">Вперёд →</a>
+    {{end}}
   </div>
   {{end}}
-  {{if eq (len .Operations) 50}}
-  <div class="pagination">
-    <a href="?page={{add .Page 1}}">Вперёд →</a>
-  </div>
-  {{end}}
-</article>
+</div>
 {{end}}

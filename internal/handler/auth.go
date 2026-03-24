@@ -8,15 +8,17 @@ import (
 )
 
 type loginData struct {
+	NoNav bool
 	Error string
 }
 
 type registerData struct {
+	NoNav bool
 	Error string
 }
 
 func (h *Handler) getLogin(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "login", loginData{})
+	h.render(w, "login", loginData{NoNav: true})
 }
 
 func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +28,7 @@ func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := h.svc.Login(r.Context(), email, password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
-			h.render(w, "login", loginData{Error: "Неверный email или пароль"})
+			h.render(w, "login", loginData{NoNav: true, Error: "Неверный email или пароль"})
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -41,7 +43,7 @@ func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getRegister(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "register", registerData{})
+	h.render(w, "register", registerData{NoNav: true})
 }
 
 func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
@@ -49,14 +51,14 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if len(password) < 8 {
-		h.render(w, "register", registerData{Error: "Пароль должен быть не менее 8 символов"})
+		h.render(w, "register", registerData{NoNav: true, Error: "Пароль должен быть не менее 8 символов"})
 		return
 	}
 
 	user, err := h.svc.Register(r.Context(), email, password)
 	if err != nil {
 		if errors.Is(err, service.ErrEmailTaken) {
-			h.render(w, "register", registerData{Error: "Email уже зарегистрирован"})
+			h.render(w, "register", registerData{NoNav: true, Error: "Email уже зарегистрирован"})
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)

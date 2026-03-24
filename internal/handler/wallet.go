@@ -8,6 +8,7 @@ import (
 )
 
 type walletsData struct {
+	basePage
 	Wallets []model.Wallet
 	Error   string
 }

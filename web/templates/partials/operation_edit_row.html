@@ -2,55 +2,57 @@
 {{$op := .Op}}
 {{$wallets := .Wallets}}
 {{$cats := .Categories}}
-<tr id="op-{{$op.ID}}">
+<tr id="op-{{$op.ID}}" class="bg-base-200">
   <td colspan="7">
     <form hx-put="/operations/{{$op.ID}}"
           hx-target="closest tr"
-          hx-swap="outerHTML"
-          class="inline-form-wide">
-      <div class="form-row-wrap">
-        <label>
-          Дата
-          <input type="date" name="operated_at" value="{{$op.OperatedAt.Format "2006-01-02"}}" required>
-        </label>
-        <label>
-          Тип
-          <select name="type">
+          hx-swap="outerHTML">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 items-end py-2">
+        <div class="form-control">
+          <label class="label py-0.5"><span class="label-text text-xs">Дата</span></label>
+          <input type="date" name="operated_at" class="input input-bordered input-xs"
+                 value="{{$op.OperatedAt.Format "2006-01-02"}}" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-0.5"><span class="label-text text-xs">Тип</span></label>
+          <select name="type" class="select select-bordered select-xs">
             <option value="expense" {{if eq $op.Type "expense"}}selected{{end}}>Расход</option>
             <option value="income"  {{if eq $op.Type "income"}}selected{{end}}>Доход</option>
           </select>
-        </label>
-        <label>
-          Сумма
-          <input type="number" name="amount" step="0.01" min="0.01" value="{{money $op.Amount}}" required>
-        </label>
-        <label>
-          Кошелёк
-          <select name="wallet_id" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-0.5"><span class="label-text text-xs">Сумма</span></label>
+          <input type="number" name="amount" step="0.01" min="0.01" class="input input-bordered input-xs"
+                 value="{{money $op.Amount}}" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-0.5"><span class="label-text text-xs">Кошелёк</span></label>
+          <select name="wallet_id" class="select select-bordered select-xs" required>
             {{range $wallets}}
-            <option value="{{.ID}}" {{if eq .ID $op.WalletID}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
+            <option value="{{.ID}}" {{if eq .ID $op.WalletID}}selected{{end}}>{{.Name}}</option>
             {{end}}
           </select>
-        </label>
-        <label>
-          Категория
-          <select name="category_id" required>
+        </div>
+        <div class="form-control">
+          <label class="label py-0.5"><span class="label-text text-xs">Категория</span></label>
+          <select name="category_id" class="select select-bordered select-xs" required>
             {{range $cats}}
             <option value="{{.ID}}" {{if eq .ID $op.CategoryID}}selected{{end}}>{{.Name}} ({{typeLabel .Type}})</option>
             {{end}}
           </select>
-        </label>
-        <label>
-          Описание
-          <input type="text" name="description" value="{{$op.Description}}">
-        </label>
-        <div class="form-action">
-          <button type="submit">Сохранить</button>
-          <button type="button" class="outline secondary"
-                  hx-get="/operations/{{$op.ID}}"
-                  hx-target="closest tr"
-                  hx-swap="outerHTML">Отмена</button>
         </div>
+        <div class="form-control col-span-2 lg:col-span-1">
+          <label class="label py-0.5"><span class="label-text text-xs">Описание</span></label>
+          <input type="text" name="description" class="input input-bordered input-xs"
+                 value="{{$op.Description}}">
+        </div>
+      </div>
+      <div class="flex gap-2 pb-1">
+        <button type="submit" class="btn btn-primary btn-xs">Сохранить</button>
+        <button type="button" class="btn btn-ghost btn-xs"
+                hx-get="/operations/{{$op.ID}}"
+                hx-target="closest tr"
+                hx-swap="outerHTML">Отмена</button>
       </div>
     </form>
   </td>

@@ -1,21 +1,41 @@
 {{define "operation-row"}}
-<tr id="op-{{.ID}}">
-  <td>{{.OperatedAt.Format "2006-01-02"}}</td>
-  <td><span class="{{typeClass .Type}}">{{typeLabel .Type}}</span></td>
-  <td class="{{typeClass .Type}}"><strong>{{money .Amount}} {{.Currency}}</strong></td>
-  <td>{{.WalletName}}</td>
-  <td>{{.CategoryName}}</td>
-  <td>{{.Description}}</td>
-  <td class="row-actions">
-    <button class="outline"
-            hx-get="/operations/{{.ID}}/edit"
-            hx-target="closest tr"
-            hx-swap="outerHTML">✎</button>
-    <button class="outline danger"
-            hx-delete="/operations/{{.ID}}"
-            hx-target="closest tr"
-            hx-swap="outerHTML"
-            hx-confirm="Удалить операцию?">✕</button>
+<tr id="op-{{.ID}}" class="hover">
+  <td class="whitespace-nowrap text-sm">{{.OperatedAt.Format "2006-01-02"}}</td>
+  <td>
+    {{if eq .Type "income"}}
+    <span class="badge badge-success badge-sm">Доход</span>
+    {{else}}
+    <span class="badge badge-error badge-sm">Расход</span>
+    {{end}}
+  </td>
+  <td class="font-semibold whitespace-nowrap {{if eq .Type "income"}}text-success{{else}}text-error{{end}}">
+    {{if eq .Type "income"}}+{{else}}-{{end}}{{money .Amount}} {{.Currency}}
+  </td>
+  <td class="hidden md:table-cell text-sm text-base-content/70">{{.WalletName}}</td>
+  <td class="hidden md:table-cell text-sm text-base-content/70">{{.CategoryName}}</td>
+  <td class="hidden lg:table-cell text-sm text-base-content/50 max-w-xs truncate">{{.Description}}</td>
+  <td>
+    <div class="flex gap-1 justify-end">
+      <button class="btn btn-ghost btn-xs"
+              hx-get="/operations/{{.ID}}/edit"
+              hx-target="closest tr"
+              hx-swap="outerHTML"
+              title="Редактировать">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+        </svg>
+      </button>
+      <button class="btn btn-ghost btn-xs text-error"
+              hx-delete="/operations/{{.ID}}"
+              hx-target="closest tr"
+              hx-swap="outerHTML"
+              hx-confirm="Удалить операцию?"
+              title="Удалить">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
   </td>
 </tr>
 {{end}}

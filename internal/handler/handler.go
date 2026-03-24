@@ -16,6 +16,12 @@ type Handler struct {
 	tmpls    map[string]*template.Template
 }
 
+// basePage встраивается во все структуры данных страниц,
+// чтобы base.html всегда мог обратиться к полю NoNav.
+type basePage struct {
+	NoNav bool
+}
+
 var tmplFuncs = template.FuncMap{
 	"money": func(amount float64) string {
 		return fmt.Sprintf("%.2f", amount)

@@ -11,6 +11,7 @@ import (
 )
 
 type operationsData struct {
+	basePage
 	Operations []model.Operation
 	Wallets    []model.Wallet
 	Categories []model.Category
