@@ -1,0 +1,17 @@
+{{define "wallet-row"}}
+<tr id="wallet-{{.ID}}">
+  <td>{{.Name}}</td>
+  <td>{{.Currency}}</td>
+  <td class="row-actions">
+    <button class="outline"
+            hx-get="/wallets/{{.ID}}/edit"
+            hx-target="closest tr"
+            hx-swap="outerHTML">✎</button>
+    <button class="outline danger"
+            hx-delete="/wallets/{{.ID}}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-confirm="Удалить кошелёк «{{.Name}}»?">✕</button>
+  </td>
+</tr>
+{{end}}

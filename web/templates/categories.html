@@ -1,0 +1,47 @@
+{{define "content"}}
+<h2>Категории</h2>
+
+<article>
+  <header><strong>Добавить категорию</strong></header>
+  <form hx-post="/categories"
+        hx-target="#categories-tbody"
+        hx-swap="afterbegin"
+        hx-on::after-request="this.reset()">
+    <div class="form-row">
+      <label>
+        Название
+        <input type="text" name="name" placeholder="Продукты" required>
+      </label>
+      <label>
+        Тип
+        <select name="type">
+          <option value="expense">Расход</option>
+          <option value="income">Доход</option>
+        </select>
+      </label>
+      <div class="form-action">
+        <button type="submit">Добавить</button>
+      </div>
+    </div>
+  </form>
+</article>
+
+<article>
+  <table>
+    <thead>
+      <tr>
+        <th>Название</th>
+        <th>Тип</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="categories-tbody">
+      {{range .Income}}{{template "category-row" .}}{{end}}
+      {{range .Expense}}{{template "category-row" .}}{{end}}
+    </tbody>
+  </table>
+  {{if and (not .Income) (not .Expense)}}
+  <p>Категории ещё не добавлены.</p>
+  {{end}}
+</article>
+{{end}}

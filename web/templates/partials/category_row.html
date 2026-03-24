@@ -1,0 +1,17 @@
+{{define "category-row"}}
+<tr id="category-{{.ID}}">
+  <td>{{.Name}}</td>
+  <td><span class="{{typeClass .Type}}">{{typeLabel .Type}}</span></td>
+  <td class="row-actions">
+    <button class="outline"
+            hx-get="/categories/{{.ID}}/edit"
+            hx-target="closest tr"
+            hx-swap="outerHTML">✎</button>
+    <button class="outline danger"
+            hx-delete="/categories/{{.ID}}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-confirm="Удалить категорию «{{.Name}}»?">✕</button>
+  </td>
+</tr>
+{{end}}

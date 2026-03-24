@@ -1,0 +1,24 @@
+{{define "wallet-edit-row"}}
+<tr id="wallet-{{.ID}}">
+  <td colspan="3">
+    <form hx-put="/wallets/{{.ID}}"
+          hx-target="closest tr"
+          hx-swap="outerHTML"
+          class="inline-form">
+      <input type="text" name="name" value="{{.Name}}" required>
+      <select name="currency">
+        <option value="RUB" {{if eq .Currency "RUB"}}selected{{end}}>RUB</option>
+        <option value="USD" {{if eq .Currency "USD"}}selected{{end}}>USD</option>
+        <option value="EUR" {{if eq .Currency "EUR"}}selected{{end}}>EUR</option>
+        <option value="GBP" {{if eq .Currency "GBP"}}selected{{end}}>GBP</option>
+        <option value="CNY" {{if eq .Currency "CNY"}}selected{{end}}>CNY</option>
+      </select>
+      <button type="submit">Сохранить</button>
+      <button type="button" class="outline secondary"
+              hx-get="/wallets/{{.ID}}"
+              hx-target="closest tr"
+              hx-swap="outerHTML">Отмена</button>
+    </form>
+  </td>
+</tr>
+{{end}}

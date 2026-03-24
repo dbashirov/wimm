@@ -1,0 +1,88 @@
+{{define "content"}}
+<h2>Дашборд</h2>
+
+{{if .WalletBalances}}
+<div class="wallet-grid">
+  {{range .WalletBalances}}
+  <article>
+    <header><strong>{{.Name}}</strong> <small>{{.Currency}}</small></header>
+    <p>Доходы: <span class="income">+{{money .Income}} {{.Currency}}</span></p>
+    <p>Расходы: <span class="expense">-{{money .Expense}} {{.Currency}}</span></p>
+    <p>Баланс:
+      {{if ge .Balance 0.0}}
+        <span class="income"><strong>{{money .Balance}} {{.Currency}}</strong></span>
+      {{else}}
+        <span class="expense"><strong>{{money .Balance}} {{.Currency}}</strong></span>
+      {{end}}
+    </p>
+  </article>
+  {{end}}
+</div>
+{{else}}
+<p>Кошельки не добавлены. <a href="/wallets">Добавить кошелёк</a></p>
+{{end}}
+
+<div class="charts-grid">
+  {{if .CategoryExpenses}}
+  <article>
+    <header><strong>Расходы по категориям (текущий месяц)</strong></header>
+    <div class="chart-container">
+      <canvas id="catChart"></canvas>
+    </div>
+  </article>
+  {{end}}
+
+  {{if .MonthlyTotals}}
+  <article>
+    <header><strong>Доходы и расходы по месяцам</strong></header>
+    <div class="chart-container">
+      <canvas id="monthChart"></canvas>
+    </div>
+  </article>
+  {{end}}
+</div>
+
+{{if or .CategoryExpenses .MonthlyTotals}}
+<script>
+(function() {
+  {{if .CategoryExpenses}}
+  const catCtx = document.getElementById('catChart');
+  new Chart(catCtx, {
+    type: 'doughnut',
+    data: {
+      labels: [{{range .CategoryExpenses}}"{{.Name}}",{{end}}],
+      datasets: [{
+        data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+  {{end}}
+
+  {{if .MonthlyTotals}}
+  const monthCtx = document.getElementById('monthChart');
+  new Chart(monthCtx, {
+    type: 'bar',
+    data: {
+      labels: [{{range .MonthlyTotals}}"{{.Month}}",{{end}}],
+      datasets: [
+        {
+          label: 'Доходы',
+          data: [{{range .MonthlyTotals}}{{money .Income}},{{end}}],
+          backgroundColor: 'rgba(34, 197, 94, 0.7)'
+        },
+        {
+          label: 'Расходы',
+          data: [{{range .MonthlyTotals}}{{money .Expense}},{{end}}],
+          backgroundColor: 'rgba(239, 68, 68, 0.7)'
+        }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+  {{end}}
+})();
+</script>
+{{end}}
+{{end}}

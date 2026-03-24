@@ -1,0 +1,21 @@
+{{define "operation-row"}}
+<tr id="op-{{.ID}}">
+  <td>{{.OperatedAt.Format "2006-01-02"}}</td>
+  <td><span class="{{typeClass .Type}}">{{typeLabel .Type}}</span></td>
+  <td class="{{typeClass .Type}}"><strong>{{money .Amount}} {{.Currency}}</strong></td>
+  <td>{{.WalletName}}</td>
+  <td>{{.CategoryName}}</td>
+  <td>{{.Description}}</td>
+  <td class="row-actions">
+    <button class="outline"
+            hx-get="/operations/{{.ID}}/edit"
+            hx-target="closest tr"
+            hx-swap="outerHTML">✎</button>
+    <button class="outline danger"
+            hx-delete="/operations/{{.ID}}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-confirm="Удалить операцию?">✕</button>
+  </td>
+</tr>
+{{end}}

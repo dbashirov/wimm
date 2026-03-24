@@ -1,0 +1,51 @@
+{{define "content"}}
+<h2>Кошельки</h2>
+
+<article>
+  <header><strong>Добавить кошелёк</strong></header>
+  <form hx-post="/wallets"
+        hx-target="#wallets-tbody"
+        hx-swap="afterbegin"
+        hx-on::after-request="this.reset()">
+    <div class="form-row">
+      <label>
+        Название
+        <input type="text" name="name" placeholder="Наличные" required>
+      </label>
+      <label>
+        Валюта
+        <select name="currency">
+          <option value="RUB">RUB</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="CNY">CNY</option>
+        </select>
+      </label>
+      <div class="form-action">
+        <button type="submit">Добавить</button>
+      </div>
+    </div>
+  </form>
+</article>
+
+<article>
+  <table>
+    <thead>
+      <tr>
+        <th>Название</th>
+        <th>Валюта</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="wallets-tbody">
+      {{range .Wallets}}
+      {{template "wallet-row" .}}
+      {{end}}
+    </tbody>
+  </table>
+  {{if not .Wallets}}
+  <p>Кошельки ещё не добавлены.</p>
+  {{end}}
+</article>
+{{end}}

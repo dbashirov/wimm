@@ -1,0 +1,12 @@
+# Binary
+wimm
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

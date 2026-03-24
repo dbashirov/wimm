@@ -1,0 +1,35 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>wimm — личные финансы</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong><a href="/dashboard" class="nav-brand">wimm</a></strong></li>
+    </ul>
+    <ul>
+      <li><a href="/dashboard">Дашборд</a></li>
+      <li><a href="/wallets">Кошельки</a></li>
+      <li><a href="/categories">Категории</a></li>
+      <li><a href="/operations">Операции</a></li>
+      <li>
+        <form method="POST" action="/logout">
+          <button type="submit" class="outline secondary">Выйти</button>
+        </form>
+      </li>
+    </ul>
+  </nav>
+  <main class="container">
+    {{template "content" .}}
+  </main>
+</body>
+</html>
+{{end}}

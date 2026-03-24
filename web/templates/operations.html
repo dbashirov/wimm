@@ -1,0 +1,141 @@
+{{define "content"}}
+<h2>Журнал операций</h2>
+
+<article>
+  <header><strong>Новая операция</strong></header>
+  <form hx-post="/operations"
+        hx-target="#operations-tbody"
+        hx-swap="afterbegin"
+        hx-on::after-request="this.reset()">
+    <div class="form-row-wrap">
+      <label>
+        Тип
+        <select name="type" id="op-type"
+                hx-get="/categories/options"
+                hx-target="#op-category"
+                hx-trigger="change"
+                hx-include="this">
+          <option value="expense">Расход</option>
+          <option value="income">Доход</option>
+        </select>
+      </label>
+      <label>
+        Сумма
+        <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required>
+      </label>
+      <label>
+        Кошелёк
+        <select name="wallet_id" required>
+          {{range .Wallets}}
+          <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        Категория
+        <select name="category_id" id="op-category" required>
+          {{range .Categories}}
+          {{if eq .Type "expense"}}
+          <option value="{{.ID}}">{{.Name}}</option>
+          {{end}}
+          {{end}}
+        </select>
+      </label>
+      <label>
+        Дата
+        <input type="date" name="operated_at" required>
+      </label>
+      <label>
+        Описание
+        <input type="text" name="description" placeholder="Необязательно">
+      </label>
+      <div class="form-action">
+        <button type="submit">Добавить</button>
+      </div>
+    </div>
+  </form>
+</article>
+
+<article>
+  <header>
+    <strong>Фильтр</strong>
+    <a href="/operations" role="button" class="outline secondary" style="float:right">Сбросить</a>
+  </header>
+  <form method="GET" action="/operations">
+    <div class="form-row-wrap">
+      <label>
+        Кошелёк
+        <select name="wallet_id">
+          <option value="">Все</option>
+          {{range .Wallets}}
+          <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        Тип
+        <select name="type">
+          <option value="">Все</option>
+          <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
+          <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
+        </select>
+      </label>
+      <label>
+        Категория
+        <select name="category_id">
+          <option value="">Все</option>
+          {{range .Categories}}
+          <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+      </label>
+      <label>
+        Дата от
+        <input type="date" name="date_from" value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
+      </label>
+      <label>
+        Дата до
+        <input type="date" name="date_to" value="{{if not .Filter.DateTo.IsZero}}{{.Filter.DateTo.Format "2006-01-02"}}{{end}}">
+      </label>
+      <div class="form-action">
+        <button type="submit">Применить</button>
+      </div>
+    </div>
+  </form>
+</article>
+
+<article>
+  <table class="ops-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Тип</th>
+        <th>Сумма</th>
+        <th>Кошелёк</th>
+        <th>Категория</th>
+        <th>Описание</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="operations-tbody">
+      {{range .Operations}}
+      {{template "operation-row" .}}
+      {{end}}
+    </tbody>
+  </table>
+  {{if not .Operations}}
+  <p>Операции не найдены.</p>
+  {{end}}
+
+  {{if gt .Page 1}}
+  <div class="pagination">
+    <a href="?page={{add .Page -1}}">← Назад</a>
+  </div>
+  {{end}}
+  {{if eq (len .Operations) 50}}
+  <div class="pagination">
+    <a href="?page={{add .Page 1}}">Вперёд →</a>
+  </div>
+  {{end}}
+</article>
+{{end}}

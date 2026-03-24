@@ -1,0 +1,18 @@
+{{define "category-edit-row"}}
+<tr id="category-{{.ID}}">
+  <td colspan="3">
+    <form hx-put="/categories/{{.ID}}"
+          hx-target="closest tr"
+          hx-swap="outerHTML"
+          class="inline-form">
+      <input type="text" name="name" value="{{.Name}}" required>
+      <span class="{{typeClass .Type}}">{{typeLabel .Type}}</span>
+      <button type="submit">Сохранить</button>
+      <button type="button" class="outline secondary"
+              hx-get="/categories/{{.ID}}"
+              hx-target="closest tr"
+              hx-swap="outerHTML">Отмена</button>
+    </form>
+  </td>
+</tr>
+{{end}}

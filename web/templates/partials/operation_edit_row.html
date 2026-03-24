@@ -1,0 +1,58 @@
+{{define "operation-edit-row"}}
+{{$op := .Op}}
+{{$wallets := .Wallets}}
+{{$cats := .Categories}}
+<tr id="op-{{$op.ID}}">
+  <td colspan="7">
+    <form hx-put="/operations/{{$op.ID}}"
+          hx-target="closest tr"
+          hx-swap="outerHTML"
+          class="inline-form-wide">
+      <div class="form-row-wrap">
+        <label>
+          Дата
+          <input type="date" name="operated_at" value="{{$op.OperatedAt.Format "2006-01-02"}}" required>
+        </label>
+        <label>
+          Тип
+          <select name="type">
+            <option value="expense" {{if eq $op.Type "expense"}}selected{{end}}>Расход</option>
+            <option value="income"  {{if eq $op.Type "income"}}selected{{end}}>Доход</option>
+          </select>
+        </label>
+        <label>
+          Сумма
+          <input type="number" name="amount" step="0.01" min="0.01" value="{{money $op.Amount}}" required>
+        </label>
+        <label>
+          Кошелёк
+          <select name="wallet_id" required>
+            {{range $wallets}}
+            <option value="{{.ID}}" {{if eq .ID $op.WalletID}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          Категория
+          <select name="category_id" required>
+            {{range $cats}}
+            <option value="{{.ID}}" {{if eq .ID $op.CategoryID}}selected{{end}}>{{.Name}} ({{typeLabel .Type}})</option>
+            {{end}}
+          </select>
+        </label>
+        <label>
+          Описание
+          <input type="text" name="description" value="{{$op.Description}}">
+        </label>
+        <div class="form-action">
+          <button type="submit">Сохранить</button>
+          <button type="button" class="outline secondary"
+                  hx-get="/operations/{{$op.ID}}"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML">Отмена</button>
+        </div>
+      </div>
+    </form>
+  </td>
+</tr>
+{{end}}
