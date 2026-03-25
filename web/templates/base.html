@@ -20,9 +20,12 @@
       theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
     }
   </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
 </head>
 <body class="min-h-screen bg-base-200 font-sans">
 
@@ -84,6 +87,29 @@
 {{template "content" .}}
 {{end}}
 
+<script>
+  // Инициализация flatpickr для всех datetime-инпутов
+  var fpConfig = {
+    enableTime: true,
+    dateFormat: 'Y-m-dTH:i',   // формат для отправки формы
+    altInput: true,              // показывает человекочитаемый вид
+    altFormat: 'd.m.Y H:i',     // отображение: 23.03.2026 14:30
+    time_24hr: true,
+    locale: 'ru',
+    defaultDate: new Date(),     // текущие дата и время
+    onReady: function(_, __, instance) {
+      // копируем классы стилей с оригинального инпута на alt-инпут
+      instance.altInput.className = instance.input.className.replace('fp-datetime', '').trim();
+    },
+  };
+  function initFlatpickr() {
+    document.querySelectorAll('.fp-datetime:not(.flatpickr-input)').forEach(function(el) {
+      flatpickr(el, fpConfig);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', initFlatpickr);
+  document.addEventListener('htmx:afterSettle', initFlatpickr);
+</script>
 <script>
   (function() {
     var toggle = document.getElementById('theme-toggle');

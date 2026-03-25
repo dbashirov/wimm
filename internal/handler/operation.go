@@ -74,7 +74,11 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid amount", http.StatusBadRequest)
 		return
 	}
-	operatedAt := r.FormValue("operated_at")
+	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
+	if err != nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return
+	}
 	description := r.FormValue("description")
 
 	op, err := h.svc.CreateOperation(r.Context(), userID, walletID, categoryID, opType, amount, operatedAt, description)
@@ -155,7 +159,11 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid amount", http.StatusBadRequest)
 		return
 	}
-	operatedAt := r.FormValue("operated_at")
+	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
+	if err != nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return
+	}
 	description := r.FormValue("description")
 
 	op, err := h.svc.UpdateOperation(r.Context(), id, userID, walletID, categoryID, opType, amount, operatedAt, description)
@@ -188,4 +196,9 @@ func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// parseDateTime парсит строку из datetime-local input формата "2006-01-02T15:04"
+func parseDateTime(s string) (time.Time, error) {
+	return time.ParseInLocation("2006-01-02T15:04", s, time.Local)
 }

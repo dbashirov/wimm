@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/jackc/pgx/v5"
@@ -81,11 +82,11 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 	return ops, rows.Err()
 }
 
-func (s *OperationStore) Create(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt, description string) (*model.Operation, error) {
+func (s *OperationStore) Create(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	var o model.Operation
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at, description)
-		 VALUES($1, $2, $3, $4, $5, $6::date, $7)
+		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at`,
 		userID, walletID, categoryID, opType, amount, operatedAt, description,
 	).Scan(
@@ -117,11 +118,11 @@ func (s *OperationStore) GetByID(ctx context.Context, id, userID int64) (*model.
 	return &o, nil
 }
 
-func (s *OperationStore) Update(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt, description string) (*model.Operation, error) {
+func (s *OperationStore) Update(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	var o model.Operation
 	err := s.pool.QueryRow(ctx,
 		`UPDATE operations
-		 SET wallet_id=$1, category_id=$2, type=$3, amount=$4, operated_at=$5::date, description=$6
+		 SET wallet_id=$1, category_id=$2, type=$3, amount=$4, operated_at=$5, description=$6
 		 WHERE id=$7 AND user_id=$8
 		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at`,
 		walletID, categoryID, opType, amount, operatedAt, description, id, userID,

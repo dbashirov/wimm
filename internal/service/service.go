@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
@@ -129,7 +130,7 @@ func (s *Service) ListOperations(ctx context.Context, filter model.OperationFilt
 	return s.store.Operations.List(ctx, filter)
 }
 
-func (s *Service) CreateOperation(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt, description string) (*model.Operation, error) {
+func (s *Service) CreateOperation(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -151,7 +152,7 @@ func (s *Service) GetOperation(ctx context.Context, id, userID int64) (*model.Op
 	return o, err
 }
 
-func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt, description string) (*model.Operation, error) {
+func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound

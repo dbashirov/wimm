@@ -1,6 +1,9 @@
 {{define "operation-row"}}
 <tr id="op-{{.ID}}" class="hover">
-  <td class="whitespace-nowrap text-sm">{{.OperatedAt.Format "2006-01-02"}}</td>
+  <td class="whitespace-nowrap text-sm">
+    <div>{{.OperatedAt.Format "02.01.2006"}}</div>
+    <div class="text-xs text-base-content/50">{{.OperatedAt.Format "15:04"}}</div>
+  </td>
   <td>
     {{if eq .Type "income"}}
     <span class="badge badge-success badge-sm">Доход</span>

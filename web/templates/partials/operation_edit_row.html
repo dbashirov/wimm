@@ -9,9 +9,9 @@
           hx-swap="outerHTML">
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 items-end py-2">
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Дата</span></label>
-          <input type="date" name="operated_at" class="input input-bordered input-xs"
-                 value="{{$op.OperatedAt.Format "2006-01-02"}}" required>
+          <label class="label py-0.5"><span class="label-text text-xs">Дата и время</span></label>
+          <input type="text" name="operated_at" class="input input-bordered input-xs fp-datetime"
+                 value="{{$op.OperatedAt.Format "2006-01-02T15:04"}}" required>
         </div>
         <div class="form-control">
           <label class="label py-0.5"><span class="label-text text-xs">Тип</span></label>
