@@ -34,6 +34,7 @@ func (m *Manager) Create(ctx context.Context, w http.ResponseWriter, userID int6
 		Expires:  sess.ExpiresAt,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
 	})
 	return nil
 }

@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/dbashirov/wimm/internal/service"
 )
 
 type categoriesData struct {
@@ -100,7 +103,11 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeleteCategory(r.Context(), id, userID); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+		} else {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -120,6 +127,6 @@ func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html")
 	for _, c := range cats {
-		fmt.Fprintf(w, `<option value="%d">%s</option>`, c.ID, c.Name)
+		fmt.Fprintf(w, `<option value="%d">%s</option>`, c.ID, template.HTMLEscapeString(c.Name))
 	}
 }

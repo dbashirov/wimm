@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/service"
@@ -111,12 +112,14 @@ func (h *Handler) Routes() http.Handler {
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	if err := h.tmpls[page].ExecuteTemplate(w, "base", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("render %s: %v", page, err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 
 func (h *Handler) renderPartial(w http.ResponseWriter, page, name string, data any) {
 	if err := h.tmpls[page].ExecuteTemplate(w, name, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("renderPartial %s/%s: %v", page, name, err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }

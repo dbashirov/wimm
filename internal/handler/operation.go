@@ -32,7 +32,9 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 		filter.DateFrom, _ = time.Parse("2006-01-02", s)
 	}
 	if s := q.Get("date_to"); s != "" {
-		filter.DateTo, _ = time.Parse("2006-01-02", s)
+		if t, err := time.Parse("2006-01-02", s); err == nil {
+			filter.DateTo = t.Add(24*time.Hour - time.Second)
+		}
 	}
 	filter.Page, _ = strconv.Atoi(q.Get("page"))
 	if filter.Page < 1 {
@@ -66,8 +68,16 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 
-	walletID, _ := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
-	categoryID, _ := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
+	walletID, err := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
+	if err != nil || walletID <= 0 {
+		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
+		return
+	}
+	categoryID, err := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
+	if err != nil || categoryID <= 0 {
+		http.Error(w, "invalid category_id", http.StatusBadRequest)
+		return
+	}
 	opType := r.FormValue("type")
 	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
 	if err != nil || amount <= 0 {
@@ -151,8 +161,16 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	walletID, _ := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
-	categoryID, _ := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
+	walletID, err := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
+	if err != nil || walletID <= 0 {
+		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
+		return
+	}
+	categoryID, err := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
+	if err != nil || categoryID <= 0 {
+		http.Error(w, "invalid category_id", http.StatusBadRequest)
+		return
+	}
 	opType := r.FormValue("type")
 	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
 	if err != nil || amount <= 0 {
@@ -192,7 +210,11 @@ func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeleteOperation(r.Context(), id, userID); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+		} else {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)

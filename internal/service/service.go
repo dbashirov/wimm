@@ -87,7 +87,13 @@ func (s *Service) UpdateWallet(ctx context.Context, id, userID int64, name, curr
 }
 
 func (s *Service) DeleteWallet(ctx context.Context, id, userID int64) error {
-	return s.store.Wallets.Delete(ctx, id, userID)
+	if err := s.store.Wallets.Delete(ctx, id, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // --- Categories ---
@@ -121,7 +127,13 @@ func (s *Service) UpdateCategory(ctx context.Context, id, userID int64, name str
 }
 
 func (s *Service) DeleteCategory(ctx context.Context, id, userID int64) error {
-	return s.store.Categories.Delete(ctx, id, userID)
+	if err := s.store.Categories.Delete(ctx, id, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // --- Operations ---
@@ -131,6 +143,12 @@ func (s *Service) ListOperations(ctx context.Context, filter model.OperationFilt
 }
 
 func (s *Service) CreateOperation(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+	if _, err := s.store.Wallets.GetByID(ctx, walletID, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
 	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -153,6 +171,12 @@ func (s *Service) GetOperation(ctx context.Context, id, userID int64) (*model.Op
 }
 
 func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+	if _, err := s.store.Wallets.GetByID(ctx, walletID, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
 	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -171,7 +195,13 @@ func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, cat
 }
 
 func (s *Service) DeleteOperation(ctx context.Context, id, userID int64) error {
-	return s.store.Operations.Delete(ctx, id, userID)
+	if err := s.store.Operations.Delete(ctx, id, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // --- Dashboard ---
