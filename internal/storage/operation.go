@@ -49,7 +49,7 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 		n++
 	}
 	if !f.DateTo.IsZero() {
-		q += fmt.Sprintf(" AND o.operated_at <= $%d", n)
+		q += fmt.Sprintf(" AND o.operated_at < $%d", n)
 		args = append(args, f.DateTo)
 		n++
 	}

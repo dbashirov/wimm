@@ -25,15 +25,19 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	filter := model.OperationFilter{UserID: userID}
-	filter.WalletID, _ = strconv.ParseInt(q.Get("wallet_id"), 10, 64)
-	filter.CategoryID, _ = strconv.ParseInt(q.Get("category_id"), 10, 64)
+	if id, err := strconv.ParseInt(q.Get("wallet_id"), 10, 64); err == nil && id > 0 {
+		filter.WalletID = id
+	}
+	if id, err := strconv.ParseInt(q.Get("category_id"), 10, 64); err == nil && id > 0 {
+		filter.CategoryID = id
+	}
 	filter.Type = q.Get("type")
 	if s := q.Get("date_from"); s != "" {
 		filter.DateFrom, _ = time.Parse("2006-01-02", s)
 	}
 	if s := q.Get("date_to"); s != "" {
 		if t, err := time.Parse("2006-01-02", s); err == nil {
-			filter.DateTo = t.Add(24*time.Hour - time.Second)
+			filter.DateTo = t.AddDate(0, 0, 1) // начало следующего дня, фильтр в SQL: < DateTo
 		}
 	}
 	filter.Page, _ = strconv.Atoi(q.Get("page"))
@@ -95,6 +99,10 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -188,6 +196,10 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)
