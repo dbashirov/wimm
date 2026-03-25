@@ -33,6 +33,17 @@ func New(ctx context.Context, dsn string) (*Storage, error) {
 	return s, nil
 }
 
+// NewFromPool создаёт Storage из готового пула (используется в тестах).
+func NewFromPool(pool *pgxpool.Pool) *Storage {
+	s := &Storage{Pool: pool}
+	s.Users = &UserStore{pool}
+	s.Sessions = &SessionStore{pool}
+	s.Wallets = &WalletStore{pool}
+	s.Categories = &CategoryStore{pool}
+	s.Operations = &OperationStore{pool}
+	return s
+}
+
 func (s *Storage) Close() {
 	s.Pool.Close()
 }

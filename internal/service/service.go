@@ -13,18 +13,42 @@ import (
 )
 
 var (
-	ErrEmailTaken        = errors.New("email already registered")
+	ErrEmailTaken         = errors.New("email already registered")
 	ErrInvalidCredentials = errors.New("invalid email or password")
-	ErrNotFound          = errors.New("not found")
-	ErrWrongCategoryType = errors.New("category type must match operation type")
+	ErrNotFound           = errors.New("not found")
+	ErrWrongCategoryType  = errors.New("category type must match operation type")
 )
 
 type Service struct {
-	store *storage.Storage
+	users      storage.UserRepo
+	wallets    storage.WalletRepo
+	categories storage.CategoryRepo
+	operations storage.OperationRepo
 }
 
+// New создаёт Service из конкретного storage.Storage (продакшн-путь).
 func New(store *storage.Storage) *Service {
-	return &Service{store: store}
+	return &Service{
+		users:      store.Users,
+		wallets:    store.Wallets,
+		categories: store.Categories,
+		operations: store.Operations,
+	}
+}
+
+// NewWithRepos создаёт Service из интерфейсов напрямую (используется в тестах).
+func NewWithRepos(
+	users storage.UserRepo,
+	wallets storage.WalletRepo,
+	categories storage.CategoryRepo,
+	operations storage.OperationRepo,
+) *Service {
+	return &Service{
+		users:      users,
+		wallets:    wallets,
+		categories: categories,
+		operations: operations,
+	}
 }
 
 // --- Users ---
@@ -34,7 +58,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*model.
 	if err != nil {
 		return nil, fmt.Errorf("bcrypt: %w", err)
 	}
-	user, err := s.store.Users.Create(ctx, email, string(hash))
+	user, err := s.users.Create(ctx, email, string(hash))
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -46,7 +70,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*model.
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (*model.User, error) {
-	user, err := s.store.Users.GetByEmail(ctx, email)
+	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, ErrInvalidCredentials
 	}
@@ -59,19 +83,19 @@ func (s *Service) Login(ctx context.Context, email, password string) (*model.Use
 // --- Wallets ---
 
 func (s *Service) ListWallets(ctx context.Context, userID int64) ([]model.Wallet, error) {
-	return s.store.Wallets.ListByUser(ctx, userID)
+	return s.wallets.ListByUser(ctx, userID)
 }
 
 func (s *Service) ListWalletsWithBalance(ctx context.Context, userID int64) ([]model.WalletBalance, error) {
-	return s.store.Wallets.ListWithBalance(ctx, userID)
+	return s.wallets.ListWithBalance(ctx, userID)
 }
 
 func (s *Service) CreateWallet(ctx context.Context, userID int64, name, currency string) (*model.Wallet, error) {
-	return s.store.Wallets.Create(ctx, userID, name, currency)
+	return s.wallets.Create(ctx, userID, name, currency)
 }
 
 func (s *Service) GetWallet(ctx context.Context, id, userID int64) (*model.Wallet, error) {
-	w, err := s.store.Wallets.GetByID(ctx, id, userID)
+	w, err := s.wallets.GetByID(ctx, id, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -79,7 +103,7 @@ func (s *Service) GetWallet(ctx context.Context, id, userID int64) (*model.Walle
 }
 
 func (s *Service) UpdateWallet(ctx context.Context, id, userID int64, name, currency string) (*model.Wallet, error) {
-	w, err := s.store.Wallets.Update(ctx, id, userID, name, currency)
+	w, err := s.wallets.Update(ctx, id, userID, name, currency)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -87,25 +111,25 @@ func (s *Service) UpdateWallet(ctx context.Context, id, userID int64, name, curr
 }
 
 func (s *Service) DeleteWallet(ctx context.Context, id, userID int64) error {
-	return wrapNotFound(s.store.Wallets.Delete(ctx, id, userID))
+	return wrapNotFound(s.wallets.Delete(ctx, id, userID))
 }
 
 // --- Categories ---
 
 func (s *Service) ListCategories(ctx context.Context, userID int64) ([]model.Category, error) {
-	return s.store.Categories.ListByUser(ctx, userID)
+	return s.categories.ListByUser(ctx, userID)
 }
 
 func (s *Service) ListCategoriesByType(ctx context.Context, userID int64, catType string) ([]model.Category, error) {
-	return s.store.Categories.ListByType(ctx, userID, catType)
+	return s.categories.ListByType(ctx, userID, catType)
 }
 
 func (s *Service) CreateCategory(ctx context.Context, userID int64, name, catType string) (*model.Category, error) {
-	return s.store.Categories.Create(ctx, userID, name, catType)
+	return s.categories.Create(ctx, userID, name, catType)
 }
 
 func (s *Service) GetCategory(ctx context.Context, id, userID int64) (*model.Category, error) {
-	c, err := s.store.Categories.GetByID(ctx, id, userID)
+	c, err := s.categories.GetByID(ctx, id, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -113,7 +137,7 @@ func (s *Service) GetCategory(ctx context.Context, id, userID int64) (*model.Cat
 }
 
 func (s *Service) UpdateCategory(ctx context.Context, id, userID int64, name string) (*model.Category, error) {
-	c, err := s.store.Categories.Update(ctx, id, userID, name)
+	c, err := s.categories.Update(ctx, id, userID, name)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -121,23 +145,23 @@ func (s *Service) UpdateCategory(ctx context.Context, id, userID int64, name str
 }
 
 func (s *Service) DeleteCategory(ctx context.Context, id, userID int64) error {
-	return wrapNotFound(s.store.Categories.Delete(ctx, id, userID))
+	return wrapNotFound(s.categories.Delete(ctx, id, userID))
 }
 
 // --- Operations ---
 
 func (s *Service) ListOperations(ctx context.Context, filter model.OperationFilter) ([]model.Operation, error) {
-	return s.store.Operations.List(ctx, filter)
+	return s.operations.List(ctx, filter)
 }
 
 func (s *Service) CreateOperation(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
-	if _, err := s.store.Wallets.GetByID(ctx, walletID, userID); err != nil {
+	if _, err := s.wallets.GetByID(ctx, walletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
+	cat, err := s.categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -147,11 +171,11 @@ func (s *Service) CreateOperation(ctx context.Context, userID, walletID, categor
 	if cat.Type != opType {
 		return nil, ErrWrongCategoryType
 	}
-	return s.store.Operations.Create(ctx, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	return s.operations.Create(ctx, userID, walletID, categoryID, opType, amount, operatedAt, description)
 }
 
 func (s *Service) GetOperation(ctx context.Context, id, userID int64) (*model.Operation, error) {
-	o, err := s.store.Operations.GetByID(ctx, id, userID)
+	o, err := s.operations.GetByID(ctx, id, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -159,13 +183,13 @@ func (s *Service) GetOperation(ctx context.Context, id, userID int64) (*model.Op
 }
 
 func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
-	if _, err := s.store.Wallets.GetByID(ctx, walletID, userID); err != nil {
+	if _, err := s.wallets.GetByID(ctx, walletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	cat, err := s.store.Categories.GetByID(ctx, categoryID, userID)
+	cat, err := s.categories.GetByID(ctx, categoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -175,7 +199,7 @@ func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, cat
 	if cat.Type != opType {
 		return nil, ErrWrongCategoryType
 	}
-	o, err := s.store.Operations.Update(ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	o, err := s.operations.Update(ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -183,17 +207,17 @@ func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, cat
 }
 
 func (s *Service) DeleteOperation(ctx context.Context, id, userID int64) error {
-	return wrapNotFound(s.store.Operations.Delete(ctx, id, userID))
+	return wrapNotFound(s.operations.Delete(ctx, id, userID))
 }
 
 // --- Dashboard ---
 
 func (s *Service) DashboardData(ctx context.Context, userID int64) (*model.DashboardData, error) {
-	wallets, err := s.store.Wallets.ListWithBalance(ctx, userID)
+	wallets, err := s.wallets.ListWithBalance(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	cats, monthly, err := s.store.Operations.DashboardData(ctx, userID)
+	cats, monthly, err := s.operations.DashboardData(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
