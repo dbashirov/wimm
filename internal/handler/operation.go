@@ -210,11 +210,7 @@ func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeleteOperation(r.Context(), id, userID); err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-		}
+		handleDeleteError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

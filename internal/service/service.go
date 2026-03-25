@@ -87,13 +87,7 @@ func (s *Service) UpdateWallet(ctx context.Context, id, userID int64, name, curr
 }
 
 func (s *Service) DeleteWallet(ctx context.Context, id, userID int64) error {
-	if err := s.store.Wallets.Delete(ctx, id, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return ErrNotFound
-		}
-		return err
-	}
-	return nil
+	return wrapNotFound(s.store.Wallets.Delete(ctx, id, userID))
 }
 
 // --- Categories ---
@@ -127,13 +121,7 @@ func (s *Service) UpdateCategory(ctx context.Context, id, userID int64, name str
 }
 
 func (s *Service) DeleteCategory(ctx context.Context, id, userID int64) error {
-	if err := s.store.Categories.Delete(ctx, id, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return ErrNotFound
-		}
-		return err
-	}
-	return nil
+	return wrapNotFound(s.store.Categories.Delete(ctx, id, userID))
 }
 
 // --- Operations ---
@@ -195,13 +183,7 @@ func (s *Service) UpdateOperation(ctx context.Context, id, userID, walletID, cat
 }
 
 func (s *Service) DeleteOperation(ctx context.Context, id, userID int64) error {
-	if err := s.store.Operations.Delete(ctx, id, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return ErrNotFound
-		}
-		return err
-	}
-	return nil
+	return wrapNotFound(s.store.Operations.Delete(ctx, id, userID))
 }
 
 // --- Dashboard ---
@@ -220,4 +202,11 @@ func (s *Service) DashboardData(ctx context.Context, userID int64) (*model.Dashb
 		CategoryExpenses: cats,
 		MonthlyTotals:    monthly,
 	}, nil
+}
+
+func wrapNotFound(err error) error {
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrNotFound
+	}
+	return err
 }

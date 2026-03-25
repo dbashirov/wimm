@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/dbashirov/wimm/internal/model"
-	"github.com/dbashirov/wimm/internal/service"
 )
 
 type walletsData struct {
@@ -94,11 +92,7 @@ func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeleteWallet(r.Context(), id, userID); err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-		}
+		handleDeleteError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

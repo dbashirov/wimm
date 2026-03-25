@@ -140,17 +140,8 @@ func (s *OperationStore) Update(ctx context.Context, id, userID, walletID, categ
 }
 
 func (s *OperationStore) Delete(ctx context.Context, id, userID int64) error {
-	tag, err := s.pool.Exec(ctx,
-		`DELETE FROM operations WHERE id=$1 AND user_id=$2`,
-		id, userID,
-	)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
+	tag, err := s.pool.Exec(ctx, `DELETE FROM operations WHERE id=$1 AND user_id=$2`, id, userID)
+	return checkRowsAffected(tag, err)
 }
 
 func (s *OperationStore) DashboardData(ctx context.Context, userID int64) ([]model.CategoryAmount, []model.MonthlyTotal, error) {

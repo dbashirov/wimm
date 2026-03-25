@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -108,6 +109,14 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("DELETE /operations/{id}", h.auth(http.HandlerFunc(h.deleteOperation)))
 
 	return mux
+}
+
+func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, service.ErrNotFound) {
+		http.NotFound(w, r)
+	} else {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {

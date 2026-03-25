@@ -101,15 +101,6 @@ func (s *CategoryStore) Update(ctx context.Context, id, userID int64, name strin
 }
 
 func (s *CategoryStore) Delete(ctx context.Context, id, userID int64) error {
-	tag, err := s.pool.Exec(ctx,
-		`DELETE FROM categories WHERE id=$1 AND user_id=$2`,
-		id, userID,
-	)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
+	tag, err := s.pool.Exec(ctx, `DELETE FROM categories WHERE id=$1 AND user_id=$2`, id, userID)
+	return checkRowsAffected(tag, err)
 }

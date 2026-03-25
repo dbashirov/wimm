@@ -1,14 +1,12 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/dbashirov/wimm/internal/model"
-	"github.com/dbashirov/wimm/internal/service"
 )
 
 type categoriesData struct {
@@ -103,11 +101,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeleteCategory(r.Context(), id, userID); err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			http.NotFound(w, r)
-		} else {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-		}
+		handleDeleteError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

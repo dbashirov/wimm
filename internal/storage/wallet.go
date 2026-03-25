@@ -113,15 +113,6 @@ func (s *WalletStore) Update(ctx context.Context, id, userID int64, name, curren
 }
 
 func (s *WalletStore) Delete(ctx context.Context, id, userID int64) error {
-	tag, err := s.pool.Exec(ctx,
-		`DELETE FROM wallets WHERE id=$1 AND user_id=$2`,
-		id, userID,
-	)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
+	tag, err := s.pool.Exec(ctx, `DELETE FROM wallets WHERE id=$1 AND user_id=$2`, id, userID)
+	return checkRowsAffected(tag, err)
 }
