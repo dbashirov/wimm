@@ -25,7 +25,7 @@ func (h *Handler) getCategories(w http.ResponseWriter, r *http.Request) {
 	}
 	data := categoriesData{}
 	for _, c := range cats {
-		if c.Type == "income" {
+		if c.Type == model.TypeIncome {
 			data.Income = append(data.Income, c)
 		} else {
 			data.Expense = append(data.Expense, c)
@@ -112,7 +112,7 @@ func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	catType := r.URL.Query().Get("type")
 	if catType == "" {
-		catType = "expense"
+		catType = model.TypeExpense
 	}
 	cats, err := h.svc.ListCategoriesByType(r.Context(), userID, catType)
 	if err != nil {

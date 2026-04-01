@@ -38,14 +38,14 @@ func (s *WalletStore) ListByUser(ctx context.Context, userID int64) ([]model.Wal
 func (s *WalletStore) ListWithBalance(ctx context.Context, userID int64) ([]model.WalletBalance, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT w.id, w.user_id, w.name, w.currency, w.created_at,
-		        COALESCE(SUM(CASE WHEN o.type='income'  THEN o.amount ELSE 0 END), 0)::float8,
-		        COALESCE(SUM(CASE WHEN o.type='expense' THEN o.amount ELSE 0 END), 0)::float8
+		        COALESCE(SUM(CASE WHEN o.type=$2 THEN o.amount ELSE 0 END), 0)::float8,
+		        COALESCE(SUM(CASE WHEN o.type=$3 THEN o.amount ELSE 0 END), 0)::float8
 		 FROM wallets w
 		 LEFT JOIN operations o ON o.wallet_id = w.id AND o.user_id = w.user_id
 		 WHERE w.user_id = $1
 		 GROUP BY w.id
 		 ORDER BY w.name`,
-		userID,
+		userID, model.TypeIncome, model.TypeExpense,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("WalletStore.ListWithBalance: %w", err)

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/session"
 )
@@ -29,16 +30,16 @@ var tmplFuncs = template.FuncMap{
 		return fmt.Sprintf("%.2f", amount)
 	},
 	"typeLabel": func(t string) string {
-		if t == "income" {
+		if t == model.TypeIncome {
 			return "Доход"
 		}
 		return "Расход"
 	},
 	"typeClass": func(t string) string {
-		if t == "income" {
-			return "income"
+		if t == model.TypeIncome {
+			return model.TypeIncome
 		}
-		return "expense"
+		return model.TypeExpense
 	},
 	"add": func(a, b int) int { return a + b },
 }

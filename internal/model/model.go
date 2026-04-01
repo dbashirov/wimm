@@ -2,6 +2,11 @@ package model
 
 import "time"
 
+const (
+	TypeIncome  = "income"
+	TypeExpense = "expense"
+)
+
 type User struct {
 	ID           int64
 	Email        string
@@ -34,7 +39,7 @@ type Category struct {
 	ID     int64
 	UserID int64
 	Name   string
-	Type   string // "income" or "expense"
+	Type   string // TypeIncome or TypeExpense
 }
 
 type Operation struct {
@@ -42,7 +47,7 @@ type Operation struct {
 	UserID       int64
 	WalletID     int64
 	CategoryID   int64
-	Type         string // "income" or "expense"
+	Type         string // TypeIncome or TypeExpense
 	Amount       float64
 	OperatedAt   time.Time
 	Description  string

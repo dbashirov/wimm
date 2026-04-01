@@ -20,7 +20,7 @@ func opFixture(t *testing.T, email string) (userID, walletID, categoryID int64) 
 	if err != nil {
 		t.Fatalf("fixture wallet: %v", err)
 	}
-	c, err := s.Categories.Create(ctx, userID, "Food", "expense")
+	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense)
 	if err != nil {
 		t.Fatalf("fixture category: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestOperationStore_CreateAndGet(t *testing.T) {
 	userID, walletID, catID := opFixture(t, "op@test.com")
 	now := time.Now().Truncate(time.Minute)
 
-	op, err := s.Operations.Create(ctx, userID, walletID, catID, "expense", 500.0, now, "lunch")
+	op, err := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 500.0, now, "lunch")
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestOperationStore_GetByID_OtherUser(t *testing.T) {
 	userID, walletID, catID := opFixture(t, "opown@test.com")
 	other := createUser(t, "opoth@test.com")
 
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, "expense", 100, time.Now(), "")
+	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, time.Now(), "")
 
 	_, err := s.Operations.GetByID(ctx, op.ID, other)
 	if err != storage.ErrNotFound {
@@ -77,9 +77,9 @@ func TestOperationStore_List_FilterByWallet(t *testing.T) {
 	w2, _ := s.Wallets.Create(ctx, userID, "Second", "USD")
 
 	now := time.Now()
-	s.Operations.Create(ctx, userID, walletID, catID, "expense", 100, now, "") //nolint:errcheck
-	s.Operations.Create(ctx, userID, walletID, catID, "expense", 200, now, "") //nolint:errcheck
-	s.Operations.Create(ctx, userID, w2.ID, catID, "expense", 300, now, "")   //nolint:errcheck
+	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, now, "") //nolint:errcheck
+	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 200, now, "") //nolint:errcheck
+	s.Operations.Create(ctx, userID, w2.ID, catID, model.TypeExpense, 300, now, "")   //nolint:errcheck
 
 	ops, err := s.Operations.List(ctx, model.OperationFilter{UserID: userID, WalletID: walletID})
 	if err != nil {
@@ -100,8 +100,8 @@ func TestOperationStore_List_FilterByDateRange(t *testing.T) {
 	yesterday := today.AddDate(0, 0, -1)
 	tomorrow := today.AddDate(0, 0, 1)
 
-	s.Operations.Create(ctx, userID, walletID, catID, "expense", 100, yesterday, "yesterday") //nolint:errcheck
-	s.Operations.Create(ctx, userID, walletID, catID, "expense", 200, today, "today")         //nolint:errcheck
+	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, yesterday, "yesterday") //nolint:errcheck
+	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 200, today, "today")         //nolint:errcheck
 
 	// Фильтр: только сегодня (DateTo = начало завтра, SQL: < DateTo)
 	ops, err := s.Operations.List(ctx, model.OperationFilter{
@@ -125,9 +125,9 @@ func TestOperationStore_List_IsolatesByUser(t *testing.T) {
 	u1, w1, c1 := opFixture(t, "opiso1@test.com")
 	u2, w2, c2 := opFixture(t, "opiso2@test.com")
 
-	s.Operations.Create(ctx, u1, w1, c1, "expense", 100, time.Now(), "") //nolint:errcheck
-	s.Operations.Create(ctx, u1, w1, c1, "expense", 200, time.Now(), "") //nolint:errcheck
-	s.Operations.Create(ctx, u2, w2, c2, "expense", 300, time.Now(), "") //nolint:errcheck
+	s.Operations.Create(ctx, u1, w1, c1, model.TypeExpense, 100, time.Now(), "") //nolint:errcheck
+	s.Operations.Create(ctx, u1, w1, c1, model.TypeExpense, 200, time.Now(), "") //nolint:errcheck
+	s.Operations.Create(ctx, u2, w2, c2, model.TypeExpense, 300, time.Now(), "") //nolint:errcheck
 
 	ops, _ := s.Operations.List(ctx, model.OperationFilter{UserID: u1})
 	if len(ops) != 2 {
@@ -147,9 +147,9 @@ func TestOperationStore_Update(t *testing.T) {
 
 	userID, walletID, catID := opFixture(t, "opupd@test.com")
 	now := time.Now().Truncate(time.Minute)
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, "expense", 100, now, "old")
+	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, now, "old")
 
-	updated, err := s.Operations.Update(ctx, op.ID, userID, walletID, catID, "expense", 999, now, "new")
+	updated, err := s.Operations.Update(ctx, op.ID, userID, walletID, catID, model.TypeExpense, 999, now, "new")
 	if err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestOperationStore_Delete_OtherUser(t *testing.T) {
 
 	userID, walletID, catID := opFixture(t, "opdel@test.com")
 	other := createUser(t, "opdel2@test.com")
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, "expense", 100, time.Now(), "")
+	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, time.Now(), "")
 
 	err := s.Operations.Delete(ctx, op.ID, other)
 	if err != storage.ErrNotFound {

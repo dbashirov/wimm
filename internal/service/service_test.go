@@ -129,7 +129,7 @@ func TestCreateOperation_WalletNotFound(t *testing.T) {
 
 	wallets.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, 1, 99, 10, "expense", 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, 1, 99, 10, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -141,7 +141,7 @@ func TestCreateOperation_CategoryNotFound(t *testing.T) {
 	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
 	cats.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, 1, 1, 99, "expense", 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, 1, 1, 99, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -151,9 +151,9 @@ func TestCreateOperation_WrongCategoryType(t *testing.T) {
 	svc, _, wallets, cats, _ := newSvc(t)
 
 	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: "income"}, nil)
+	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.CreateOperation(ctx, 1, 1, 1, "expense", 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, 1, 1, 1, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -164,14 +164,14 @@ func TestCreateOperation_Success(t *testing.T) {
 
 	now := time.Now()
 	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: "expense"}, nil)
+	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeExpense}, nil)
 
-	want := &model.Operation{ID: 42, UserID: 1, WalletID: 1, CategoryID: 1, Type: "expense", Amount: 100}
+	want := &model.Operation{ID: 42, UserID: 1, WalletID: 1, CategoryID: 1, Type: model.TypeExpense, Amount: 100}
 	ops.EXPECT().
-		Create(ctx, int64(1), int64(1), int64(1), "expense", float64(100), now, "coffee").
+		Create(ctx, int64(1), int64(1), int64(1), model.TypeExpense, float64(100), now, "coffee").
 		Return(want, nil)
 
-	got, err := svc.CreateOperation(ctx, 1, 1, 1, "expense", 100, now, "coffee")
+	got, err := svc.CreateOperation(ctx, 1, 1, 1, model.TypeExpense, 100, now, "coffee")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -187,7 +187,7 @@ func TestUpdateOperation_WalletNotFound(t *testing.T) {
 
 	wallets.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, 5, 1, 99, 10, "expense", 100, time.Now(), "")
+	_, err := svc.UpdateOperation(ctx, 5, 1, 99, 10, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -197,9 +197,9 @@ func TestUpdateOperation_WrongCategoryType(t *testing.T) {
 	svc, _, wallets, cats, _ := newSvc(t)
 
 	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: "income"}, nil)
+	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.UpdateOperation(ctx, 5, 1, 1, 1, "expense", 100, time.Now(), "")
+	_, err := svc.UpdateOperation(ctx, 5, 1, 1, 1, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -210,12 +210,12 @@ func TestUpdateOperation_OperationNotFound(t *testing.T) {
 
 	now := time.Now()
 	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: "expense"}, nil)
+	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeExpense}, nil)
 	ops.EXPECT().
-		Update(ctx, int64(99), int64(1), int64(1), int64(1), "expense", float64(100), now, "").
+		Update(ctx, int64(99), int64(1), int64(1), int64(1), model.TypeExpense, float64(100), now, "").
 		Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, 99, 1, 1, 1, "expense", 100, now, "")
+	_, err := svc.UpdateOperation(ctx, 99, 1, 1, 1, model.TypeExpense, 100, now, "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}

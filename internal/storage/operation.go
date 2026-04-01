@@ -150,11 +150,11 @@ func (s *OperationStore) DashboardData(ctx context.Context, userID int64) ([]mod
 		SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
 		FROM categories c
 		JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
-		WHERE c.user_id = $1 AND o.type = 'expense'
+		WHERE c.user_id = $1 AND o.type = $2
 		  AND date_trunc('month', o.operated_at) = date_trunc('month', CURRENT_DATE)
 		GROUP BY c.name
 		ORDER BY SUM(o.amount) DESC`,
-		userID,
+		userID, model.TypeExpense,
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("DashboardData categories: %w", err)
@@ -175,14 +175,14 @@ func (s *OperationStore) DashboardData(ctx context.Context, userID int64) ([]mod
 	// Monthly income vs expense (last 6 months)
 	monthRows, err := s.pool.Query(ctx, `
 		SELECT to_char(date_trunc('month', operated_at), 'YYYY-MM'),
-		       SUM(CASE WHEN type='income'  THEN amount ELSE 0 END)::float8,
-		       SUM(CASE WHEN type='expense' THEN amount ELSE 0 END)::float8
+		       SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8,
+		       SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8
 		FROM operations
 		WHERE user_id = $1
 		  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '5 months'
 		GROUP BY date_trunc('month', operated_at)
 		ORDER BY date_trunc('month', operated_at)`,
-		userID,
+		userID, model.TypeIncome, model.TypeExpense,
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("DashboardData monthly: %w", err)

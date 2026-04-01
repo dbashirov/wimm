@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
 )
 
@@ -13,11 +14,11 @@ func TestCategoryStore_CreateAndGet(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "cat@test.com")
-	c, err := s.Categories.Create(ctx, userID, "Food", "expense")
+	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense)
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if c.Name != "Food" || c.Type != "expense" || c.UserID != userID {
+	if c.Name != "Food" || c.Type != model.TypeExpense || c.UserID != userID {
 		t.Errorf("unexpected category: %+v", c)
 	}
 
@@ -37,7 +38,7 @@ func TestCategoryStore_GetByID_OtherUser(t *testing.T) {
 
 	owner := createUser(t, "catown@test.com")
 	other := createUser(t, "catoth@test.com")
-	c, _ := s.Categories.Create(ctx, owner, "Salary", "income")
+	c, _ := s.Categories.Create(ctx, owner, "Salary", model.TypeIncome)
 
 	_, err := s.Categories.GetByID(ctx, c.ID, other)
 	if err != storage.ErrNotFound {
@@ -51,11 +52,11 @@ func TestCategoryStore_ListByType(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "catlist@test.com")
-	s.Categories.Create(ctx, userID, "Food", "expense")    //nolint:errcheck
-	s.Categories.Create(ctx, userID, "Transport", "expense") //nolint:errcheck
-	s.Categories.Create(ctx, userID, "Salary", "income")   //nolint:errcheck
+	s.Categories.Create(ctx, userID, "Food", model.TypeExpense)    //nolint:errcheck
+	s.Categories.Create(ctx, userID, "Transport", model.TypeExpense) //nolint:errcheck
+	s.Categories.Create(ctx, userID, "Salary", model.TypeIncome)   //nolint:errcheck
 
-	expenses, err := s.Categories.ListByType(ctx, userID, "expense")
+	expenses, err := s.Categories.ListByType(ctx, userID, model.TypeExpense)
 	if err != nil {
 		t.Fatalf("ListByType: %v", err)
 	}
@@ -63,7 +64,7 @@ func TestCategoryStore_ListByType(t *testing.T) {
 		t.Errorf("got %d expenses, want 2", len(expenses))
 	}
 
-	incomes, err := s.Categories.ListByType(ctx, userID, "income")
+	incomes, err := s.Categories.ListByType(ctx, userID, model.TypeIncome)
 	if err != nil {
 		t.Fatalf("ListByType income: %v", err)
 	}
@@ -78,7 +79,7 @@ func TestCategoryStore_Update(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "catupd@test.com")
-	c, _ := s.Categories.Create(ctx, userID, "Old", "expense")
+	c, _ := s.Categories.Create(ctx, userID, "Old", model.TypeExpense)
 
 	updated, err := s.Categories.Update(ctx, c.ID, userID, "New")
 	if err != nil {
@@ -88,7 +89,7 @@ func TestCategoryStore_Update(t *testing.T) {
 		t.Errorf("got name %q, want %q", updated.Name, "New")
 	}
 	// Тип не меняется при обновлении
-	if updated.Type != "expense" {
+	if updated.Type != model.TypeExpense {
 		t.Errorf("type changed unexpectedly: %q", updated.Type)
 	}
 }
@@ -100,7 +101,7 @@ func TestCategoryStore_Delete_OtherUser(t *testing.T) {
 
 	owner := createUser(t, "catdel@test.com")
 	other := createUser(t, "catdel2@test.com")
-	c, _ := s.Categories.Create(ctx, owner, "Mine", "expense")
+	c, _ := s.Categories.Create(ctx, owner, "Mine", model.TypeExpense)
 
 	err := s.Categories.Delete(ctx, c.ID, other)
 	if err != storage.ErrNotFound {
