@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,26 +11,13 @@ import (
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/session"
 	"github.com/dbashirov/wimm/internal/storage"
-	"github.com/dbashirov/wimm/migrations"
 	"github.com/dbashirov/wimm/web"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/pressly/goose/v3"
 )
 
 func main() {
 	dbURL := mustEnv("DB_URL")
 	addr := envOr("SERVER_ADDR", ":8080")
 	sessionTTL := 30 * 24 * time.Hour
-
-	// Run migrations
-	sqlDB, err := sql.Open("pgx", dbURL)
-	if err != nil {
-		log.Fatalf("sql.Open: %v", err)
-	}
-	if err := runMigrations(sqlDB); err != nil {
-		log.Fatalf("migrations: %v", err)
-	}
-	sqlDB.Close()
 
 	// App storage
 	ctx := context.Background()
@@ -68,21 +53,6 @@ func main() {
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
-}
-
-func runMigrations(db *sql.DB) error {
-	provider, err := goose.NewProvider(goose.DialectPostgres, db, migrations.FS)
-	if err != nil {
-		return fmt.Errorf("goose.NewProvider: %w", err)
-	}
-	results, err := provider.Up(context.Background())
-	if err != nil {
-		return fmt.Errorf("provider.Up: %w", err)
-	}
-	for _, r := range results {
-		log.Printf("migration: %s applied in %s", r.Source.Path, r.Duration)
-	}
-	return nil
 }
 
 func mustEnv(key string) string {

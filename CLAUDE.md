@@ -16,7 +16,15 @@ go test ./...
 
 # Docker (полный стек: приложение + PostgreSQL)
 docker-compose up --build
+
+# Миграции — только вручную
+goose -dir migrations postgres "$DB_URL" up
+goose -dir migrations postgres "$DB_URL" status
 ```
+
+## Правила
+
+- **Миграции никогда не запускаются автоматически при старте приложения.** Только вручную через `goose`. Не добавлять вызовы `goose` / `migrate` в `main()` или любой другой код инициализации.
 
 ## Архитектура
 
@@ -32,7 +40,7 @@ handler → session.Manager
 - **`internal/handler/`** — net/http хендлеры. Роутинг через Go 1.22+ ServeMux с method-префиксами (`GET /wallets/{id}`).
 - **`internal/session/`** — cookie-сессии (UUID в таблице `sessions`). Middleware `auth()` читает куку → ищет сессию в БД → кладёт `userID` в `context.Context`.
 - **`web/`** — embed.FS с шаблонами и статикой. Каждая страница парсится отдельно: `base.html + page.html + partials/*.html`.
-- **`migrations/`** — SQL-файлы goose v3. Миграции запускаются автоматически при старте через `goose.NewProvider`.
+- **`migrations/`** — SQL-файлы goose v3. Миграции **не запускаются автоматически** — только вручную через `goose`.
 
 ## Frontend
 
