@@ -1,42 +1,57 @@
 {{define "content"}}
-<div class="min-h-screen flex items-center justify-center bg-base-200 px-4">
+<div class="min-h-screen flex items-center justify-center auth-bg bg-base-200 px-4">
   <div class="w-full max-w-sm">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl font-bold tracking-tight">wimm</h1>
-      <p class="text-base-content/60 mt-2">Личные финансы под контролем</p>
+
+    <div class="text-center mb-10">
+      <span class="text-5xl font-bold tracking-tight logo-text">wimm</span>
+      <p class="text-base-content/40 mt-3 text-sm tracking-wide uppercase font-medium letter-spacing-wider">
+        Личные финансы
+      </p>
     </div>
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body gap-4">
-        <h2 class="text-xl font-semibold">Войти в аккаунт</h2>
+
+    <div class="card bg-base-100">
+      <div class="card-body gap-5 p-7">
+        <div>
+          <h2 class="text-lg font-semibold tracking-tight">Войти в аккаунт</h2>
+          <p class="text-base-content/40 text-sm mt-0.5">Введите ваши данные для входа</p>
+        </div>
+
         {{if .Error}}
-        <div class="alert alert-error py-2 text-sm">
+        <div class="alert alert-error py-2.5 text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
           </svg>
           {{.Error}}
         </div>
         {{end}}
+
         <form method="POST" action="/login" class="flex flex-col gap-4">
-          <div class="form-control">
-            <label class="label pb-1"><span class="label-text font-medium">Email</span></label>
+          <div class="form-control gap-1.5">
+            <label class="text-sm font-medium text-base-content/70">Email</label>
             <input type="email" name="email" placeholder="you@example.com"
                    class="input input-bordered w-full" required autofocus>
           </div>
-          <div class="form-control">
-            <label class="label pb-1"><span class="label-text font-medium">Пароль</span></label>
+          <div class="form-control gap-1.5">
+            <label class="text-sm font-medium text-base-content/70">Пароль</label>
             <input type="password" name="password" placeholder="••••••••"
                    class="input input-bordered w-full" required>
           </div>
-          <button type="submit" class="btn btn-primary w-full mt-2">Войти</button>
+          <button type="submit" class="btn btn-primary w-full mt-1 font-semibold">
+            Войти
+          </button>
         </form>
-        <p class="text-center text-sm text-base-content/60">
-          Нет аккаунта? <a href="/register" class="link link-primary font-medium">Зарегистрироваться</a>
+
+        <p class="text-center text-sm text-base-content/40 border-t border-base-content/5 pt-4">
+          Нет аккаунта?
+          <a href="/register" class="text-primary hover:text-primary/80 font-medium transition-colors">
+            Зарегистрироваться
+          </a>
         </p>
       </div>
     </div>
-    <!-- Theme toggle on auth page -->
-    <div class="flex justify-center mt-4">
-      <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
+
+    <div class="flex justify-center mt-5">
+      <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm opacity-40 hover:opacity-70">
         <input type="checkbox" id="theme-toggle">
         <svg class="swap-on h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
@@ -46,6 +61,19 @@
         </svg>
       </label>
     </div>
+
   </div>
 </div>
+<script>
+  (function() {
+    var toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+    toggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+    toggle.addEventListener('change', function() {
+      var theme = toggle.checked ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    });
+  })();
+</script>
 {{end}}

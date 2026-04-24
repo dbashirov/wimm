@@ -1,51 +1,59 @@
 {{define "content"}}
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold">Дашборд</h1>
-  <a href="/operations" class="btn btn-primary btn-sm gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="page-title">Дашборд</h1>
+    <p class="page-subtitle">Обзор ваших финансов</p>
+  </div>
+  <a href="/operations" class="btn btn-primary gap-2 font-semibold">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
-    Добавить операцию
+    Новая операция
   </a>
 </div>
 
 {{if .WalletBalances}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
   {{range .WalletBalances}}
-  <div class="card bg-base-100 shadow-md">
-    <div class="card-body p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold text-base">{{.Name}}</h3>
-        <span class="badge badge-outline badge-sm">{{.Currency}}</span>
+  <div class="card bg-base-100 wallet-card">
+    <div class="card-body p-6 gap-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-medium text-sm text-base-content/70">{{.Name}}</h3>
+        <span class="badge badge-ghost badge-sm font-mono">{{.Currency}}</span>
       </div>
-      <div class="text-2xl font-bold {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
-        {{money .Balance}} {{.Currency}}
+      <div class="text-3xl font-bold tracking-tight {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
+        {{money .Balance}} <span class="text-base font-medium opacity-50">{{.Currency}}</span>
       </div>
-      <div class="flex gap-4 mt-3 text-sm text-base-content/60">
-        <span class="text-success">↑ {{money .Income}}</span>
-        <span class="text-error">↓ {{money .Expense}}</span>
+      <div class="flex gap-4 text-xs text-base-content/40 pt-1 border-t border-base-content/5">
+        <span class="text-success/80 font-medium">↑ {{money .Income}}</span>
+        <span class="text-error/80 font-medium">↓ {{money .Expense}}</span>
       </div>
     </div>
   </div>
   {{end}}
 </div>
 {{else}}
-<div class="alert mb-6">
-  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<div class="alert mb-8">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
   </svg>
-  <span>Кошельки не добавлены. <a href="/wallets" class="link link-primary">Добавить кошелёк</a></span>
+  <span class="text-sm text-base-content/60">
+    Кошельки не добавлены.
+    <a href="/wallets" class="text-primary hover:text-primary/80 font-medium transition-colors">Добавить кошелёк</a>
+  </span>
 </div>
 {{end}}
 
 {{if or .CategoryExpenses .MonthlyTotals}}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   {{if .CategoryExpenses}}
-  <div class="card bg-base-100 shadow-md">
-    <div class="card-body">
-      <h3 class="card-title text-base font-semibold">Расходы по категориям</h3>
-      <p class="text-xs text-base-content/50 -mt-2 mb-2">Текущий месяц</p>
-      <div class="relative h-64">
+  <div class="card bg-base-100">
+    <div class="card-body p-6">
+      <div class="mb-4">
+        <h3 class="font-medium text-sm">Расходы по категориям</h3>
+        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
+      </div>
+      <div class="relative h-60">
         <canvas id="catChart"></canvas>
       </div>
     </div>
@@ -53,11 +61,13 @@
   {{end}}
 
   {{if .MonthlyTotals}}
-  <div class="card bg-base-100 shadow-md">
-    <div class="card-body">
-      <h3 class="card-title text-base font-semibold">Доходы и расходы</h3>
-      <p class="text-xs text-base-content/50 -mt-2 mb-2">Последние 6 месяцев</p>
-      <div class="relative h-64">
+  <div class="card bg-base-100">
+    <div class="card-body p-6">
+      <div class="mb-4">
+        <h3 class="font-medium text-sm">Доходы и расходы</h3>
+        <p class="text-xs text-base-content/30 mt-0.5">Последние 6 месяцев</p>
+      </div>
+      <div class="relative h-60">
         <canvas id="monthChart"></canvas>
       </div>
     </div>
@@ -67,8 +77,12 @@
 
 <script>
 (function() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  Chart.defaults.color = isDark ? '#9ca3af' : '#6b7280';
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var gridColor = isDark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
+  var textColor = isDark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.45)';
+  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = 'Inter, sans-serif';
+  Chart.defaults.font.size = 11;
 
   {{if .CategoryExpenses}}
   new Chart(document.getElementById('catChart'), {
@@ -78,13 +92,20 @@
       datasets: [{
         data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
         borderWidth: 2,
-        borderColor: isDark ? '#1f2937' : '#ffffff',
+        borderColor: isDark ? '#13141F' : '#ffffff',
+        hoverBorderColor: isDark ? '#13141F' : '#ffffff',
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } } }
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8 }
+        }
+      }
     }
   });
   {{end}}
@@ -98,24 +119,34 @@
         {
           label: 'Доходы',
           data: [{{range .MonthlyTotals}}{{money .Income}},{{end}}],
-          backgroundColor: 'rgba(34,197,94,0.75)',
+          backgroundColor: isDark ? 'rgba(52,211,153,0.6)' : 'rgba(5,150,105,0.6)',
           borderRadius: 4,
+          borderSkipped: false,
         },
         {
           label: 'Расходы',
           data: [{{range .MonthlyTotals}}{{money .Expense}},{{end}}],
-          backgroundColor: 'rgba(239,68,68,0.75)',
+          backgroundColor: isDark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.6)',
           borderRadius: 4,
+          borderSkipped: false,
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } } },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8 }
+        }
+      },
       scales: {
-        x: { grid: { display: false } },
-        y: { grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } }
+        x: { grid: { display: false }, border: { display: false } },
+        y: {
+          grid: { color: gridColor },
+          border: { display: false, dash: [4, 4] },
+        }
       }
     }
   });

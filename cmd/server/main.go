@@ -28,7 +28,8 @@ func main() {
 	defer store.Close()
 
 	svc := service.New(store)
-	sm := session.NewManager(store.Sessions, sessionTTL)
+	secureCookie := os.Getenv("COOKIE_INSECURE") != "true"
+	sm := session.NewManager(store.Sessions, sessionTTL, secureCookie)
 
 	// Background: clean expired sessions hourly
 	go func() {

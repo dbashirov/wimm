@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 )
 
 type categoriesData struct {
@@ -37,9 +37,10 @@ func (h *Handler) getCategories(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	name := r.FormValue("name")
-	catType := r.FormValue("type")
+	catType := model.OperationType(r.FormValue("type"))
+	description := r.FormValue("description")
 
-	cat, err := h.svc.CreateCategory(r.Context(), userID, name, catType)
+	cat, err := h.svc.CreateCategory(r.Context(), userID, name, catType, description)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -49,7 +50,7 @@ func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -64,7 +65,7 @@ func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getCategoryEdit(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -79,13 +80,14 @@ func (h *Handler) getCategoryEdit(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	name := r.FormValue("name")
-	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name)
+	description := r.FormValue("description")
+	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name, description)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -95,7 +97,7 @@ func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -110,7 +112,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 // getCategoryOptions returns <option> tags for a given type (for htmx dynamic select)
 func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	catType := r.URL.Query().Get("type")
+	catType := model.OperationType(r.URL.Query().Get("type"))
 	if catType == "" {
 		catType = model.TypeExpense
 	}
@@ -121,6 +123,6 @@ func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html")
 	for _, c := range cats {
-		fmt.Fprintf(w, `<option value="%d">%s</option>`, c.ID, template.HTMLEscapeString(c.Name))
+		fmt.Fprintf(w, `<option value="%s">%s</option>`, c.ID, template.HTMLEscapeString(c.Name))
 	}
 }

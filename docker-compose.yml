@@ -6,6 +6,7 @@ services:
     environment:
       DB_URL: postgres://wimm:wimm@postgres:5432/wimm?sslmode=disable
       SERVER_ADDR: :8080
+      COOKIE_INSECURE: "true"
     depends_on:
       postgres:
         condition: service_healthy

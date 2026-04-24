@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,9 +15,9 @@ type WalletStore struct {
 	pool *pgxpool.Pool
 }
 
-func (s *WalletStore) ListByUser(ctx context.Context, userID int64) ([]model.Wallet, error) {
+func (s *WalletStore) ListByUser(ctx context.Context, userID uuid.UUID) ([]model.Wallet, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, user_id, name, currency, created_at
+		`SELECT id, user_id, name, currency, description, created_at
 		 FROM wallets WHERE user_id=$1 ORDER BY name`,
 		userID,
 	)
@@ -27,7 +28,9 @@ func (s *WalletStore) ListByUser(ctx context.Context, userID int64) ([]model.Wal
 	var wallets []model.Wallet
 	for rows.Next() {
 		var w model.Wallet
-		if err := rows.Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		wallets = append(wallets, w)
@@ -35,9 +38,9 @@ func (s *WalletStore) ListByUser(ctx context.Context, userID int64) ([]model.Wal
 	return wallets, rows.Err()
 }
 
-func (s *WalletStore) ListWithBalance(ctx context.Context, userID int64) ([]model.WalletBalance, error) {
+func (s *WalletStore) ListWithBalance(ctx context.Context, userID uuid.UUID) ([]model.WalletBalance, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT w.id, w.user_id, w.name, w.currency, w.created_at,
+		`SELECT w.id, w.user_id, w.name, w.currency, w.description, w.created_at,
 		        COALESCE(SUM(CASE WHEN o.type=$2 THEN o.amount ELSE 0 END), 0)::float8,
 		        COALESCE(SUM(CASE WHEN o.type=$3 THEN o.amount ELSE 0 END), 0)::float8
 		 FROM wallets w
@@ -55,7 +58,7 @@ func (s *WalletStore) ListWithBalance(ctx context.Context, userID int64) ([]mode
 	for rows.Next() {
 		var wb model.WalletBalance
 		if err := rows.Scan(
-			&wb.ID, &wb.UserID, &wb.Name, &wb.Currency, &wb.CreatedAt,
+			&wb.ID, &wb.UserID, &wb.Name, &wb.Currency, &wb.Description, &wb.CreatedAt,
 			&wb.Income, &wb.Expense,
 		); err != nil {
 			return nil, err
@@ -66,26 +69,26 @@ func (s *WalletStore) ListWithBalance(ctx context.Context, userID int64) ([]mode
 	return result, rows.Err()
 }
 
-func (s *WalletStore) Create(ctx context.Context, userID int64, name, currency string) (*model.Wallet, error) {
+func (s *WalletStore) Create(ctx context.Context, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
-		`INSERT INTO wallets(user_id, name, currency) VALUES($1, $2, $3)
-		 RETURNING id, user_id, name, currency, created_at`,
-		userID, name, currency,
-	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.CreatedAt)
+		`INSERT INTO wallets(user_id, name, currency, description) VALUES($1, $2, $3, $4)
+		 RETURNING id, user_id, name, currency, description, created_at`,
+		userID, name, currency, description,
+	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("WalletStore.Create: %w", err)
 	}
 	return &w, nil
 }
 
-func (s *WalletStore) GetByID(ctx context.Context, id, userID int64) (*model.Wallet, error) {
+func (s *WalletStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, user_id, name, currency, created_at
+		`SELECT id, user_id, name, currency, description, created_at
 		 FROM wallets WHERE id=$1 AND user_id=$2`,
 		id, userID,
-	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.CreatedAt)
+	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -95,14 +98,14 @@ func (s *WalletStore) GetByID(ctx context.Context, id, userID int64) (*model.Wal
 	return &w, nil
 }
 
-func (s *WalletStore) Update(ctx context.Context, id, userID int64, name, currency string) (*model.Wallet, error) {
+func (s *WalletStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
-		`UPDATE wallets SET name=$1, currency=$2
-		 WHERE id=$3 AND user_id=$4
-		 RETURNING id, user_id, name, currency, created_at`,
-		name, currency, id, userID,
-	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.CreatedAt)
+		`UPDATE wallets SET name=$1, currency=$2, description=$3
+		 WHERE id=$4 AND user_id=$5
+		 RETURNING id, user_id, name, currency, description, created_at`,
+		name, currency, description, id, userID,
+	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -112,7 +115,7 @@ func (s *WalletStore) Update(ctx context.Context, id, userID int64, name, curren
 	return &w, nil
 }
 
-func (s *WalletStore) Delete(ctx context.Context, id, userID int64) error {
+func (s *WalletStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM wallets WHERE id=$1 AND user_id=$2`, id, userID)
 	return checkRowsAffected(tag, err)
 }

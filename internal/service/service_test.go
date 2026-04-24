@@ -10,9 +10,25 @@ import (
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/storage"
 	"github.com/dbashirov/wimm/internal/storage/mocks"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// test UUIDs
+var (
+	wID1  = uuid.MustParse("10000000-0000-0000-0000-000000000001")
+	wID99 = uuid.MustParse("10000000-0000-0000-0000-000000000099")
+	cID1  = uuid.MustParse("20000000-0000-0000-0000-000000000001")
+	cID5  = uuid.MustParse("20000000-0000-0000-0000-000000000005")
+	cID10 = uuid.MustParse("20000000-0000-0000-0000-000000000010")
+	cID99 = uuid.MustParse("20000000-0000-0000-0000-000000000099")
+	opID1  = uuid.MustParse("30000000-0000-0000-0000-000000000001")
+	opID5  = uuid.MustParse("30000000-0000-0000-0000-000000000005")
+	opID7  = uuid.MustParse("30000000-0000-0000-0000-000000000007")
+	opID99 = uuid.MustParse("30000000-0000-0000-0000-000000000099")
+	uID1   = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 )
 
 // helpers
@@ -41,7 +57,7 @@ var ctx = context.Background()
 func TestRegister_Success(t *testing.T) {
 	svc, users, _, _, _ := newSvc(t)
 
-	want := &model.User{ID: 1, Email: "a@b.com"}
+	want := &model.User{ID: uID1, Email: "a@b.com"}
 	users.EXPECT().
 		Create(ctx, "a@b.com", gomock.Any()). // Any — bcrypt-хеш
 		Return(want, nil)
@@ -85,15 +101,15 @@ func TestLogin_Success(t *testing.T) {
 	svc, users, _, _, _ := newSvc(t)
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("correctpass"), bcrypt.MinCost)
-	want := &model.User{ID: 1, Email: "a@b.com", PasswordHash: string(hash)}
+	want := &model.User{ID: uID1, Email: "a@b.com", PasswordHash: string(hash)}
 	users.EXPECT().GetByEmail(ctx, "a@b.com").Return(want, nil)
 
 	got, err := svc.Login(ctx, "a@b.com", "correctpass")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.ID != 1 {
-		t.Errorf("got ID %d, want 1", got.ID)
+	if got.ID != uID1 {
+		t.Errorf("got ID %v, want %v", got.ID, uID1)
 	}
 }
 
@@ -102,7 +118,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("correctpass"), bcrypt.MinCost)
 	users.EXPECT().GetByEmail(ctx, "a@b.com").Return(
-		&model.User{ID: 1, Email: "a@b.com", PasswordHash: string(hash)}, nil,
+		&model.User{ID: uID1, Email: "a@b.com", PasswordHash: string(hash)}, nil,
 	)
 
 	_, err := svc.Login(ctx, "a@b.com", "wrongpass")
@@ -127,9 +143,9 @@ func TestLogin_UserNotFound(t *testing.T) {
 func TestCreateOperation_WalletNotFound(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
+	wallets.EXPECT().GetByID(ctx, wID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, 1, 99, 10, model.TypeExpense, 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, uID1, wID99, cID10, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -138,10 +154,10 @@ func TestCreateOperation_WalletNotFound(t *testing.T) {
 func TestCreateOperation_CategoryNotFound(t *testing.T) {
 	svc, _, wallets, cats, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, 1, 1, 99, model.TypeExpense, 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, uID1, wID1, cID99, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -150,10 +166,10 @@ func TestCreateOperation_CategoryNotFound(t *testing.T) {
 func TestCreateOperation_WrongCategoryType(t *testing.T) {
 	svc, _, wallets, cats, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeIncome}, nil)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.CreateOperation(ctx, 1, 1, 1, model.TypeExpense, 100, time.Now(), "")
+	_, err := svc.CreateOperation(ctx, uID1, wID1, cID1, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -163,20 +179,20 @@ func TestCreateOperation_Success(t *testing.T) {
 	svc, _, wallets, cats, ops := newSvc(t)
 
 	now := time.Now()
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeExpense}, nil)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeExpense}, nil)
 
-	want := &model.Operation{ID: 42, UserID: 1, WalletID: 1, CategoryID: 1, Type: model.TypeExpense, Amount: 100}
+	want := &model.Operation{ID: opID1, UserID: uID1, WalletID: wID1, CategoryID: cID1, Type: model.TypeExpense, Amount: 100}
 	ops.EXPECT().
-		Create(ctx, int64(1), int64(1), int64(1), model.TypeExpense, float64(100), now, "coffee").
+		Create(ctx, uID1, wID1, cID1, model.TypeExpense, float64(100), now, "coffee").
 		Return(want, nil)
 
-	got, err := svc.CreateOperation(ctx, 1, 1, 1, model.TypeExpense, 100, now, "coffee")
+	got, err := svc.CreateOperation(ctx, uID1, wID1, cID1, model.TypeExpense, 100, now, "coffee")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.ID != 42 {
-		t.Errorf("got ID %d, want 42", got.ID)
+	if got.ID != opID1 {
+		t.Errorf("got ID %v, want %v", got.ID, opID1)
 	}
 }
 
@@ -185,9 +201,9 @@ func TestCreateOperation_Success(t *testing.T) {
 func TestUpdateOperation_WalletNotFound(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(99), int64(1)).Return(nil, storage.ErrNotFound)
+	wallets.EXPECT().GetByID(ctx, wID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, 5, 1, 99, 10, model.TypeExpense, 100, time.Now(), "")
+	_, err := svc.UpdateOperation(ctx, opID5, uID1, wID99, cID10, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -196,10 +212,10 @@ func TestUpdateOperation_WalletNotFound(t *testing.T) {
 func TestUpdateOperation_WrongCategoryType(t *testing.T) {
 	svc, _, wallets, cats, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeIncome}, nil)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.UpdateOperation(ctx, 5, 1, 1, 1, model.TypeExpense, 100, time.Now(), "")
+	_, err := svc.UpdateOperation(ctx, opID5, uID1, wID1, cID1, model.TypeExpense, 100, time.Now(), "")
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -209,13 +225,13 @@ func TestUpdateOperation_OperationNotFound(t *testing.T) {
 	svc, _, wallets, cats, ops := newSvc(t)
 
 	now := time.Now()
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Wallet{ID: 1}, nil)
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(&model.Category{ID: 1, Type: model.TypeExpense}, nil)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeExpense}, nil)
 	ops.EXPECT().
-		Update(ctx, int64(99), int64(1), int64(1), int64(1), model.TypeExpense, float64(100), now, "").
+		Update(ctx, opID99, uID1, wID1, cID1, model.TypeExpense, float64(100), now, "").
 		Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, 99, 1, 1, 1, model.TypeExpense, 100, now, "")
+	_, err := svc.UpdateOperation(ctx, opID99, uID1, wID1, cID1, model.TypeExpense, 100, now, "")
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -226,9 +242,9 @@ func TestUpdateOperation_OperationNotFound(t *testing.T) {
 func TestDeleteWallet_NotFound(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 
-	wallets.EXPECT().Delete(ctx, int64(1), int64(1)).Return(storage.ErrNotFound)
+	wallets.EXPECT().Delete(ctx, wID1, uID1).Return(storage.ErrNotFound)
 
-	err := svc.DeleteWallet(ctx, 1, 1)
+	err := svc.DeleteWallet(ctx, wID1, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -237,9 +253,9 @@ func TestDeleteWallet_NotFound(t *testing.T) {
 func TestDeleteWallet_Success(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 
-	wallets.EXPECT().Delete(ctx, int64(1), int64(1)).Return(nil)
+	wallets.EXPECT().Delete(ctx, wID1, uID1).Return(nil)
 
-	if err := svc.DeleteWallet(ctx, 1, 1); err != nil {
+	if err := svc.DeleteWallet(ctx, wID1, uID1); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -247,9 +263,9 @@ func TestDeleteWallet_Success(t *testing.T) {
 func TestDeleteCategory_NotFound(t *testing.T) {
 	svc, _, _, cats, _ := newSvc(t)
 
-	cats.EXPECT().Delete(ctx, int64(5), int64(1)).Return(storage.ErrNotFound)
+	cats.EXPECT().Delete(ctx, cID5, uID1).Return(storage.ErrNotFound)
 
-	err := svc.DeleteCategory(ctx, 5, 1)
+	err := svc.DeleteCategory(ctx, cID5, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -258,9 +274,9 @@ func TestDeleteCategory_NotFound(t *testing.T) {
 func TestDeleteOperation_NotFound(t *testing.T) {
 	svc, _, _, _, ops := newSvc(t)
 
-	ops.EXPECT().Delete(ctx, int64(7), int64(1)).Return(storage.ErrNotFound)
+	ops.EXPECT().Delete(ctx, opID7, uID1).Return(storage.ErrNotFound)
 
-	err := svc.DeleteOperation(ctx, 7, 1)
+	err := svc.DeleteOperation(ctx, opID7, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -271,9 +287,9 @@ func TestDeleteOperation_NotFound(t *testing.T) {
 func TestGetWallet_NotFound(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 
-	wallets.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(nil, storage.ErrNotFound)
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.GetWallet(ctx, 1, 1)
+	_, err := svc.GetWallet(ctx, wID1, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -282,9 +298,9 @@ func TestGetWallet_NotFound(t *testing.T) {
 func TestGetCategory_NotFound(t *testing.T) {
 	svc, _, _, cats, _ := newSvc(t)
 
-	cats.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(nil, storage.ErrNotFound)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.GetCategory(ctx, 1, 1)
+	_, err := svc.GetCategory(ctx, cID1, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -293,9 +309,9 @@ func TestGetCategory_NotFound(t *testing.T) {
 func TestGetOperation_NotFound(t *testing.T) {
 	svc, _, _, _, ops := newSvc(t)
 
-	ops.EXPECT().GetByID(ctx, int64(1), int64(1)).Return(nil, storage.ErrNotFound)
+	ops.EXPECT().GetByID(ctx, opID1, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.GetOperation(ctx, 1, 1)
+	_, err := svc.GetOperation(ctx, opID1, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}

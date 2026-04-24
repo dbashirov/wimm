@@ -6,14 +6,15 @@ import (
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/session"
+	"github.com/google/uuid"
 )
 
 type contextKey string
 
 const userIDKey contextKey = "userID"
 
-func userIDFromCtx(ctx context.Context) int64 {
-	id, _ := ctx.Value(userIDKey).(int64)
+func userIDFromCtx(ctx context.Context) uuid.UUID {
+	id, _ := ctx.Value(userIDKey).(uuid.UUID)
 	return id
 }
 

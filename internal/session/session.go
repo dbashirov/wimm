@@ -8,20 +8,22 @@ import (
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
+	"github.com/google/uuid"
 )
 
 const cookieName = "session_id"
 
 type Manager struct {
-	store *storage.SessionStore
-	ttl   time.Duration
+	store  *storage.SessionStore
+	ttl    time.Duration
+	secure bool
 }
 
-func NewManager(store *storage.SessionStore, ttl time.Duration) *Manager {
-	return &Manager{store: store, ttl: ttl}
+func NewManager(store *storage.SessionStore, ttl time.Duration, secure bool) *Manager {
+	return &Manager{store: store, ttl: ttl, secure: secure}
 }
 
-func (m *Manager) Create(ctx context.Context, w http.ResponseWriter, userID int64) error {
+func (m *Manager) Create(ctx context.Context, w http.ResponseWriter, userID uuid.UUID) error {
 	expiresAt := time.Now().Add(m.ttl)
 	sess, err := m.store.Create(ctx, userID, expiresAt)
 	if err != nil {
@@ -34,7 +36,7 @@ func (m *Manager) Create(ctx context.Context, w http.ResponseWriter, userID int6
 		Expires:  sess.ExpiresAt,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
-		Secure:   true,
+		Secure:   m.secure,
 	})
 	return nil
 }

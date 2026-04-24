@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,7 +16,7 @@ type SessionStore struct {
 	pool *pgxpool.Pool
 }
 
-func (s *SessionStore) Create(ctx context.Context, userID int64, expiresAt time.Time) (*model.Session, error) {
+func (s *SessionStore) Create(ctx context.Context, userID uuid.UUID, expiresAt time.Time) (*model.Session, error) {
 	var sess model.Session
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO sessions(user_id, expires_at) VALUES($1, $2)

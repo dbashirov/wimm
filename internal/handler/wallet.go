@@ -2,9 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 )
 
 type walletsData struct {
@@ -27,8 +27,9 @@ func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	name := r.FormValue("name")
 	currency := r.FormValue("currency")
+	description := r.FormValue("description")
 
-	wallet, err := h.svc.CreateWallet(r.Context(), userID, name, currency)
+	wallet, err := h.svc.CreateWallet(r.Context(), userID, name, currency, description)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -38,7 +39,7 @@ func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -53,7 +54,7 @@ func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getWalletEdit(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -68,15 +69,16 @@ func (h *Handler) getWalletEdit(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	name := r.FormValue("name")
 	currency := r.FormValue("currency")
+	description := r.FormValue("description")
 
-	wallet, err := h.svc.UpdateWallet(r.Context(), id, userID, name, currency)
+	wallet, err := h.svc.UpdateWallet(r.Context(), id, userID, name, currency, description)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -86,7 +88,7 @@ func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return

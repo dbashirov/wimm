@@ -9,47 +9,48 @@
           hx-swap="outerHTML">
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 items-end py-2">
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Дата и время</span></label>
-          <input type="text" name="operated_at" class="input input-bordered input-xs fp-datetime"
+          <label class="form-label">Дата и время</label>
+          <input type="text" name="operated_at" class="input input-bordered input-sm fp-datetime"
                  value="{{$op.OperatedAt.Format "2006-01-02T15:04"}}" required>
         </div>
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Тип</span></label>
-          <select name="type" class="select select-bordered select-xs">
+          <label class="form-label">Тип</label>
+          <select name="type" class="select select-bordered select-sm">
             <option value="expense" {{if eq $op.Type "expense"}}selected{{end}}>Расход</option>
             <option value="income"  {{if eq $op.Type "income"}}selected{{end}}>Доход</option>
           </select>
         </div>
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Сумма</span></label>
-          <input type="number" name="amount" step="0.01" min="0.01" class="input input-bordered input-xs"
+          <label class="form-label">Сумма</label>
+          <input type="number" name="amount" step="0.01" min="0.01"
+                 class="input input-bordered input-sm"
                  value="{{money $op.Amount}}" required>
         </div>
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Кошелёк</span></label>
-          <select name="wallet_id" class="select select-bordered select-xs" required>
+          <label class="form-label">Кошелёк</label>
+          <select name="wallet_id" class="select select-bordered select-sm" required>
             {{range $wallets}}
             <option value="{{.ID}}" {{if eq .ID $op.WalletID}}selected{{end}}>{{.Name}}</option>
             {{end}}
           </select>
         </div>
         <div class="form-control">
-          <label class="label py-0.5"><span class="label-text text-xs">Категория</span></label>
-          <select name="category_id" class="select select-bordered select-xs" required>
+          <label class="form-label">Категория</label>
+          <select name="category_id" class="select select-bordered select-sm" required>
             {{range $cats}}
             <option value="{{.ID}}" {{if eq .ID $op.CategoryID}}selected{{end}}>{{.Name}} ({{typeLabel .Type}})</option>
             {{end}}
           </select>
         </div>
         <div class="form-control col-span-2 lg:col-span-1">
-          <label class="label py-0.5"><span class="label-text text-xs">Описание</span></label>
-          <input type="text" name="description" class="input input-bordered input-xs"
+          <label class="form-label">Описание</label>
+          <input type="text" name="description" class="input input-bordered input-sm"
                  value="{{$op.Description}}">
         </div>
       </div>
-      <div class="flex gap-2 pb-1">
-        <button type="submit" class="btn btn-primary btn-xs">Сохранить</button>
-        <button type="button" class="btn btn-ghost btn-xs"
+      <div class="flex gap-2 pb-2">
+        <button type="submit" class="btn btn-primary btn-sm font-semibold">Сохранить</button>
+        <button type="button" class="btn btn-ghost btn-sm"
                 hx-get="/operations/{{$op.ID}}"
                 hx-target="closest tr"
                 hx-swap="outerHTML">Отмена</button>

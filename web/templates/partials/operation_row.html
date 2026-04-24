@@ -1,43 +1,69 @@
 {{define "operation-row"}}
-<tr id="op-{{.ID}}" class="hover">
+<tr id="op-{{.ID}}" {{if .TransferID}}data-transfer-id="{{.TransferID}}"{{end}} class="hover">
   <td class="whitespace-nowrap text-sm">
     <div>{{.OperatedAt.Format "02.01.2006"}}</div>
     <div class="text-xs text-base-content/50">{{.OperatedAt.Format "15:04"}}</div>
   </td>
   <td>
-    {{if eq .Type "income"}}
-    <span class="badge badge-success badge-sm">Доход</span>
+    {{if .TransferID}}
+      {{if eq .Type "expense"}}
+      <span class="badge badge-outline badge-sm">↑ Перевод</span>
+      {{else}}
+      <span class="badge badge-outline badge-sm">↓ Перевод</span>
+      {{end}}
+    {{else if eq .Type "income"}}
+      <span class="badge badge-success badge-sm">Доход</span>
     {{else}}
-    <span class="badge badge-error badge-sm">Расход</span>
+      <span class="badge badge-error badge-sm">Расход</span>
     {{end}}
   </td>
   <td class="font-semibold whitespace-nowrap {{if eq .Type "income"}}text-success{{else}}text-error{{end}}">
     {{if eq .Type "income"}}+{{else}}-{{end}}{{money .Amount}} {{.Currency}}
   </td>
   <td class="hidden md:table-cell text-sm text-base-content/70">{{.WalletName}}</td>
-  <td class="hidden md:table-cell text-sm text-base-content/70">{{.CategoryName}}</td>
+  <td class="hidden md:table-cell text-sm text-base-content/70">
+    {{if .TransferID}}
+      <span class="text-base-content/40">→ {{.TransferWalletName}}</span>
+    {{else}}
+      {{.CategoryName}}
+    {{end}}
+  </td>
   <td class="hidden lg:table-cell text-sm text-base-content/50 max-w-xs truncate">{{.Description}}</td>
   <td>
     <div class="flex gap-1 justify-end">
-      <button class="btn btn-ghost btn-xs"
+      {{if .TransferID}}
+      <button class="btn-action btn-action-danger"
+              hx-delete="/transfers/{{.TransferID}}"
+              hx-target="closest tr"
+              hx-swap="outerHTML"
+              hx-confirm="Удалить оба плеча перевода?"
+              hx-on::after-request="document.querySelectorAll('[data-transfer-id=&quot;{{.TransferID}}&quot;]').forEach(function(r){r.remove()})"
+              title="Удалить перевод">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+      {{else}}
+      <button class="btn-action"
               hx-get="/operations/{{.ID}}/edit"
               hx-target="closest tr"
               hx-swap="outerHTML"
               title="Редактировать">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
         </svg>
       </button>
-      <button class="btn btn-ghost btn-xs text-error"
+      <button class="btn-action btn-action-danger"
               hx-delete="/operations/{{.ID}}"
               hx-target="closest tr"
               hx-swap="outerHTML"
               hx-confirm="Удалить операцию?"
               title="Удалить">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
         </svg>
       </button>
+      {{end}}
     </div>
   </td>
 </tr>

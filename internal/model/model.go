@@ -1,14 +1,31 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
 
-const (
-	TypeIncome  = "income"
-	TypeExpense = "expense"
+	"github.com/google/uuid"
 )
 
+type OperationType string
+
+const (
+	TypeIncome  OperationType = "income"
+	TypeExpense OperationType = "expense"
+)
+
+// Scan реализует sql.Scanner для совместимости с pgx v5.
+func (t *OperationType) Scan(src any) error {
+	s, ok := src.(string)
+	if !ok {
+		return fmt.Errorf("OperationType: expected string, got %T", src)
+	}
+	*t = OperationType(s)
+	return nil
+}
+
 type User struct {
-	ID           int64
+	ID           uuid.UUID
 	Email        string
 	PasswordHash string
 	CreatedAt    time.Time
@@ -16,16 +33,17 @@ type User struct {
 
 type Session struct {
 	ID        string
-	UserID    int64
+	UserID    uuid.UUID
 	ExpiresAt time.Time
 }
 
 type Wallet struct {
-	ID        int64
-	UserID    int64
-	Name      string
-	Currency  string
-	CreatedAt time.Time
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Currency    string
+	Description string
+	CreatedAt   time.Time
 }
 
 type WalletBalance struct {
@@ -36,32 +54,35 @@ type WalletBalance struct {
 }
 
 type Category struct {
-	ID     int64
-	UserID int64
-	Name   string
-	Type   string // TypeIncome or TypeExpense
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Type        OperationType
+	Description string
 }
 
 type Operation struct {
-	ID           int64
-	UserID       int64
-	WalletID     int64
-	CategoryID   int64
-	Type         string // TypeIncome or TypeExpense
-	Amount       float64
-	OperatedAt   time.Time
-	Description  string
-	CreatedAt    time.Time
-	WalletName   string
-	CategoryName string
-	Currency     string
+	ID                 uuid.UUID
+	UserID             uuid.UUID
+	WalletID           uuid.UUID
+	CategoryID         uuid.UUID // uuid.Nil for transfers
+	Type               OperationType
+	Amount             float64
+	OperatedAt         time.Time
+	Description        string
+	CreatedAt          time.Time
+	TransferID         *uuid.UUID
+	TransferWalletName string
+	WalletName         string
+	CategoryName       string
+	Currency           string
 }
 
 type OperationFilter struct {
-	UserID     int64
-	WalletID   int64
-	CategoryID int64
-	Type       string
+	UserID     uuid.UUID
+	WalletID   uuid.UUID
+	CategoryID uuid.UUID
+	Type       OperationType
 	DateFrom   time.Time
 	DateTo     time.Time
 	Page       int

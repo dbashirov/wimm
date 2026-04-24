@@ -8,6 +8,7 @@ import (
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
+	"github.com/google/uuid"
 )
 
 type operationsData struct {
@@ -25,13 +26,13 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	filter := model.OperationFilter{UserID: userID}
-	if id, err := strconv.ParseInt(q.Get("wallet_id"), 10, 64); err == nil && id > 0 {
+	if id, err := uuid.Parse(q.Get("wallet_id")); err == nil {
 		filter.WalletID = id
 	}
-	if id, err := strconv.ParseInt(q.Get("category_id"), 10, 64); err == nil && id > 0 {
+	if id, err := uuid.Parse(q.Get("category_id")); err == nil {
 		filter.CategoryID = id
 	}
-	filter.Type = q.Get("type")
+	filter.Type = model.OperationType(q.Get("type"))
 	if s := q.Get("date_from"); s != "" {
 		filter.DateFrom, _ = time.Parse("2006-01-02", s)
 	}
@@ -72,17 +73,17 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 
-	walletID, err := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
-	if err != nil || walletID <= 0 {
+	walletID, err := uuid.Parse(r.FormValue("wallet_id"))
+	if err != nil {
 		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
 		return
 	}
-	categoryID, err := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
-	if err != nil || categoryID <= 0 {
+	categoryID, err := uuid.Parse(r.FormValue("category_id"))
+	if err != nil {
 		http.Error(w, "invalid category_id", http.StatusBadRequest)
 		return
 	}
-	opType := r.FormValue("type")
+	opType := model.OperationType(r.FormValue("type"))
 	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
 	if err != nil || amount <= 0 {
 		http.Error(w, "invalid amount", http.StatusBadRequest)
@@ -120,7 +121,7 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getOperationRow(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -135,7 +136,7 @@ func (h *Handler) getOperationRow(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -143,6 +144,10 @@ func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
 	op, err := h.svc.GetOperation(r.Context(), id, userID)
 	if err != nil {
 		http.NotFound(w, r)
+		return
+	}
+	if op.TransferID != nil {
+		http.Error(w, "переводы нельзя редактировать", http.StatusBadRequest)
 		return
 	}
 	wallets, err := h.svc.ListWallets(r.Context(), userID)
@@ -164,22 +169,22 @@ func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	walletID, err := strconv.ParseInt(r.FormValue("wallet_id"), 10, 64)
-	if err != nil || walletID <= 0 {
+	walletID, err := uuid.Parse(r.FormValue("wallet_id"))
+	if err != nil {
 		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
 		return
 	}
-	categoryID, err := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
-	if err != nil || categoryID <= 0 {
+	categoryID, err := uuid.Parse(r.FormValue("category_id"))
+	if err != nil {
 		http.Error(w, "invalid category_id", http.StatusBadRequest)
 		return
 	}
-	opType := r.FormValue("type")
+	opType := model.OperationType(r.FormValue("type"))
 	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
 	if err != nil || amount <= 0 {
 		http.Error(w, "invalid amount", http.StatusBadRequest)
@@ -216,12 +221,70 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	if err := h.svc.DeleteOperation(r.Context(), id, userID); err != nil {
+		handleDeleteError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+
+	fromID, err := uuid.Parse(r.FormValue("from_wallet_id"))
+	if err != nil {
+		http.Error(w, "invalid from_wallet_id", http.StatusBadRequest)
+		return
+	}
+	toID, err := uuid.Parse(r.FormValue("to_wallet_id"))
+	if err != nil {
+		http.Error(w, "invalid to_wallet_id", http.StatusBadRequest)
+		return
+	}
+	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
+	if err != nil || amount <= 0 {
+		http.Error(w, "invalid amount", http.StatusBadRequest)
+		return
+	}
+	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
+	if err != nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return
+	}
+	description := r.FormValue("description")
+
+	expense, income, err := h.svc.CreateTransfer(r.Context(), userID, fromID, toID, amount, operatedAt, description)
+	if err != nil {
+		if errors.Is(err, service.ErrSameWallet) {
+			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	h.renderPartial(w, "operations", "operation-row", expense)
+	h.renderPartial(w, "operations", "operation-row", income)
+}
+
+func (h *Handler) deleteTransfer(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	transferID, err := uuid.Parse(r.PathValue("transfer_id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := h.svc.DeleteTransfer(r.Context(), transferID, userID); err != nil {
 		handleDeleteError(w, r, err)
 		return
 	}

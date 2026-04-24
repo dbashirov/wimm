@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -15,25 +17,56 @@ type OperationStore struct {
 	pool *pgxpool.Pool
 }
 
+// operationSelect selects all columns needed to populate model.Operation.
+// category_id and transfer_id can be NULL (transfers), so LEFT JOINs are used.
 const operationSelect = `
 	SELECT o.id, o.user_id, o.wallet_id, o.category_id, o.type,
 	       o.amount::float8, o.operated_at, o.description, o.created_at,
-	       w.name, c.name, w.currency
+	       o.transfer_id,
+	       w.name, COALESCE(c.name, ''), w.currency,
+	       COALESCE(tw.name, '')
 	FROM operations o
-	JOIN wallets w    ON w.id = o.wallet_id
-	JOIN categories c ON c.id = o.category_id`
+	JOIN  wallets w   ON w.id = o.wallet_id
+	LEFT JOIN categories c  ON c.id  = o.category_id
+	LEFT JOIN wallets    tw ON tw.id = o.transfer_wallet_id`
+
+// scanOperation scans one row of operationSelect into *model.Operation.
+// category_id and transfer_id are nullable, so we scan via pgtype.UUID.
+func scanOperation(row interface{ Scan(...any) error }, o *model.Operation) error {
+	var catID pgtype.UUID
+	var xferID pgtype.UUID
+
+	if err := row.Scan(
+		&o.ID, &o.UserID, &o.WalletID, &catID, &o.Type,
+		&o.Amount, &o.OperatedAt, &o.Description, &o.CreatedAt,
+		&xferID,
+		&o.WalletName, &o.CategoryName, &o.Currency,
+		&o.TransferWalletName,
+	); err != nil {
+		return err
+	}
+
+	if catID.Valid {
+		o.CategoryID = uuid.UUID(catID.Bytes)
+	}
+	if xferID.Valid {
+		id := uuid.UUID(xferID.Bytes)
+		o.TransferID = &id
+	}
+	return nil
+}
 
 func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]model.Operation, error) {
 	q := operationSelect + ` WHERE o.user_id = $1`
 	args := []any{f.UserID}
 	n := 2
 
-	if f.WalletID != 0 {
+	if f.WalletID != uuid.Nil {
 		q += fmt.Sprintf(" AND o.wallet_id = $%d", n)
 		args = append(args, f.WalletID)
 		n++
 	}
-	if f.CategoryID != 0 {
+	if f.CategoryID != uuid.Nil {
 		q += fmt.Sprintf(" AND o.category_id = $%d", n)
 		args = append(args, f.CategoryID)
 		n++
@@ -70,11 +103,7 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 	var ops []model.Operation
 	for rows.Next() {
 		var o model.Operation
-		if err := rows.Scan(
-			&o.ID, &o.UserID, &o.WalletID, &o.CategoryID, &o.Type,
-			&o.Amount, &o.OperatedAt, &o.Description, &o.CreatedAt,
-			&o.WalletName, &o.CategoryName, &o.Currency,
-		); err != nil {
+		if err := scanOperation(rows, &o); err != nil {
 			return nil, err
 		}
 		ops = append(ops, o)
@@ -82,32 +111,30 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 	return ops, rows.Err()
 }
 
-func (s *OperationStore) Create(ctx context.Context, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+func (s *OperationStore) Create(ctx context.Context, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	var o model.Operation
-	err := s.pool.QueryRow(ctx,
+	row := s.pool.QueryRow(ctx,
 		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at, description)
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at`,
+		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		           transfer_id,
+		           (SELECT name FROM wallets  WHERE id=$2),
+		           (SELECT name FROM categories WHERE id=$3),
+		           (SELECT currency FROM wallets WHERE id=$2),
+		           ''`,
 		userID, walletID, categoryID, opType, amount, operatedAt, description,
-	).Scan(
-		&o.ID, &o.UserID, &o.WalletID, &o.CategoryID, &o.Type,
-		&o.Amount, &o.OperatedAt, &o.Description, &o.CreatedAt,
 	)
-	if err != nil {
+	if err := scanOperation(row, &o); err != nil {
 		return nil, fmt.Errorf("OperationStore.Create: %w", err)
 	}
 	return &o, nil
 }
 
-func (s *OperationStore) GetByID(ctx context.Context, id, userID int64) (*model.Operation, error) {
+func (s *OperationStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Operation, error) {
 	var o model.Operation
-	err := s.pool.QueryRow(ctx,
-		operationSelect+` WHERE o.id=$1 AND o.user_id=$2`,
-		id, userID,
-	).Scan(
-		&o.ID, &o.UserID, &o.WalletID, &o.CategoryID, &o.Type,
-		&o.Amount, &o.OperatedAt, &o.Description, &o.CreatedAt,
-		&o.WalletName, &o.CategoryName, &o.Currency,
+	err := scanOperation(
+		s.pool.QueryRow(ctx, operationSelect+` WHERE o.id=$1 AND o.user_id=$2`, id, userID),
+		&o,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -118,18 +145,21 @@ func (s *OperationStore) GetByID(ctx context.Context, id, userID int64) (*model.
 	return &o, nil
 }
 
-func (s *OperationStore) Update(ctx context.Context, id, userID, walletID, categoryID int64, opType string, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
 	var o model.Operation
-	err := s.pool.QueryRow(ctx,
+	row := s.pool.QueryRow(ctx,
 		`UPDATE operations
 		 SET wallet_id=$1, category_id=$2, type=$3, amount=$4, operated_at=$5, description=$6
-		 WHERE id=$7 AND user_id=$8
-		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at`,
+		 WHERE id=$7 AND user_id=$8 AND transfer_id IS NULL
+		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		           transfer_id,
+		           (SELECT name FROM wallets     WHERE id=$1),
+		           (SELECT name FROM categories  WHERE id=$2),
+		           (SELECT currency FROM wallets WHERE id=$1),
+		           ''`,
 		walletID, categoryID, opType, amount, operatedAt, description, id, userID,
-	).Scan(
-		&o.ID, &o.UserID, &o.WalletID, &o.CategoryID, &o.Type,
-		&o.Amount, &o.OperatedAt, &o.Description, &o.CreatedAt,
 	)
+	err := scanOperation(row, &o)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -139,13 +169,77 @@ func (s *OperationStore) Update(ctx context.Context, id, userID, walletID, categ
 	return &o, nil
 }
 
-func (s *OperationStore) Delete(ctx context.Context, id, userID int64) error {
-	tag, err := s.pool.Exec(ctx, `DELETE FROM operations WHERE id=$1 AND user_id=$2`, id, userID)
+func (s *OperationStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	tag, err := s.pool.Exec(ctx,
+		`DELETE FROM operations WHERE id=$1 AND user_id=$2 AND transfer_id IS NULL`,
+		id, userID,
+	)
 	return checkRowsAffected(tag, err)
 }
 
-func (s *OperationStore) DashboardData(ctx context.Context, userID int64) ([]model.CategoryAmount, []model.MonthlyTotal, error) {
-	// Expenses by category (current month)
+func (s *OperationStore) CreateTransfer(
+	ctx context.Context,
+	userID uuid.UUID,
+	fromWalletID, toWalletID uuid.UUID,
+	amount float64,
+	operatedAt time.Time,
+	description string,
+) (*model.Operation, *model.Operation, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer begin: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	transferID := uuid.Must(uuid.NewV7())
+
+	insertSQL := `
+		INSERT INTO operations(user_id, wallet_id, type, amount, operated_at, description, transfer_id, transfer_wallet_id)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		          transfer_id,
+		          (SELECT name FROM wallets WHERE id=$2),
+		          '',
+		          (SELECT currency FROM wallets WHERE id=$2),
+		          (SELECT name FROM wallets WHERE id=$8)`
+
+	var expense model.Operation
+	if err := scanOperation(
+		tx.QueryRow(ctx, insertSQL, userID, fromWalletID, model.TypeExpense, amount, operatedAt, description, transferID, toWalletID),
+		&expense,
+	); err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer expense: %w", err)
+	}
+
+	var income model.Operation
+	if err := scanOperation(
+		tx.QueryRow(ctx, insertSQL, userID, toWalletID, model.TypeIncome, amount, operatedAt, description, transferID, fromWalletID),
+		&income,
+	); err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer income: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer commit: %w", err)
+	}
+	return &expense, &income, nil
+}
+
+func (s *OperationStore) DeleteTransfer(ctx context.Context, transferID uuid.UUID, userID uuid.UUID) error {
+	tag, err := s.pool.Exec(ctx,
+		`DELETE FROM operations WHERE transfer_id=$1 AND user_id=$2`,
+		transferID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("OperationStore.DeleteTransfer: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *OperationStore) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.CategoryAmount, []model.MonthlyTotal, error) {
 	catRows, err := s.pool.Query(ctx, `
 		SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
 		FROM categories c
@@ -172,7 +266,6 @@ func (s *OperationStore) DashboardData(ctx context.Context, userID int64) ([]mod
 		return nil, nil, err
 	}
 
-	// Monthly income vs expense (last 6 months)
 	monthRows, err := s.pool.Query(ctx, `
 		SELECT to_char(date_trunc('month', operated_at), 'YYYY-MM'),
 		       SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,9 +15,9 @@ type CategoryStore struct {
 	pool *pgxpool.Pool
 }
 
-func (s *CategoryStore) ListByUser(ctx context.Context, userID int64) ([]model.Category, error) {
+func (s *CategoryStore) ListByUser(ctx context.Context, userID uuid.UUID) ([]model.Category, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, user_id, name, type FROM categories
+		`SELECT id, user_id, name, type, description FROM categories
 		 WHERE user_id=$1 ORDER BY type, name`,
 		userID,
 	)
@@ -27,7 +28,7 @@ func (s *CategoryStore) ListByUser(ctx context.Context, userID int64) ([]model.C
 	var cats []model.Category
 	for rows.Next() {
 		var c model.Category
-		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.Type); err != nil {
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description); err != nil {
 			return nil, err
 		}
 		cats = append(cats, c)
@@ -35,9 +36,9 @@ func (s *CategoryStore) ListByUser(ctx context.Context, userID int64) ([]model.C
 	return cats, rows.Err()
 }
 
-func (s *CategoryStore) ListByType(ctx context.Context, userID int64, catType string) ([]model.Category, error) {
+func (s *CategoryStore) ListByType(ctx context.Context, userID uuid.UUID, catType model.OperationType) ([]model.Category, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, user_id, name, type FROM categories
+		`SELECT id, user_id, name, type, description FROM categories
 		 WHERE user_id=$1 AND type=$2 ORDER BY name`,
 		userID, catType,
 	)
@@ -48,7 +49,7 @@ func (s *CategoryStore) ListByType(ctx context.Context, userID int64, catType st
 	var cats []model.Category
 	for rows.Next() {
 		var c model.Category
-		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.Type); err != nil {
+		if err := rows.Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description); err != nil {
 			return nil, err
 		}
 		cats = append(cats, c)
@@ -56,25 +57,25 @@ func (s *CategoryStore) ListByType(ctx context.Context, userID int64, catType st
 	return cats, rows.Err()
 }
 
-func (s *CategoryStore) Create(ctx context.Context, userID int64, name, catType string) (*model.Category, error) {
+func (s *CategoryStore) Create(ctx context.Context, userID uuid.UUID, name string, catType model.OperationType, description string) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
-		`INSERT INTO categories(user_id, name, type) VALUES($1, $2, $3)
-		 RETURNING id, user_id, name, type`,
-		userID, name, catType,
-	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type)
+		`INSERT INTO categories(user_id, name, type, description) VALUES($1, $2, $3, $4)
+		 RETURNING id, user_id, name, type, description`,
+		userID, name, catType, description,
+	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description)
 	if err != nil {
 		return nil, fmt.Errorf("CategoryStore.Create: %w", err)
 	}
 	return &c, nil
 }
 
-func (s *CategoryStore) GetByID(ctx context.Context, id, userID int64) (*model.Category, error) {
+func (s *CategoryStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, user_id, name, type FROM categories WHERE id=$1 AND user_id=$2`,
+		`SELECT id, user_id, name, type, description FROM categories WHERE id=$1 AND user_id=$2`,
 		id, userID,
-	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type)
+	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -84,13 +85,13 @@ func (s *CategoryStore) GetByID(ctx context.Context, id, userID int64) (*model.C
 	return &c, nil
 }
 
-func (s *CategoryStore) Update(ctx context.Context, id, userID int64, name string) (*model.Category, error) {
+func (s *CategoryStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, description string) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
-		`UPDATE categories SET name=$1 WHERE id=$2 AND user_id=$3
-		 RETURNING id, user_id, name, type`,
-		name, id, userID,
-	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type)
+		`UPDATE categories SET name=$1, description=$2 WHERE id=$3 AND user_id=$4
+		 RETURNING id, user_id, name, type, description`,
+		name, description, id, userID,
+	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -100,7 +101,7 @@ func (s *CategoryStore) Update(ctx context.Context, id, userID int64, name strin
 	return &c, nil
 }
 
-func (s *CategoryStore) Delete(ctx context.Context, id, userID int64) error {
+func (s *CategoryStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM categories WHERE id=$1 AND user_id=$2`, id, userID)
 	return checkRowsAffected(tag, err)
 }

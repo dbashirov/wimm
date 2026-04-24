@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/dbashirov/wimm/migrations"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -69,16 +70,16 @@ func TestMain(m *testing.M) {
 func cleanDB(t *testing.T) {
 	t.Helper()
 	_, err := testPool.Exec(context.Background(),
-		`TRUNCATE users, sessions, wallets, categories, operations RESTART IDENTITY CASCADE`)
+		`TRUNCATE users, sessions, wallets, categories, operations CASCADE`)
 	if err != nil {
 		t.Fatalf("cleanDB: %v", err)
 	}
 }
 
 // createUser создаёт пользователя и возвращает его ID.
-func createUser(t *testing.T, email string) int64 {
+func createUser(t *testing.T, email string) uuid.UUID {
 	t.Helper()
-	var id int64
+	var id uuid.UUID
 	err := testPool.QueryRow(context.Background(),
 		`INSERT INTO users(email, password_hash) VALUES($1, 'x') RETURNING id`, email,
 	).Scan(&id)

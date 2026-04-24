@@ -29,17 +29,17 @@ var tmplFuncs = template.FuncMap{
 	"money": func(amount float64) string {
 		return fmt.Sprintf("%.2f", amount)
 	},
-	"typeLabel": func(t string) string {
+	"typeLabel": func(t model.OperationType) string {
 		if t == model.TypeIncome {
 			return "Доход"
 		}
 		return "Расход"
 	},
-	"typeClass": func(t string) string {
+	"typeClass": func(t model.OperationType) string {
 		if t == model.TypeIncome {
-			return model.TypeIncome
+			return string(model.TypeIncome)
 		}
-		return model.TypeExpense
+		return string(model.TypeExpense)
 	},
 	"add": func(a, b int) int { return a + b },
 }
@@ -108,6 +108,9 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("GET /operations/{id}/edit", h.auth(http.HandlerFunc(h.getOperationEdit)))
 	mux.Handle("PUT /operations/{id}", h.auth(http.HandlerFunc(h.putOperation)))
 	mux.Handle("DELETE /operations/{id}", h.auth(http.HandlerFunc(h.deleteOperation)))
+
+	mux.Handle("POST /transfers", h.auth(http.HandlerFunc(h.postTransfer)))
+	mux.Handle("DELETE /transfers/{transfer_id}", h.auth(http.HandlerFunc(h.deleteTransfer)))
 
 	return mux
 }

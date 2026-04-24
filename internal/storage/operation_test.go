@@ -7,20 +7,21 @@ import (
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
+	"github.com/google/uuid"
 )
 
 // fixture создаёт пользователя, кошелёк и категорию, возвращает их ID.
-func opFixture(t *testing.T, email string) (userID, walletID, categoryID int64) {
+func opFixture(t *testing.T, email string) (userID uuid.UUID, walletID, categoryID uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
 	s := storage.NewFromPool(testPool)
 
 	userID = createUser(t, email)
-	w, err := s.Wallets.Create(ctx, userID, "Main", "RUB")
+	w, err := s.Wallets.Create(ctx, userID, "Main", "RUB", "")
 	if err != nil {
 		t.Fatalf("fixture wallet: %v", err)
 	}
-	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense)
+	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense, "")
 	if err != nil {
 		t.Fatalf("fixture category: %v", err)
 	}
@@ -74,7 +75,7 @@ func TestOperationStore_List_FilterByWallet(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID, walletID, catID := opFixture(t, "oplist@test.com")
-	w2, _ := s.Wallets.Create(ctx, userID, "Second", "USD")
+	w2, _ := s.Wallets.Create(ctx, userID, "Second", "USD", "")
 
 	now := time.Now()
 	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, now, "") //nolint:errcheck

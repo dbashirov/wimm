@@ -1,33 +1,321 @@
-/* Minimal custom styles — Tailwind + DaisyUI handle the rest */
+/* =====================================================
+   WIMM Design System
+   ===================================================== */
 
 body {
   font-family: 'Inter', sans-serif;
 }
 
-/* Active nav link highlight */
-.menu a[href]:is([href="/dashboard"]:has(~ :not(*)),
-                 [href="/wallets"],
-                 [href="/categories"],
-                 [href="/operations"]) {
-  /* handled by Tailwind active states */
+/* ── Dark Theme ── */
+[data-theme="dark"] {
+  --color-base-100: oklch(13% 0.015 260);
+  --color-base-200: oklch(10.5% 0.015 260);
+  --color-base-300: oklch(8.5%  0.015 260);
+  --color-base-content: oklch(85% 0.038 255);
+  --color-primary: oklch(62% 0.20 268);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(52% 0.17 268);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-neutral: oklch(20% 0.018 260);
+  --color-neutral-content: oklch(85% 0.038 255);
+  --color-info:    oklch(65% 0.15 240);
+  --color-info-content: oklch(10% 0 0);
+  --color-success: oklch(75% 0.17 162);
+  --color-success-content: oklch(10% 0 0);
+  --color-warning: oklch(80% 0.15 80);
+  --color-warning-content: oklch(10% 0 0);
+  --color-error:   oklch(68% 0.19 22);
+  --color-error-content: oklch(100% 0 0);
+  --radius-box: 0.75rem;
+  --radius-field: 0.5rem;
+  --radius-selector: 0.5rem;
 }
 
-/* Smooth theme transition */
+/* ── Light Theme ── */
+[data-theme="light"] {
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97% 0.008 255);
+  --color-base-300: oklch(92% 0.012 255);
+  --color-base-content: oklch(17% 0.025 260);
+  --color-primary: oklch(52% 0.20 268);
+  --color-primary-content: oklch(100% 0 0);
+  --color-success: oklch(52% 0.17 162);
+  --color-success-content: oklch(100% 0 0);
+  --color-error: oklch(50% 0.22 22);
+  --color-error-content: oklch(100% 0 0);
+  --radius-box: 0.75rem;
+  --radius-field: 0.5rem;
+  --radius-selector: 0.5rem;
+}
+
+/* ── Navbar ── */
+.navbar {
+  border-bottom: 1px solid color-mix(in oklch, var(--color-base-content) 7%, transparent);
+  min-height: 3.5rem;
+}
+
+[data-theme="dark"] .navbar {
+  background-color: color-mix(in oklch, var(--color-base-300) 85%, transparent) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Active nav link */
+.nav-link-active {
+  color: var(--color-primary) !important;
+  background-color: color-mix(in oklch, var(--color-primary) 12%, transparent);
+}
+
+/* ── Primary Button ── */
+.btn-primary {
+  box-shadow: 0 2px 12px color-mix(in oklch, var(--color-primary) 35%, transparent);
+  transition: box-shadow 0.2s, transform 0.1s;
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 20px color-mix(in oklch, var(--color-primary) 50%, transparent);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 6px color-mix(in oklch, var(--color-primary) 30%, transparent);
+}
+
+/* Ghost/icon buttons in table rows */
+.btn-action {
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border-radius: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-action:hover {
+  background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+.btn-action-danger {
+  color: var(--color-error);
+}
+.btn-action-danger:hover {
+  background-color: color-mix(in oklch, var(--color-error) 10%, transparent);
+}
+
+/* ── Cards ── */
+.card {
+  border-radius: var(--radius-box);
+}
+
+[data-theme="dark"] .card {
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
+  box-shadow: 0 2px 12px color-mix(in oklch, oklch(0% 0 0) 20%, transparent);
+}
+
+[data-theme="light"] .card {
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 7%, transparent);
+  box-shadow: 0 1px 8px color-mix(in oklch, var(--color-base-content) 5%, transparent),
+              0 4px 24px color-mix(in oklch, var(--color-base-content) 3%, transparent);
+}
+
+/* ── Inputs & Selects ── */
+.input, .select {
+  border-radius: var(--radius-field);
+}
+
+[data-theme="dark"] .input,
+[data-theme="dark"] .select,
+[data-theme="dark"] .textarea {
+  border-color: color-mix(in oklch, var(--color-base-content) 13%, transparent);
+  background-color: color-mix(in oklch, var(--color-base-300) 80%, transparent);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+[data-theme="dark"] .input:focus,
+[data-theme="dark"] .select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 18%, transparent);
+}
+
+[data-theme="light"] .input:focus,
+[data-theme="light"] .select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 12%, transparent);
+}
+
+/* ── Table ── */
+.table th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+[data-theme="dark"] .table th {
+  color: oklch(42% 0.02 260);
+  border-bottom-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+
+[data-theme="dark"] .table td {
+  border-bottom-color: color-mix(in oklch, var(--color-base-content) 5%, transparent);
+}
+
+.table td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+[data-theme="dark"] .table tr.hover:hover td,
+[data-theme="dark"] .table tbody tr:hover td {
+  background-color: color-mix(in oklch, var(--color-base-content) 3%, transparent);
+}
+
+/* ── Badges ── */
+[data-theme="dark"] .badge-success {
+  background-color: color-mix(in oklch, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+  border-color: color-mix(in oklch, var(--color-success) 25%, transparent);
+}
+
+[data-theme="dark"] .badge-error {
+  background-color: color-mix(in oklch, var(--color-error) 15%, transparent);
+  color: var(--color-error);
+  border-color: color-mix(in oklch, var(--color-error) 25%, transparent);
+}
+
+[data-theme="dark"] .badge-ghost {
+  background-color: color-mix(in oklch, var(--color-base-content) 9%, transparent);
+  border-color: color-mix(in oklch, var(--color-base-content) 14%, transparent);
+}
+
+/* ── Collapse / Details ── */
+[data-theme="dark"] .collapse {
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+
+/* ── Alert ── */
+[data-theme="dark"] .alert {
+  background-color: color-mix(in oklch, var(--color-base-content) 4%, transparent);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+
+/* ── Logo gradient ── */
+.logo-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .logo-text {
+  background: linear-gradient(135deg, var(--color-primary), oklch(44% 0.20 268));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Auth page radial glow ── */
+.auth-bg {
+  background: radial-gradient(
+    ellipse 90% 40% at 50% -10%,
+    color-mix(in oklch, var(--color-primary) 18%, transparent),
+    transparent
+  );
+}
+
+/* ── Wallet cards ── */
+.wallet-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.wallet-card:hover {
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .wallet-card:hover {
+  box-shadow: 0 8px 32px color-mix(in oklch, oklch(0% 0 0) 40%, transparent);
+}
+
+[data-theme="dark"] .wallet-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--color-primary) 65%, transparent),
+    transparent
+  );
+}
+
+/* ── Section header in card ── */
+.card-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-base-content);
+  margin-bottom: 1rem;
+}
+
+/* ── Page header ── */
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+  margin-top: 0.2rem;
+}
+
+/* ── Smooth theme transition ── */
 html {
   transition: background-color 0.2s, color 0.2s;
 }
 
-/* htmx loading indicator */
+/* ── htmx loading ── */
 .htmx-indicator { opacity: 0; transition: opacity 0.2s; }
 .htmx-request .htmx-indicator { opacity: 1; }
 
-/* Table row add animation */
+/* ── New row fade-in ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 #wallets-tbody tr:first-child,
 #categories-tbody tr:first-child,
 #operations-tbody tr:first-child {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* ── Form row spacing ── */
+.form-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+  margin-bottom: 0.4rem;
+  display: block;
+  letter-spacing: 0.01em;
+}
+
+/* ── Tabs (for operations form) ── */
+[data-theme="dark"] .tabs-bordered .tab {
+  border-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+[data-theme="dark"] .tab:is(.tab-active, [aria-selected=true]) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
