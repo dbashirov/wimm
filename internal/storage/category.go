@@ -36,7 +36,11 @@ func (s *CategoryStore) ListByUser(ctx context.Context, userID uuid.UUID) ([]mod
 	return cats, rows.Err()
 }
 
-func (s *CategoryStore) ListByType(ctx context.Context, userID uuid.UUID, catType model.OperationType) ([]model.Category, error) {
+func (s *CategoryStore) ListByType(
+	ctx context.Context,
+	userID uuid.UUID,
+	catType model.OperationType,
+) ([]model.Category, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT id, user_id, name, type, description FROM categories
 		 WHERE user_id=$1 AND type=$2 ORDER BY name`,
@@ -57,7 +61,11 @@ func (s *CategoryStore) ListByType(ctx context.Context, userID uuid.UUID, catTyp
 	return cats, rows.Err()
 }
 
-func (s *CategoryStore) Create(ctx context.Context, userID uuid.UUID, inp model.CategoryInput) (*model.Category, error) {
+func (s *CategoryStore) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.CategoryInput,
+) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO categories(user_id, name, type, description) VALUES($1, $2, $3, $4)
@@ -70,7 +78,11 @@ func (s *CategoryStore) Create(ctx context.Context, userID uuid.UUID, inp model.
 	return &c, nil
 }
 
-func (s *CategoryStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Category, error) {
+func (s *CategoryStore) GetByID(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
 		`SELECT id, user_id, name, type, description FROM categories WHERE id=$1 AND user_id=$2`,
@@ -85,7 +97,12 @@ func (s *CategoryStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.U
 	return &c, nil
 }
 
-func (s *CategoryStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, description string) (*model.Category, error) {
+func (s *CategoryStore) Update(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	name, description string,
+) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
 		`UPDATE categories SET name=$1, description=$2 WHERE id=$3 AND user_id=$4
@@ -101,7 +118,11 @@ func (s *CategoryStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UU
 	return &c, nil
 }
 
-func (s *CategoryStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (s *CategoryStore) Delete(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM categories WHERE id=$1 AND user_id=$2`, id, userID)
 	return checkRowsAffected(tag, err)
 }

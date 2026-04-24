@@ -85,9 +85,18 @@ func TestOperationStore_List_FilterByWallet(t *testing.T) {
 	w2, _ := s.Wallets.Create(ctx, userID, model.WalletInput{Name: "Second", Currency: "USD"})
 
 	now := time.Now()
-	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 100, OperatedAt: now}) //nolint:errcheck
-	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 200, OperatedAt: now}) //nolint:errcheck
-	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: w2.ID, CategoryID: catID, Type: model.TypeExpense, Amount: 300, OperatedAt: now})    //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{ //nolint:errcheck
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: now,
+	})
+	s.Operations.Create(ctx, userID, model.OperationInput{ //nolint:errcheck
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 200, OperatedAt: now,
+	})
+	s.Operations.Create(ctx, userID, model.OperationInput{ //nolint:errcheck
+		WalletID: w2.ID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 300, OperatedAt: now,
+	})
 
 	ops, err := s.Operations.List(ctx, model.OperationFilter{UserID: userID, WalletID: walletID})
 	if err != nil {
@@ -108,8 +117,16 @@ func TestOperationStore_List_FilterByDateRange(t *testing.T) {
 	yesterday := today.AddDate(0, 0, -1)
 	tomorrow := today.AddDate(0, 0, 1)
 
-	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 100, OperatedAt: yesterday, Description: "yesterday"}) //nolint:errcheck
-	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 200, OperatedAt: today, Description: "today"})         //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{ //nolint:errcheck
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 100,
+		OperatedAt: yesterday, Description: "yesterday",
+	})
+	s.Operations.Create(ctx, userID, model.OperationInput{ //nolint:errcheck
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 200,
+		OperatedAt: today, Description: "today",
+	})
 
 	// Фильтр: только сегодня (DateTo = начало завтра, SQL: < DateTo)
 	ops, err := s.Operations.List(ctx, model.OperationFilter{
@@ -134,9 +151,18 @@ func TestOperationStore_List_IsolatesByUser(t *testing.T) {
 	u2, w2, c2 := opFixture(t, "opiso2@test.com")
 
 	now := time.Now()
-	s.Operations.Create(ctx, u1, model.OperationInput{WalletID: w1, CategoryID: c1, Type: model.TypeExpense, Amount: 100, OperatedAt: now}) //nolint:errcheck
-	s.Operations.Create(ctx, u1, model.OperationInput{WalletID: w1, CategoryID: c1, Type: model.TypeExpense, Amount: 200, OperatedAt: now}) //nolint:errcheck
-	s.Operations.Create(ctx, u2, model.OperationInput{WalletID: w2, CategoryID: c2, Type: model.TypeExpense, Amount: 300, OperatedAt: now}) //nolint:errcheck
+	s.Operations.Create(ctx, u1, model.OperationInput{ //nolint:errcheck
+		WalletID: w1, CategoryID: c1,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: now,
+	})
+	s.Operations.Create(ctx, u1, model.OperationInput{ //nolint:errcheck
+		WalletID: w1, CategoryID: c1,
+		Type: model.TypeExpense, Amount: 200, OperatedAt: now,
+	})
+	s.Operations.Create(ctx, u2, model.OperationInput{ //nolint:errcheck
+		WalletID: w2, CategoryID: c2,
+		Type: model.TypeExpense, Amount: 300, OperatedAt: now,
+	})
 
 	ops, _ := s.Operations.List(ctx, model.OperationFilter{UserID: u1})
 	if len(ops) != 2 {

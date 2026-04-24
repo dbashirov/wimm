@@ -82,7 +82,11 @@ func (s *WalletStore) Create(ctx context.Context, userID uuid.UUID, inp model.Wa
 	return &w, nil
 }
 
-func (s *WalletStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Wallet, error) {
+func (s *WalletStore) GetByID(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
 		`SELECT id, user_id, name, currency, description, created_at
@@ -98,7 +102,12 @@ func (s *WalletStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUI
 	return &w, nil
 }
 
-func (s *WalletStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
+func (s *WalletStore) Update(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	inp model.WalletInput,
+) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
 		`UPDATE wallets SET name=$1, currency=$2, description=$3
@@ -115,7 +124,11 @@ func (s *WalletStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID
 	return &w, nil
 }
 
-func (s *WalletStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (s *WalletStore) Delete(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM wallets WHERE id=$1 AND user_id=$2`, id, userID)
 	return checkRowsAffected(tag, err)
 }

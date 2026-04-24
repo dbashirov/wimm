@@ -110,7 +110,11 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 	return ops, rows.Err()
 }
 
-func (s *OperationStore) Create(ctx context.Context, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+func (s *OperationStore) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.OperationInput,
+) (*model.Operation, error) {
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
 		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at, description)
@@ -129,7 +133,11 @@ func (s *OperationStore) Create(ctx context.Context, userID uuid.UUID, inp model
 	return &o, nil
 }
 
-func (s *OperationStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Operation, error) {
+func (s *OperationStore) GetByID(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Operation, error) {
 	var o model.Operation
 	err := scanOperation(
 		s.pool.QueryRow(ctx, operationSelect+` WHERE o.id=$1 AND o.user_id=$2`, id, userID),
@@ -144,7 +152,12 @@ func (s *OperationStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.
 	return &o, nil
 }
 
-func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+func (s *OperationStore) Update(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	inp model.OperationInput,
+) (*model.Operation, error) {
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
 		`UPDATE operations
@@ -168,7 +181,11 @@ func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.U
 	return &o, nil
 }
 
-func (s *OperationStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (s *OperationStore) Delete(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) error {
 	tag, err := s.pool.Exec(ctx,
 		`DELETE FROM operations WHERE id=$1 AND user_id=$2 AND transfer_id IS NULL`,
 		id, userID,
@@ -176,7 +193,11 @@ func (s *OperationStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.U
 	return checkRowsAffected(tag, err)
 }
 
-func (s *OperationStore) CreateTransfer(ctx context.Context, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
+func (s *OperationStore) CreateTransfer(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.TransferInput,
+) (*model.Operation, *model.Operation, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer begin: %w", err)
@@ -221,7 +242,11 @@ func (s *OperationStore) CreateTransfer(ctx context.Context, userID uuid.UUID, i
 	return &expense, &income, nil
 }
 
-func (s *OperationStore) DeleteTransfer(ctx context.Context, transferID uuid.UUID, userID uuid.UUID) error {
+func (s *OperationStore) DeleteTransfer(
+	ctx context.Context,
+	transferID uuid.UUID,
+	userID uuid.UUID,
+) error {
 	tag, err := s.pool.Exec(ctx,
 		`DELETE FROM operations WHERE transfer_id=$1 AND user_id=$2`,
 		transferID, userID,
@@ -235,7 +260,10 @@ func (s *OperationStore) DeleteTransfer(ctx context.Context, transferID uuid.UUI
 	return nil
 }
 
-func (s *OperationStore) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.CategoryAmount, []model.MonthlyTotal, error) {
+func (s *OperationStore) DashboardData(
+	ctx context.Context,
+	userID uuid.UUID,
+) ([]model.CategoryAmount, []model.MonthlyTotal, error) {
 	catRows, err := s.pool.Query(ctx, `
 		SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
 		FROM categories c

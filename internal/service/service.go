@@ -103,7 +103,12 @@ func (s *Service) GetWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID)
 	return w, err
 }
 
-func (s *Service) UpdateWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
+func (s *Service) UpdateWallet(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	inp model.WalletInput,
+) (*model.Wallet, error) {
 	w, err := s.wallets.Update(ctx, id, userID, inp)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -121,11 +126,19 @@ func (s *Service) ListCategories(ctx context.Context, userID uuid.UUID) ([]model
 	return s.categories.ListByUser(ctx, userID)
 }
 
-func (s *Service) ListCategoriesByType(ctx context.Context, userID uuid.UUID, catType model.OperationType) ([]model.Category, error) {
+func (s *Service) ListCategoriesByType(
+	ctx context.Context,
+	userID uuid.UUID,
+	catType model.OperationType,
+) ([]model.Category, error) {
 	return s.categories.ListByType(ctx, userID, catType)
 }
 
-func (s *Service) CreateCategory(ctx context.Context, userID uuid.UUID, inp model.CategoryInput) (*model.Category, error) {
+func (s *Service) CreateCategory(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.CategoryInput,
+) (*model.Category, error) {
 	return s.categories.Create(ctx, userID, inp)
 }
 
@@ -137,7 +150,12 @@ func (s *Service) GetCategory(ctx context.Context, id uuid.UUID, userID uuid.UUI
 	return c, err
 }
 
-func (s *Service) UpdateCategory(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, description string) (*model.Category, error) {
+func (s *Service) UpdateCategory(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	name, description string,
+) (*model.Category, error) {
 	c, err := s.categories.Update(ctx, id, userID, name, description)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -155,7 +173,11 @@ func (s *Service) ListOperations(ctx context.Context, filter model.OperationFilt
 	return s.operations.List(ctx, filter)
 }
 
-func (s *Service) CreateOperation(ctx context.Context, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+func (s *Service) CreateOperation(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.OperationInput,
+) (*model.Operation, error) {
 	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
@@ -183,7 +205,12 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID, userID uuid.UU
 	return o, err
 }
 
-func (s *Service) UpdateOperation(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+func (s *Service) UpdateOperation(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+	inp model.OperationInput,
+) (*model.Operation, error) {
 	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
@@ -211,7 +238,11 @@ func (s *Service) DeleteOperation(ctx context.Context, id uuid.UUID, userID uuid
 	return wrapNotFound(s.operations.Delete(ctx, id, userID))
 }
 
-func (s *Service) CreateTransfer(ctx context.Context, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
+func (s *Service) CreateTransfer(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.TransferInput,
+) (*model.Operation, *model.Operation, error) {
 	if inp.FromWalletID == inp.ToWalletID {
 		return nil, nil, ErrSameWallet
 	}
