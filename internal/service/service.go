@@ -272,13 +272,19 @@ func (s *Service) DashboardData(ctx context.Context, userID uuid.UUID) (*model.D
 	if err != nil {
 		return nil, err
 	}
-	cats, monthly, err := s.operations.DashboardData(ctx, userID)
+	expenses, incomes, monthly, err := s.operations.DashboardData(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
+	var total float64
+	for _, w := range wallets {
+		total += w.Balance
+	}
 	return &model.DashboardData{
 		WalletBalances:   wallets,
-		CategoryExpenses: cats,
+		TotalBalance:     total,
+		CategoryExpenses: expenses,
+		CategoryIncomes:  incomes,
 		MonthlyTotals:    monthly,
 	}, nil
 }

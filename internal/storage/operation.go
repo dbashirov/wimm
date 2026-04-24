@@ -260,58 +260,94 @@ func (s *OperationStore) DeleteTransfer(
 	return nil
 }
 
+const catAmountSQL = `
+	SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
+	FROM categories c
+	JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
+	WHERE c.user_id = $1 AND o.type = $2
+	  AND date_trunc('month', o.operated_at) = date_trunc('month', CURRENT_DATE)
+	GROUP BY c.name
+	ORDER BY SUM(o.amount) DESC`
+
+func scanCatAmounts(rows interface {
+	Next() bool
+	Scan(...any) error
+	Err() error
+	Close()
+}, label string) ([]model.CategoryAmount, error) {
+	defer rows.Close()
+	var out []model.CategoryAmount
+	for rows.Next() {
+		var ca model.CategoryAmount
+		if err := rows.Scan(&ca.Name, &ca.Amount); err != nil {
+			return nil, fmt.Errorf("DashboardData %s scan: %w", label, err)
+		}
+		out = append(out, ca)
+	}
+	return out, rows.Err()
+}
+
 func (s *OperationStore) DashboardData(
 	ctx context.Context,
 	userID uuid.UUID,
-) ([]model.CategoryAmount, []model.MonthlyTotal, error) {
-	catRows, err := s.pool.Query(ctx, `
-		SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
-		FROM categories c
-		JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
-		WHERE c.user_id = $1 AND o.type = $2
-		  AND date_trunc('month', o.operated_at) = date_trunc('month', CURRENT_DATE)
-		GROUP BY c.name
-		ORDER BY SUM(o.amount) DESC`,
-		userID, model.TypeExpense,
-	)
+) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error) {
+	expRows, err := s.pool.Query(ctx, catAmountSQL, userID, model.TypeExpense)
 	if err != nil {
-		return nil, nil, fmt.Errorf("DashboardData categories: %w", err)
+		return nil, nil, nil, fmt.Errorf("DashboardData expenses: %w", err)
 	}
-	defer catRows.Close()
-	var catAmounts []model.CategoryAmount
-	for catRows.Next() {
-		var ca model.CategoryAmount
-		if err := catRows.Scan(&ca.Name, &ca.Amount); err != nil {
-			return nil, nil, err
-		}
-		catAmounts = append(catAmounts, ca)
+	expenses, err := scanCatAmounts(expRows, "expenses")
+	if err != nil {
+		return nil, nil, nil, err
 	}
-	if err := catRows.Err(); err != nil {
-		return nil, nil, err
+
+	incRows, err := s.pool.Query(ctx, catAmountSQL, userID, model.TypeIncome)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("DashboardData incomes: %w", err)
+	}
+	incomes, err := scanCatAmounts(incRows, "incomes")
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	monthRows, err := s.pool.Query(ctx, `
-		SELECT to_char(date_trunc('month', operated_at), 'YYYY-MM'),
-		       SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8,
-		       SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8
-		FROM operations
-		WHERE user_id = $1
-		  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '5 months'
-		GROUP BY date_trunc('month', operated_at)
-		ORDER BY date_trunc('month', operated_at)`,
+		WITH monthly AS (
+			SELECT
+				date_trunc('month', operated_at) AS month,
+				SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8 AS income,
+				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
+			FROM operations
+			WHERE user_id = $1
+			  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+			GROUP BY date_trunc('month', operated_at)
+		),
+		pre AS (
+			SELECT COALESCE(
+				SUM(CASE WHEN type=$2 THEN amount ELSE -amount END), 0
+			)::float8 AS base
+			FROM operations
+			WHERE user_id = $1
+			  AND operated_at < date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+		)
+		SELECT
+			to_char(m.month, 'YYYY-MM'),
+			m.income,
+			m.expense,
+			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::float8
+		FROM monthly m
+		ORDER BY m.month`,
 		userID, model.TypeIncome, model.TypeExpense,
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("DashboardData monthly: %w", err)
+		return nil, nil, nil, fmt.Errorf("DashboardData monthly: %w", err)
 	}
 	defer monthRows.Close()
 	var monthly []model.MonthlyTotal
 	for monthRows.Next() {
 		var mt model.MonthlyTotal
-		if err := monthRows.Scan(&mt.Month, &mt.Income, &mt.Expense); err != nil {
-			return nil, nil, err
+		if err := monthRows.Scan(&mt.Month, &mt.Income, &mt.Expense, &mt.Balance); err != nil {
+			return nil, nil, nil, err
 		}
 		monthly = append(monthly, mt)
 	}
-	return catAmounts, monthly, monthRows.Err()
+	return expenses, incomes, monthly, monthRows.Err()
 }

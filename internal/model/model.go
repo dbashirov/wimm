@@ -123,7 +123,9 @@ type TransferInput struct {
 
 type DashboardData struct {
 	WalletBalances   []WalletBalance
+	TotalBalance     float64
 	CategoryExpenses []CategoryAmount
+	CategoryIncomes  []CategoryAmount
 	MonthlyTotals    []MonthlyTotal
 }
 
@@ -136,4 +138,5 @@ type MonthlyTotal struct {
 	Month   string
 	Income  float64
 	Expense float64
+	Balance float64 // нарастающий итог на конец месяца
 }
