@@ -88,6 +88,39 @@ type OperationFilter struct {
 	Page       int
 }
 
+// WalletInput — данные для создания/обновления кошелька.
+type WalletInput struct {
+	Name        string
+	Currency    string
+	Description string
+}
+
+// CategoryInput — данные для создания категории.
+type CategoryInput struct {
+	Name        string
+	Type        OperationType
+	Description string
+}
+
+// OperationInput — данные для создания/обновления операции.
+type OperationInput struct {
+	WalletID    uuid.UUID
+	CategoryID  uuid.UUID
+	Type        OperationType
+	Amount      float64
+	OperatedAt  time.Time
+	Description string
+}
+
+// TransferInput — данные для создания перевода.
+type TransferInput struct {
+	FromWalletID uuid.UUID
+	ToWalletID   uuid.UUID
+	Amount       float64
+	OperatedAt   time.Time
+	Description  string
+}
+
 type DashboardData struct {
 	WalletBalances   []WalletBalance
 	CategoryExpenses []CategoryAmount

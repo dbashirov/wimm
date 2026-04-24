@@ -145,7 +145,8 @@ func TestCreateOperation_WalletNotFound(t *testing.T) {
 
 	wallets.EXPECT().GetByID(ctx, wID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, uID1, wID99, cID10, model.TypeExpense, 100, time.Now(), "")
+	inp := model.OperationInput{WalletID: wID99, CategoryID: cID10, Type: model.TypeExpense, Amount: 100}
+	_, err := svc.CreateOperation(ctx, uID1, inp)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -157,7 +158,8 @@ func TestCreateOperation_CategoryNotFound(t *testing.T) {
 	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
 	cats.EXPECT().GetByID(ctx, cID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.CreateOperation(ctx, uID1, wID1, cID99, model.TypeExpense, 100, time.Now(), "")
+	inp := model.OperationInput{WalletID: wID1, CategoryID: cID99, Type: model.TypeExpense, Amount: 100}
+	_, err := svc.CreateOperation(ctx, uID1, inp)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -169,7 +171,8 @@ func TestCreateOperation_WrongCategoryType(t *testing.T) {
 	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
 	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.CreateOperation(ctx, uID1, wID1, cID1, model.TypeExpense, 100, time.Now(), "")
+	inp := model.OperationInput{WalletID: wID1, CategoryID: cID1, Type: model.TypeExpense, Amount: 100}
+	_, err := svc.CreateOperation(ctx, uID1, inp)
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -182,12 +185,15 @@ func TestCreateOperation_Success(t *testing.T) {
 	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
 	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeExpense}, nil)
 
+	inp := model.OperationInput{
+		WalletID: wID1, CategoryID: cID1,
+		Type: model.TypeExpense, Amount: 100,
+		OperatedAt: now, Description: "coffee",
+	}
 	want := &model.Operation{ID: opID1, UserID: uID1, WalletID: wID1, CategoryID: cID1, Type: model.TypeExpense, Amount: 100}
-	ops.EXPECT().
-		Create(ctx, uID1, wID1, cID1, model.TypeExpense, float64(100), now, "coffee").
-		Return(want, nil)
+	ops.EXPECT().Create(ctx, uID1, inp).Return(want, nil)
 
-	got, err := svc.CreateOperation(ctx, uID1, wID1, cID1, model.TypeExpense, 100, now, "coffee")
+	got, err := svc.CreateOperation(ctx, uID1, inp)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -203,7 +209,8 @@ func TestUpdateOperation_WalletNotFound(t *testing.T) {
 
 	wallets.EXPECT().GetByID(ctx, wID99, uID1).Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, opID5, uID1, wID99, cID10, model.TypeExpense, 100, time.Now(), "")
+	inp := model.OperationInput{WalletID: wID99, CategoryID: cID10, Type: model.TypeExpense, Amount: 100}
+	_, err := svc.UpdateOperation(ctx, opID5, uID1, inp)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -215,7 +222,8 @@ func TestUpdateOperation_WrongCategoryType(t *testing.T) {
 	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
 	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeIncome}, nil)
 
-	_, err := svc.UpdateOperation(ctx, opID5, uID1, wID1, cID1, model.TypeExpense, 100, time.Now(), "")
+	inp := model.OperationInput{WalletID: wID1, CategoryID: cID1, Type: model.TypeExpense, Amount: 100}
+	_, err := svc.UpdateOperation(ctx, opID5, uID1, inp)
 	if !errors.Is(err, service.ErrWrongCategoryType) {
 		t.Errorf("got %v, want ErrWrongCategoryType", err)
 	}
@@ -227,11 +235,14 @@ func TestUpdateOperation_OperationNotFound(t *testing.T) {
 	now := time.Now()
 	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
 	cats.EXPECT().GetByID(ctx, cID1, uID1).Return(&model.Category{ID: cID1, Type: model.TypeExpense}, nil)
-	ops.EXPECT().
-		Update(ctx, opID99, uID1, wID1, cID1, model.TypeExpense, float64(100), now, "").
-		Return(nil, storage.ErrNotFound)
 
-	_, err := svc.UpdateOperation(ctx, opID99, uID1, wID1, cID1, model.TypeExpense, 100, now, "")
+	inp := model.OperationInput{
+		WalletID: wID1, CategoryID: cID1,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: now,
+	}
+	ops.EXPECT().Update(ctx, opID99, uID1, inp).Return(nil, storage.ErrNotFound)
+
+	_, err := svc.UpdateOperation(ctx, opID99, uID1, inp)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}

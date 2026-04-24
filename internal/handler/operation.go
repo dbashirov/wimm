@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -73,30 +74,13 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 
-	walletID, err := uuid.Parse(r.FormValue("wallet_id"))
+	inp, err := parseOperationInput(r)
 	if err != nil {
-		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	categoryID, err := uuid.Parse(r.FormValue("category_id"))
-	if err != nil {
-		http.Error(w, "invalid category_id", http.StatusBadRequest)
-		return
-	}
-	opType := model.OperationType(r.FormValue("type"))
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil || amount <= 0 {
-		http.Error(w, "invalid amount", http.StatusBadRequest)
-		return
-	}
-	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
-	if err != nil {
-		http.Error(w, "invalid date", http.StatusBadRequest)
-		return
-	}
-	description := r.FormValue("description")
 
-	op, err := h.svc.CreateOperation(r.Context(), userID, walletID, categoryID, opType, amount, operatedAt, description)
+	op, err := h.svc.CreateOperation(r.Context(), userID, inp)
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
@@ -110,7 +94,6 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch joined data for the partial
 	full, err := h.svc.GetOperation(r.Context(), op.ID, userID)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -174,30 +157,13 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	walletID, err := uuid.Parse(r.FormValue("wallet_id"))
+	inp, err := parseOperationInput(r)
 	if err != nil {
-		http.Error(w, "invalid wallet_id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	categoryID, err := uuid.Parse(r.FormValue("category_id"))
-	if err != nil {
-		http.Error(w, "invalid category_id", http.StatusBadRequest)
-		return
-	}
-	opType := model.OperationType(r.FormValue("type"))
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil || amount <= 0 {
-		http.Error(w, "invalid amount", http.StatusBadRequest)
-		return
-	}
-	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
-	if err != nil {
-		http.Error(w, "invalid date", http.StatusBadRequest)
-		return
-	}
-	description := r.FormValue("description")
 
-	op, err := h.svc.UpdateOperation(r.Context(), id, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	op, err := h.svc.UpdateOperation(r.Context(), id, userID, inp)
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
@@ -236,29 +202,13 @@ func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 
-	fromID, err := uuid.Parse(r.FormValue("from_wallet_id"))
+	inp, err := parseTransferInput(r)
 	if err != nil {
-		http.Error(w, "invalid from_wallet_id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	toID, err := uuid.Parse(r.FormValue("to_wallet_id"))
-	if err != nil {
-		http.Error(w, "invalid to_wallet_id", http.StatusBadRequest)
-		return
-	}
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil || amount <= 0 {
-		http.Error(w, "invalid amount", http.StatusBadRequest)
-		return
-	}
-	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
-	if err != nil {
-		http.Error(w, "invalid date", http.StatusBadRequest)
-		return
-	}
-	description := r.FormValue("description")
 
-	expense, income, err := h.svc.CreateTransfer(r.Context(), userID, fromID, toID, amount, operatedAt, description)
+	expense, income, err := h.svc.CreateTransfer(r.Context(), userID, inp)
 	if err != nil {
 		if errors.Is(err, service.ErrSameWallet) {
 			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
@@ -289,6 +239,59 @@ func (h *Handler) deleteTransfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func parseOperationInput(r *http.Request) (model.OperationInput, error) {
+	walletID, err := uuid.Parse(r.FormValue("wallet_id"))
+	if err != nil {
+		return model.OperationInput{}, fmt.Errorf("invalid wallet_id")
+	}
+	categoryID, err := uuid.Parse(r.FormValue("category_id"))
+	if err != nil {
+		return model.OperationInput{}, fmt.Errorf("invalid category_id")
+	}
+	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
+	if err != nil || amount <= 0 {
+		return model.OperationInput{}, fmt.Errorf("invalid amount")
+	}
+	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
+	if err != nil {
+		return model.OperationInput{}, fmt.Errorf("invalid date")
+	}
+	return model.OperationInput{
+		WalletID:    walletID,
+		CategoryID:  categoryID,
+		Type:        model.OperationType(r.FormValue("type")),
+		Amount:      amount,
+		OperatedAt:  operatedAt,
+		Description: r.FormValue("description"),
+	}, nil
+}
+
+func parseTransferInput(r *http.Request) (model.TransferInput, error) {
+	fromID, err := uuid.Parse(r.FormValue("from_wallet_id"))
+	if err != nil {
+		return model.TransferInput{}, fmt.Errorf("invalid from_wallet_id")
+	}
+	toID, err := uuid.Parse(r.FormValue("to_wallet_id"))
+	if err != nil {
+		return model.TransferInput{}, fmt.Errorf("invalid to_wallet_id")
+	}
+	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
+	if err != nil || amount <= 0 {
+		return model.TransferInput{}, fmt.Errorf("invalid amount")
+	}
+	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
+	if err != nil {
+		return model.TransferInput{}, fmt.Errorf("invalid date")
+	}
+	return model.TransferInput{
+		FromWalletID: fromID,
+		ToWalletID:   toID,
+		Amount:       amount,
+		OperatedAt:   operatedAt,
+		Description:  r.FormValue("description"),
+	}, nil
 }
 
 // parseDateTime парсит строку из datetime-local input формата "2006-01-02T15:04"

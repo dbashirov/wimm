@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
@@ -92,8 +91,8 @@ func (s *Service) ListWalletsWithBalance(ctx context.Context, userID uuid.UUID) 
 	return s.wallets.ListWithBalance(ctx, userID)
 }
 
-func (s *Service) CreateWallet(ctx context.Context, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
-	return s.wallets.Create(ctx, userID, name, currency, description)
+func (s *Service) CreateWallet(ctx context.Context, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
+	return s.wallets.Create(ctx, userID, inp)
 }
 
 func (s *Service) GetWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Wallet, error) {
@@ -104,8 +103,8 @@ func (s *Service) GetWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID)
 	return w, err
 }
 
-func (s *Service) UpdateWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
-	w, err := s.wallets.Update(ctx, id, userID, name, currency, description)
+func (s *Service) UpdateWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
+	w, err := s.wallets.Update(ctx, id, userID, inp)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -126,8 +125,8 @@ func (s *Service) ListCategoriesByType(ctx context.Context, userID uuid.UUID, ca
 	return s.categories.ListByType(ctx, userID, catType)
 }
 
-func (s *Service) CreateCategory(ctx context.Context, userID uuid.UUID, name string, catType model.OperationType, description string) (*model.Category, error) {
-	return s.categories.Create(ctx, userID, name, catType, description)
+func (s *Service) CreateCategory(ctx context.Context, userID uuid.UUID, inp model.CategoryInput) (*model.Category, error) {
+	return s.categories.Create(ctx, userID, inp)
 }
 
 func (s *Service) GetCategory(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Category, error) {
@@ -156,24 +155,24 @@ func (s *Service) ListOperations(ctx context.Context, filter model.OperationFilt
 	return s.operations.List(ctx, filter)
 }
 
-func (s *Service) CreateOperation(ctx context.Context, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
-	if _, err := s.wallets.GetByID(ctx, walletID, userID); err != nil {
+func (s *Service) CreateOperation(ctx context.Context, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	cat, err := s.categories.GetByID(ctx, categoryID, userID)
+	cat, err := s.categories.GetByID(ctx, inp.CategoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if cat.Type != opType {
+	if cat.Type != inp.Type {
 		return nil, ErrWrongCategoryType
 	}
-	return s.operations.Create(ctx, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	return s.operations.Create(ctx, userID, inp)
 }
 
 func (s *Service) GetOperation(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Operation, error) {
@@ -184,24 +183,24 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID, userID uuid.UU
 	return o, err
 }
 
-func (s *Service) UpdateOperation(ctx context.Context, id uuid.UUID, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
-	if _, err := s.wallets.GetByID(ctx, walletID, userID); err != nil {
+func (s *Service) UpdateOperation(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
+	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	cat, err := s.categories.GetByID(ctx, categoryID, userID)
+	cat, err := s.categories.GetByID(ctx, inp.CategoryID, userID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if cat.Type != opType {
+	if cat.Type != inp.Type {
 		return nil, ErrWrongCategoryType
 	}
-	o, err := s.operations.Update(ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	o, err := s.operations.Update(ctx, id, userID, inp)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
 	}
@@ -212,23 +211,23 @@ func (s *Service) DeleteOperation(ctx context.Context, id uuid.UUID, userID uuid
 	return wrapNotFound(s.operations.Delete(ctx, id, userID))
 }
 
-func (s *Service) CreateTransfer(ctx context.Context, userID uuid.UUID, fromWalletID, toWalletID uuid.UUID, amount float64, operatedAt time.Time, description string) (*model.Operation, *model.Operation, error) {
-	if fromWalletID == toWalletID {
+func (s *Service) CreateTransfer(ctx context.Context, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
+	if inp.FromWalletID == inp.ToWalletID {
 		return nil, nil, ErrSameWallet
 	}
-	if _, err := s.wallets.GetByID(ctx, fromWalletID, userID); err != nil {
+	if _, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, nil, ErrNotFound
 		}
 		return nil, nil, err
 	}
-	if _, err := s.wallets.GetByID(ctx, toWalletID, userID); err != nil {
+	if _, err := s.wallets.GetByID(ctx, inp.ToWalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, nil, ErrNotFound
 		}
 		return nil, nil, err
 	}
-	return s.operations.CreateTransfer(ctx, userID, fromWalletID, toWalletID, amount, operatedAt, description)
+	return s.operations.CreateTransfer(ctx, userID, inp)
 }
 
 func (s *Service) DeleteTransfer(ctx context.Context, transferID uuid.UUID, userID uuid.UUID) error {

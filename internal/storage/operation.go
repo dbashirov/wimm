@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/google/uuid"
@@ -111,18 +110,18 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 	return ops, rows.Err()
 }
 
-func (s *OperationStore) Create(ctx context.Context, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+func (s *OperationStore) Create(ctx context.Context, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
 		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at, description)
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
 		           transfer_id,
-		           (SELECT name FROM wallets  WHERE id=$2),
-		           (SELECT name FROM categories WHERE id=$3),
+		           (SELECT name FROM wallets     WHERE id=$2),
+		           (SELECT name FROM categories  WHERE id=$3),
 		           (SELECT currency FROM wallets WHERE id=$2),
 		           ''`,
-		userID, walletID, categoryID, opType, amount, operatedAt, description,
+		userID, inp.WalletID, inp.CategoryID, inp.Type, inp.Amount, inp.OperatedAt, inp.Description,
 	)
 	if err := scanOperation(row, &o); err != nil {
 		return nil, fmt.Errorf("OperationStore.Create: %w", err)
@@ -145,7 +144,7 @@ func (s *OperationStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.
 	return &o, nil
 }
 
-func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
 		`UPDATE operations
@@ -157,7 +156,7 @@ func (s *OperationStore) Update(ctx context.Context, id uuid.UUID, userID uuid.U
 		           (SELECT name FROM categories  WHERE id=$2),
 		           (SELECT currency FROM wallets WHERE id=$1),
 		           ''`,
-		walletID, categoryID, opType, amount, operatedAt, description, id, userID,
+		inp.WalletID, inp.CategoryID, inp.Type, inp.Amount, inp.OperatedAt, inp.Description, id, userID,
 	)
 	err := scanOperation(row, &o)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -177,14 +176,7 @@ func (s *OperationStore) Delete(ctx context.Context, id uuid.UUID, userID uuid.U
 	return checkRowsAffected(tag, err)
 }
 
-func (s *OperationStore) CreateTransfer(
-	ctx context.Context,
-	userID uuid.UUID,
-	fromWalletID, toWalletID uuid.UUID,
-	amount float64,
-	operatedAt time.Time,
-	description string,
-) (*model.Operation, *model.Operation, error) {
+func (s *OperationStore) CreateTransfer(ctx context.Context, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer begin: %w", err)
@@ -205,7 +197,9 @@ func (s *OperationStore) CreateTransfer(
 
 	var expense model.Operation
 	if err := scanOperation(
-		tx.QueryRow(ctx, insertSQL, userID, fromWalletID, model.TypeExpense, amount, operatedAt, description, transferID, toWalletID),
+		tx.QueryRow(ctx, insertSQL,
+			userID, inp.FromWalletID, model.TypeExpense, inp.Amount, inp.OperatedAt, inp.Description, transferID, inp.ToWalletID,
+		),
 		&expense,
 	); err != nil {
 		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer expense: %w", err)
@@ -213,7 +207,9 @@ func (s *OperationStore) CreateTransfer(
 
 	var income model.Operation
 	if err := scanOperation(
-		tx.QueryRow(ctx, insertSQL, userID, toWalletID, model.TypeIncome, amount, operatedAt, description, transferID, fromWalletID),
+		tx.QueryRow(ctx, insertSQL,
+			userID, inp.ToWalletID, model.TypeIncome, inp.Amount, inp.OperatedAt, inp.Description, transferID, inp.FromWalletID,
+		),
 		&income,
 	); err != nil {
 		return nil, nil, fmt.Errorf("OperationStore.CreateTransfer income: %w", err)

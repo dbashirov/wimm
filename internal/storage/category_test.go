@@ -14,7 +14,7 @@ func TestCategoryStore_CreateAndGet(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "cat@test.com")
-	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense, "")
+	c, err := s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Food", Type: model.TypeExpense})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestCategoryStore_GetByID_OtherUser(t *testing.T) {
 
 	owner := createUser(t, "catown@test.com")
 	other := createUser(t, "catoth@test.com")
-	c, _ := s.Categories.Create(ctx, owner, "Salary", model.TypeIncome, "")
+	c, _ := s.Categories.Create(ctx, owner, model.CategoryInput{Name: "Salary", Type: model.TypeIncome})
 
 	_, err := s.Categories.GetByID(ctx, c.ID, other)
 	if err != storage.ErrNotFound {
@@ -52,9 +52,9 @@ func TestCategoryStore_ListByType(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "catlist@test.com")
-	s.Categories.Create(ctx, userID, "Food", model.TypeExpense, "")      //nolint:errcheck
-	s.Categories.Create(ctx, userID, "Transport", model.TypeExpense, "") //nolint:errcheck
-	s.Categories.Create(ctx, userID, "Salary", model.TypeIncome, "")    //nolint:errcheck
+	s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Food", Type: model.TypeExpense})      //nolint:errcheck
+	s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Transport", Type: model.TypeExpense}) //nolint:errcheck
+	s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Salary", Type: model.TypeIncome})    //nolint:errcheck
 
 	expenses, err := s.Categories.ListByType(ctx, userID, model.TypeExpense)
 	if err != nil {
@@ -79,7 +79,7 @@ func TestCategoryStore_Update(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID := createUser(t, "catupd@test.com")
-	c, _ := s.Categories.Create(ctx, userID, "Old", model.TypeExpense, "")
+	c, _ := s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Old", Type: model.TypeExpense})
 
 	updated, err := s.Categories.Update(ctx, c.ID, userID, "New", "")
 	if err != nil {
@@ -101,7 +101,7 @@ func TestCategoryStore_Delete_OtherUser(t *testing.T) {
 
 	owner := createUser(t, "catdel@test.com")
 	other := createUser(t, "catdel2@test.com")
-	c, _ := s.Categories.Create(ctx, owner, "Mine", model.TypeExpense, "")
+	c, _ := s.Categories.Create(ctx, owner, model.CategoryInput{Name: "Mine", Type: model.TypeExpense})
 
 	err := s.Categories.Delete(ctx, c.ID, other)
 	if err != storage.ErrNotFound {

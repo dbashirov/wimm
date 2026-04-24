@@ -57,12 +57,12 @@ func (s *CategoryStore) ListByType(ctx context.Context, userID uuid.UUID, catTyp
 	return cats, rows.Err()
 }
 
-func (s *CategoryStore) Create(ctx context.Context, userID uuid.UUID, name string, catType model.OperationType, description string) (*model.Category, error) {
+func (s *CategoryStore) Create(ctx context.Context, userID uuid.UUID, inp model.CategoryInput) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO categories(user_id, name, type, description) VALUES($1, $2, $3, $4)
 		 RETURNING id, user_id, name, type, description`,
-		userID, name, catType, description,
+		userID, inp.Name, inp.Type, inp.Description,
 	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description)
 	if err != nil {
 		return nil, fmt.Errorf("CategoryStore.Create: %w", err)

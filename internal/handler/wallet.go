@@ -25,11 +25,12 @@ func (h *Handler) getWallets(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	name := r.FormValue("name")
-	currency := r.FormValue("currency")
-	description := r.FormValue("description")
-
-	wallet, err := h.svc.CreateWallet(r.Context(), userID, name, currency, description)
+	inp := model.WalletInput{
+		Name:        r.FormValue("name"),
+		Currency:    r.FormValue("currency"),
+		Description: r.FormValue("description"),
+	}
+	wallet, err := h.svc.CreateWallet(r.Context(), userID, inp)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -74,11 +75,12 @@ func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	name := r.FormValue("name")
-	currency := r.FormValue("currency")
-	description := r.FormValue("description")
-
-	wallet, err := h.svc.UpdateWallet(r.Context(), id, userID, name, currency, description)
+	inp := model.WalletInput{
+		Name:        r.FormValue("name"),
+		Currency:    r.FormValue("currency"),
+		Description: r.FormValue("description"),
+	}
+	wallet, err := h.svc.UpdateWallet(r.Context(), id, userID, inp)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

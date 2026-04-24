@@ -36,11 +36,12 @@ func (h *Handler) getCategories(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
-	name := r.FormValue("name")
-	catType := model.OperationType(r.FormValue("type"))
-	description := r.FormValue("description")
-
-	cat, err := h.svc.CreateCategory(r.Context(), userID, name, catType, description)
+	inp := model.CategoryInput{
+		Name:        r.FormValue("name"),
+		Type:        model.OperationType(r.FormValue("type")),
+		Description: r.FormValue("description"),
+	}
+	cat, err := h.svc.CreateCategory(r.Context(), userID, inp)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

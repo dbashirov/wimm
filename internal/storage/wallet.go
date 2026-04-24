@@ -69,12 +69,12 @@ func (s *WalletStore) ListWithBalance(ctx context.Context, userID uuid.UUID) ([]
 	return result, rows.Err()
 }
 
-func (s *WalletStore) Create(ctx context.Context, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
+func (s *WalletStore) Create(ctx context.Context, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO wallets(user_id, name, currency, description) VALUES($1, $2, $3, $4)
 		 RETURNING id, user_id, name, currency, description, created_at`,
-		userID, name, currency, description,
+		userID, inp.Name, inp.Currency, inp.Description,
 	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("WalletStore.Create: %w", err)
@@ -98,13 +98,13 @@ func (s *WalletStore) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUI
 	return &w, nil
 }
 
-func (s *WalletStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
+func (s *WalletStore) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
 		`UPDATE wallets SET name=$1, currency=$2, description=$3
 		 WHERE id=$4 AND user_id=$5
 		 RETURNING id, user_id, name, currency, description, created_at`,
-		name, currency, description, id, userID,
+		inp.Name, inp.Currency, inp.Description, id, userID,
 	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound

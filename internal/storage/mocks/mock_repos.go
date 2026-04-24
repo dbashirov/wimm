@@ -12,7 +12,6 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
 	model "github.com/dbashirov/wimm/internal/model"
 	uuid "github.com/google/uuid"
@@ -98,22 +97,22 @@ func (m *MockWalletRepo) EXPECT() *MockWalletRepoMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockWalletRepo) Create(ctx context.Context, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
+func (m *MockWalletRepo) Create(ctx context.Context, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, userID, name, currency, description)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, inp)
 	ret0, _ := ret[0].(*model.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockWalletRepoMockRecorder) Create(ctx, userID, name, currency, description any) *gomock.Call {
+func (mr *MockWalletRepoMockRecorder) Create(ctx, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockWalletRepo)(nil).Create), ctx, userID, name, currency, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockWalletRepo)(nil).Create), ctx, userID, inp)
 }
 
 // Delete mocks base method.
-func (m *MockWalletRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (m *MockWalletRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id, userID)
 	ret0, _ := ret[0].(error)
@@ -127,7 +126,7 @@ func (mr *MockWalletRepoMockRecorder) Delete(ctx, id, userID any) *gomock.Call {
 }
 
 // GetByID mocks base method.
-func (m *MockWalletRepo) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Wallet, error) {
+func (m *MockWalletRepo) GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, id, userID)
 	ret0, _ := ret[0].(*model.Wallet)
@@ -172,18 +171,18 @@ func (mr *MockWalletRepoMockRecorder) ListWithBalance(ctx, userID any) *gomock.C
 }
 
 // Update mocks base method.
-func (m *MockWalletRepo) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, currency, description string) (*model.Wallet, error) {
+func (m *MockWalletRepo) Update(ctx context.Context, id, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, userID, name, currency, description)
+	ret := m.ctrl.Call(m, "Update", ctx, id, userID, inp)
 	ret0, _ := ret[0].(*model.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockWalletRepoMockRecorder) Update(ctx, id, userID, name, currency, description any) *gomock.Call {
+func (mr *MockWalletRepoMockRecorder) Update(ctx, id, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockWalletRepo)(nil).Update), ctx, id, userID, name, currency, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockWalletRepo)(nil).Update), ctx, id, userID, inp)
 }
 
 // MockCategoryRepo is a mock of CategoryRepo interface.
@@ -211,22 +210,22 @@ func (m *MockCategoryRepo) EXPECT() *MockCategoryRepoMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockCategoryRepo) Create(ctx context.Context, userID uuid.UUID, name string, catType model.OperationType, description string) (*model.Category, error) {
+func (m *MockCategoryRepo) Create(ctx context.Context, userID uuid.UUID, inp model.CategoryInput) (*model.Category, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, userID, name, catType, description)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, inp)
 	ret0, _ := ret[0].(*model.Category)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockCategoryRepoMockRecorder) Create(ctx, userID, name, catType, description any) *gomock.Call {
+func (mr *MockCategoryRepoMockRecorder) Create(ctx, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockCategoryRepo)(nil).Create), ctx, userID, name, catType, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockCategoryRepo)(nil).Create), ctx, userID, inp)
 }
 
 // Delete mocks base method.
-func (m *MockCategoryRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (m *MockCategoryRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id, userID)
 	ret0, _ := ret[0].(error)
@@ -240,7 +239,7 @@ func (mr *MockCategoryRepoMockRecorder) Delete(ctx, id, userID any) *gomock.Call
 }
 
 // GetByID mocks base method.
-func (m *MockCategoryRepo) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Category, error) {
+func (m *MockCategoryRepo) GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Category, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, id, userID)
 	ret0, _ := ret[0].(*model.Category)
@@ -285,7 +284,7 @@ func (mr *MockCategoryRepoMockRecorder) ListByUser(ctx, userID any) *gomock.Call
 }
 
 // Update mocks base method.
-func (m *MockCategoryRepo) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, name, description string) (*model.Category, error) {
+func (m *MockCategoryRepo) Update(ctx context.Context, id, userID uuid.UUID, name, description string) (*model.Category, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, id, userID, name, description)
 	ret0, _ := ret[0].(*model.Category)
@@ -323,10 +322,25 @@ func (m *MockOperationRepo) EXPECT() *MockOperationRepoMockRecorder {
 	return m.recorder
 }
 
-// CreateTransfer mocks base method.
-func (m *MockOperationRepo) CreateTransfer(ctx context.Context, userID uuid.UUID, fromWalletID, toWalletID uuid.UUID, amount float64, operatedAt time.Time, description string) (*model.Operation, *model.Operation, error) {
+// Create mocks base method.
+func (m *MockOperationRepo) Create(ctx context.Context, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTransfer", ctx, userID, fromWalletID, toWalletID, amount, operatedAt, description)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, inp)
+	ret0, _ := ret[0].(*model.Operation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockOperationRepoMockRecorder) Create(ctx, userID, inp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockOperationRepo)(nil).Create), ctx, userID, inp)
+}
+
+// CreateTransfer mocks base method.
+func (m *MockOperationRepo) CreateTransfer(ctx context.Context, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTransfer", ctx, userID, inp)
 	ret0, _ := ret[0].(*model.Operation)
 	ret1, _ := ret[1].(*model.Operation)
 	ret2, _ := ret[2].(error)
@@ -334,38 +348,9 @@ func (m *MockOperationRepo) CreateTransfer(ctx context.Context, userID uuid.UUID
 }
 
 // CreateTransfer indicates an expected call of CreateTransfer.
-func (mr *MockOperationRepoMockRecorder) CreateTransfer(ctx, userID, fromWalletID, toWalletID, amount, operatedAt, description any) *gomock.Call {
+func (mr *MockOperationRepoMockRecorder) CreateTransfer(ctx, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockOperationRepo)(nil).CreateTransfer), ctx, userID, fromWalletID, toWalletID, amount, operatedAt, description)
-}
-
-// DeleteTransfer mocks base method.
-func (m *MockOperationRepo) DeleteTransfer(ctx context.Context, transferID uuid.UUID, userID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteTransfer", ctx, transferID, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteTransfer indicates an expected call of DeleteTransfer.
-func (mr *MockOperationRepoMockRecorder) DeleteTransfer(ctx, transferID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransfer", reflect.TypeOf((*MockOperationRepo)(nil).DeleteTransfer), ctx, transferID, userID)
-}
-
-// Create mocks base method.
-func (m *MockOperationRepo) Create(ctx context.Context, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, userID, walletID, categoryID, opType, amount, operatedAt, description)
-	ret0, _ := ret[0].(*model.Operation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockOperationRepoMockRecorder) Create(ctx, userID, walletID, categoryID, opType, amount, operatedAt, description any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockOperationRepo)(nil).Create), ctx, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockOperationRepo)(nil).CreateTransfer), ctx, userID, inp)
 }
 
 // DashboardData mocks base method.
@@ -385,7 +370,7 @@ func (mr *MockOperationRepoMockRecorder) DashboardData(ctx, userID any) *gomock.
 }
 
 // Delete mocks base method.
-func (m *MockOperationRepo) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+func (m *MockOperationRepo) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id, userID)
 	ret0, _ := ret[0].(error)
@@ -398,8 +383,22 @@ func (mr *MockOperationRepoMockRecorder) Delete(ctx, id, userID any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOperationRepo)(nil).Delete), ctx, id, userID)
 }
 
+// DeleteTransfer mocks base method.
+func (m *MockOperationRepo) DeleteTransfer(ctx context.Context, transferID, userID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTransfer", ctx, transferID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTransfer indicates an expected call of DeleteTransfer.
+func (mr *MockOperationRepoMockRecorder) DeleteTransfer(ctx, transferID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTransfer", reflect.TypeOf((*MockOperationRepo)(nil).DeleteTransfer), ctx, transferID, userID)
+}
+
 // GetByID mocks base method.
-func (m *MockOperationRepo) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Operation, error) {
+func (m *MockOperationRepo) GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Operation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, id, userID)
 	ret0, _ := ret[0].(*model.Operation)
@@ -429,16 +428,16 @@ func (mr *MockOperationRepoMockRecorder) List(ctx, filter any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockOperationRepo) Update(ctx context.Context, id uuid.UUID, userID uuid.UUID, walletID, categoryID uuid.UUID, opType model.OperationType, amount float64, operatedAt time.Time, description string) (*model.Operation, error) {
+func (m *MockOperationRepo) Update(ctx context.Context, id, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	ret := m.ctrl.Call(m, "Update", ctx, id, userID, inp)
 	ret0, _ := ret[0].(*model.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockOperationRepoMockRecorder) Update(ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description any) *gomock.Call {
+func (mr *MockOperationRepoMockRecorder) Update(ctx, id, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockOperationRepo)(nil).Update), ctx, id, userID, walletID, categoryID, opType, amount, operatedAt, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockOperationRepo)(nil).Update), ctx, id, userID, inp)
 }

@@ -10,18 +10,18 @@ import (
 	"github.com/google/uuid"
 )
 
-// fixture создаёт пользователя, кошелёк и категорию, возвращает их ID.
+// opFixture создаёт пользователя, кошелёк и категорию, возвращает их ID.
 func opFixture(t *testing.T, email string) (userID uuid.UUID, walletID, categoryID uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
 	s := storage.NewFromPool(testPool)
 
 	userID = createUser(t, email)
-	w, err := s.Wallets.Create(ctx, userID, "Main", "RUB", "")
+	w, err := s.Wallets.Create(ctx, userID, model.WalletInput{Name: "Main", Currency: "RUB"})
 	if err != nil {
 		t.Fatalf("fixture wallet: %v", err)
 	}
-	c, err := s.Categories.Create(ctx, userID, "Food", model.TypeExpense, "")
+	c, err := s.Categories.Create(ctx, userID, model.CategoryInput{Name: "Food", Type: model.TypeExpense})
 	if err != nil {
 		t.Fatalf("fixture category: %v", err)
 	}
@@ -36,7 +36,11 @@ func TestOperationStore_CreateAndGet(t *testing.T) {
 	userID, walletID, catID := opFixture(t, "op@test.com")
 	now := time.Now().Truncate(time.Minute)
 
-	op, err := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 500.0, now, "lunch")
+	op, err := s.Operations.Create(ctx, userID, model.OperationInput{
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 500.0,
+		OperatedAt: now, Description: "lunch",
+	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -61,7 +65,10 @@ func TestOperationStore_GetByID_OtherUser(t *testing.T) {
 	userID, walletID, catID := opFixture(t, "opown@test.com")
 	other := createUser(t, "opoth@test.com")
 
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, time.Now(), "")
+	op, _ := s.Operations.Create(ctx, userID, model.OperationInput{
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: time.Now(),
+	})
 
 	_, err := s.Operations.GetByID(ctx, op.ID, other)
 	if err != storage.ErrNotFound {
@@ -75,12 +82,12 @@ func TestOperationStore_List_FilterByWallet(t *testing.T) {
 	s := storage.NewFromPool(testPool)
 
 	userID, walletID, catID := opFixture(t, "oplist@test.com")
-	w2, _ := s.Wallets.Create(ctx, userID, "Second", "USD", "")
+	w2, _ := s.Wallets.Create(ctx, userID, model.WalletInput{Name: "Second", Currency: "USD"})
 
 	now := time.Now()
-	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, now, "") //nolint:errcheck
-	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 200, now, "") //nolint:errcheck
-	s.Operations.Create(ctx, userID, w2.ID, catID, model.TypeExpense, 300, now, "")   //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 100, OperatedAt: now}) //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 200, OperatedAt: now}) //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: w2.ID, CategoryID: catID, Type: model.TypeExpense, Amount: 300, OperatedAt: now})    //nolint:errcheck
 
 	ops, err := s.Operations.List(ctx, model.OperationFilter{UserID: userID, WalletID: walletID})
 	if err != nil {
@@ -101,8 +108,8 @@ func TestOperationStore_List_FilterByDateRange(t *testing.T) {
 	yesterday := today.AddDate(0, 0, -1)
 	tomorrow := today.AddDate(0, 0, 1)
 
-	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, yesterday, "yesterday") //nolint:errcheck
-	s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 200, today, "today")         //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 100, OperatedAt: yesterday, Description: "yesterday"}) //nolint:errcheck
+	s.Operations.Create(ctx, userID, model.OperationInput{WalletID: walletID, CategoryID: catID, Type: model.TypeExpense, Amount: 200, OperatedAt: today, Description: "today"})         //nolint:errcheck
 
 	// Фильтр: только сегодня (DateTo = начало завтра, SQL: < DateTo)
 	ops, err := s.Operations.List(ctx, model.OperationFilter{
@@ -126,9 +133,10 @@ func TestOperationStore_List_IsolatesByUser(t *testing.T) {
 	u1, w1, c1 := opFixture(t, "opiso1@test.com")
 	u2, w2, c2 := opFixture(t, "opiso2@test.com")
 
-	s.Operations.Create(ctx, u1, w1, c1, model.TypeExpense, 100, time.Now(), "") //nolint:errcheck
-	s.Operations.Create(ctx, u1, w1, c1, model.TypeExpense, 200, time.Now(), "") //nolint:errcheck
-	s.Operations.Create(ctx, u2, w2, c2, model.TypeExpense, 300, time.Now(), "") //nolint:errcheck
+	now := time.Now()
+	s.Operations.Create(ctx, u1, model.OperationInput{WalletID: w1, CategoryID: c1, Type: model.TypeExpense, Amount: 100, OperatedAt: now}) //nolint:errcheck
+	s.Operations.Create(ctx, u1, model.OperationInput{WalletID: w1, CategoryID: c1, Type: model.TypeExpense, Amount: 200, OperatedAt: now}) //nolint:errcheck
+	s.Operations.Create(ctx, u2, model.OperationInput{WalletID: w2, CategoryID: c2, Type: model.TypeExpense, Amount: 300, OperatedAt: now}) //nolint:errcheck
 
 	ops, _ := s.Operations.List(ctx, model.OperationFilter{UserID: u1})
 	if len(ops) != 2 {
@@ -148,9 +156,15 @@ func TestOperationStore_Update(t *testing.T) {
 
 	userID, walletID, catID := opFixture(t, "opupd@test.com")
 	now := time.Now().Truncate(time.Minute)
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, now, "old")
+	op, _ := s.Operations.Create(ctx, userID, model.OperationInput{
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: now, Description: "old",
+	})
 
-	updated, err := s.Operations.Update(ctx, op.ID, userID, walletID, catID, model.TypeExpense, 999, now, "new")
+	updated, err := s.Operations.Update(ctx, op.ID, userID, model.OperationInput{
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 999, OperatedAt: now, Description: "new",
+	})
 	if err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -166,7 +180,10 @@ func TestOperationStore_Delete_OtherUser(t *testing.T) {
 
 	userID, walletID, catID := opFixture(t, "opdel@test.com")
 	other := createUser(t, "opdel2@test.com")
-	op, _ := s.Operations.Create(ctx, userID, walletID, catID, model.TypeExpense, 100, time.Now(), "")
+	op, _ := s.Operations.Create(ctx, userID, model.OperationInput{
+		WalletID: walletID, CategoryID: catID,
+		Type: model.TypeExpense, Amount: 100, OperatedAt: time.Now(),
+	})
 
 	err := s.Operations.Delete(ctx, op.ID, other)
 	if err != storage.ErrNotFound {
