@@ -1,8 +1,13 @@
 {{define "wallet-row"}}
 <tr id="wallet-{{.ID}}" class="hover">
   <td class="font-medium">
-    {{.Name}}
-    {{if .Hidden}}<span class="badge badge-sm badge-neutral ml-2">Скрыт</span>{{end}}
+    <div>
+      {{.Name}}
+      {{if .Hidden}}<span class="badge badge-sm badge-neutral ml-2">Скрыт</span>{{end}}
+    </div>
+    {{if .Description}}
+    <p class="text-xs text-base-content/50 mt-1">{{.Description}}</p>
+    {{end}}
   </td>
   <td><span class="badge badge-ghost badge-sm">{{.Currency}}</span></td>
   <td>

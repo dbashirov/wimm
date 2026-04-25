@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/google/uuid"
@@ -20,6 +21,15 @@ func (h *Handler) getWallets(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	slices.SortStableFunc(wallets, func(a, b model.Wallet) int {
+		if a.Hidden == b.Hidden {
+			return 0
+		}
+		if !a.Hidden {
+			return -1
+		}
+		return 1
+	})
 	h.render(w, "wallets", walletsData{Wallets: wallets})
 }
 

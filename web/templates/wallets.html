@@ -13,7 +13,7 @@
           hx-target="#wallets-tbody"
           hx-swap="afterbegin"
           hx-on::after-request="this.reset()">
-      <div class="flex flex-wrap gap-3 items-end">
+      <div class="flex flex-wrap gap-3 items-end mb-3">
         <div class="form-control flex-1 min-w-40">
           <label class="form-label">Название</label>
           <input type="text" name="name" placeholder="Наличные"
@@ -29,8 +29,13 @@
             <option value="CNY">CNY</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary font-semibold">Добавить</button>
       </div>
+      <div class="mb-3">
+        <label class="form-label text-xs">Описание (необязательно)</label>
+        <textarea name="description" placeholder="Например: основной счёт, подушка безопасности, инвестиции..."
+                  class="textarea textarea-bordered" rows="2"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary font-semibold">Добавить</button>
     </form>
   </div>
 </div>
