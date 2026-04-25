@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/model"
@@ -16,7 +17,7 @@ func (h *Handler) getDashboard(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	data, err := h.svc.DashboardData(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "DashboardData", err)
 		return
 	}
 	h.render(w, "dashboard", dashboardPageData{DashboardData: data})
@@ -27,9 +28,11 @@ func (h *Handler) getDashboardJSON(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	data, err := h.svc.DashboardData(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "DashboardData", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("dashboard JSON encode: %v", err)
+	}
 }

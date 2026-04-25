@@ -20,7 +20,7 @@ func (h *Handler) getCategories(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	cats, err := h.svc.ListCategories(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListCategories", err)
 		return
 	}
 	data := categoriesData{}
@@ -43,7 +43,7 @@ func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	cat, err := h.svc.CreateCategory(r.Context(), userID, inp)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "CreateCategory", err)
 		return
 	}
 	h.renderPartial(w, "categories", "category-row", cat)
@@ -90,7 +90,7 @@ func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name, description)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "UpdateCategory", err)
 		return
 	}
 	h.renderPartial(w, "categories", "category-row", cat)
@@ -119,7 +119,7 @@ func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	cats, err := h.svc.ListCategoriesByType(r.Context(), userID, catType)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListCategoriesByType", err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")

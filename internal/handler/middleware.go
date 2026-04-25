@@ -3,10 +3,17 @@ package handler
 import (
 	"context"
 	"errors"
+	"log"
+	"net"
 	"net/http"
+	"runtime/debug"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/dbashirov/wimm/internal/session"
 	"github.com/google/uuid"
+	"golang.org/x/time/rate"
 )
 
 type contextKey string
@@ -26,10 +33,141 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 				http.Redirect(w, r, "/login", http.StatusFound)
 				return
 			}
+			log.Printf("auth %s %s: %v", r.Method, r.URL.Path, err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, sess.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// recoverPanic ловит панику в любом хендлере, логирует stack и возвращает 500.
+func recoverPanic(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if v := recover(); v != nil {
+				log.Printf("PANIC %s %s: %v\n%s",
+					r.Method, r.URL.Path, v, debug.Stack())
+				http.Error(w, "internal error", http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// statusRecorder перехватывает статус ответа для логирования.
+type statusRecorder struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func (sr *statusRecorder) WriteHeader(code int) {
+	if !sr.wroteHeader {
+		sr.status = code
+		sr.wroteHeader = true
+	}
+	sr.ResponseWriter.WriteHeader(code)
+}
+
+func (sr *statusRecorder) Write(b []byte) (int, error) {
+	if !sr.wroteHeader {
+		sr.status = http.StatusOK
+		sr.wroteHeader = true
+	}
+	return sr.ResponseWriter.Write(b)
+}
+
+// logRequests пишет access log для каждого запроса.
+func logRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(sr, r)
+		log.Printf("%s %s %s %d %s",
+			clientIP(r), r.Method, r.URL.Path, sr.status, time.Since(start))
+	})
+}
+
+// rateLimiter — простой token bucket per-key с автоматической очисткой
+// старых записей. Безопасен для конкурентного доступа.
+type rateLimiter struct {
+	mu       sync.Mutex
+	visitors map[string]*visitor
+	rate     rate.Limit
+	burst    int
+}
+
+type visitor struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
+func newRateLimiter(r rate.Limit, burst int) *rateLimiter {
+	rl := &rateLimiter{
+		visitors: make(map[string]*visitor),
+		rate:     r,
+		burst:    burst,
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (rl *rateLimiter) get(key string) *rate.Limiter {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	if v, ok := rl.visitors[key]; ok {
+		v.lastSeen = time.Now()
+		return v.limiter
+	}
+	l := rate.NewLimiter(rl.rate, rl.burst)
+	rl.visitors[key] = &visitor{limiter: l, lastSeen: time.Now()}
+	return l
+}
+
+func (rl *rateLimiter) cleanup() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		rl.mu.Lock()
+		for k, v := range rl.visitors {
+			if time.Since(v.lastSeen) > time.Hour {
+				delete(rl.visitors, k)
+			}
+		}
+		rl.mu.Unlock()
+	}
+}
+
+// limitByIP — middleware с rate-limit по IP клиента.
+func limitByIP(rl *rateLimiter) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !rl.get(clientIP(r)).Allow() {
+				http.Error(w, "слишком много запросов, попробуйте позже",
+					http.StatusTooManyRequests)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// clientIP достаёт реальный IP клиента, учитывая reverse-proxy headers.
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.Index(xff, ","); i >= 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if rip := r.Header.Get("X-Real-IP"); rip != "" {
+		return rip
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

@@ -7,16 +7,19 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/session"
+	"golang.org/x/time/rate"
 )
 
 type Handler struct {
-	svc      *service.Service
-	sessions *session.Manager
-	tmpls    map[string]*template.Template
+	svc          *service.Service
+	sessions     *session.Manager
+	tmpls        map[string]*template.Template
+	loginLimiter *rateLimiter
 }
 
 // basePage встраивается во все структуры данных страниц,
@@ -45,7 +48,12 @@ var tmplFuncs = template.FuncMap{
 }
 
 func New(svc *service.Service, sm *session.Manager, webFS fs.FS) (*Handler, error) {
-	h := &Handler{svc: svc, sessions: sm}
+	h := &Handler{
+		svc:      svc,
+		sessions: sm,
+		// 5 попыток логина с разгоном по 1 в минуту с одного IP.
+		loginLimiter: newRateLimiter(rate.Every(time.Minute), 5),
+	}
 	tmpls, err := parseTemplates(webFS)
 	if err != nil {
 		return nil, fmt.Errorf("parseTemplates: %w", err)
@@ -74,11 +82,13 @@ func parseTemplates(webFS fs.FS) (map[string]*template.Template, error) {
 func (h *Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
 
+	loginRL := limitByIP(h.loginLimiter)
+
 	// Public
 	mux.HandleFunc("GET /login", h.getLogin)
-	mux.HandleFunc("POST /login", h.postLogin)
+	mux.Handle("POST /login", loginRL(http.HandlerFunc(h.postLogin)))
 	mux.HandleFunc("GET /register", h.getRegister)
-	mux.HandleFunc("POST /register", h.postRegister)
+	mux.Handle("POST /register", loginRL(http.HandlerFunc(h.postRegister)))
 	mux.HandleFunc("POST /logout", h.postLogout)
 
 	// Protected
@@ -113,13 +123,20 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("POST /transfers", h.auth(http.HandlerFunc(h.postTransfer)))
 	mux.Handle("DELETE /transfers/{transfer_id}", h.auth(http.HandlerFunc(h.deleteTransfer)))
 
-	return mux
+	return logRequests(recoverPanic(mux))
+}
+
+// serverError логирует ошибку и возвращает клиенту 500.
+func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string, err error) {
+	log.Printf("%s %s %s: %v", r.Method, r.URL.Path, op, err)
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
 func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, service.ErrNotFound) {
 		http.NotFound(w, r)
 	} else {
+		log.Printf("%s %s delete: %v", r.Method, r.URL.Path, err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }

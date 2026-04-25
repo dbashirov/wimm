@@ -20,6 +20,18 @@ var (
 	ErrSameWallet         = errors.New("source and target wallet must differ")
 )
 
+// dummyPasswordHash используется в Login для уравнивания времени работы
+// bcrypt при отсутствии пользователя (защита от timing attack).
+var dummyPasswordHash []byte
+
+func init() {
+	h, err := bcrypt.GenerateFromPassword([]byte("dummy-for-timing"), 12)
+	if err != nil {
+		panic("bcrypt init: " + err.Error())
+	}
+	dummyPasswordHash = h
+}
+
 type Service struct {
 	users      storage.UserRepo
 	wallets    storage.WalletRepo
@@ -73,9 +85,15 @@ func (s *Service) Register(ctx context.Context, email, password string) (*model.
 func (s *Service) Login(ctx context.Context, email, password string) (*model.User, error) {
 	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
+		// Сравниваем пароль с фиктивным хешем чтобы выровнять время ответа
+		// и не давать злоумышленнику возможность перечислять зарегистрированных
+		// пользователей по разнице во времени (timing attack).
+		_ = bcrypt.CompareHashAndPassword(dummyPasswordHash, []byte(password))
 		return nil, ErrInvalidCredentials
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(user.PasswordHash), []byte(password),
+	); err != nil {
 		return nil, ErrInvalidCredentials
 	}
 	return user, nil

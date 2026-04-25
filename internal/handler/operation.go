@@ -49,17 +49,17 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 
 	ops, err := h.svc.ListOperations(r.Context(), filter)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListOperations", err)
 		return
 	}
 	wallets, err := h.svc.ListWallets(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListWallets", err)
 		return
 	}
 	cats, err := h.svc.ListCategories(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListCategories", err)
 		return
 	}
 	h.render(w, "operations", operationsData{
@@ -90,13 +90,13 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "CreateOperation", err)
 		return
 	}
 
 	full, err := h.svc.GetOperation(r.Context(), op.ID, userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "GetOperation", err)
 		return
 	}
 	h.renderPartial(w, "operations", "operation-row", full)
@@ -135,12 +135,12 @@ func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
 	}
 	wallets, err := h.svc.ListWallets(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListWallets", err)
 		return
 	}
 	cats, err := h.svc.ListCategories(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "ListCategories", err)
 		return
 	}
 	h.renderPartial(w, "operations", "operation-edit-row", map[string]any{
@@ -173,13 +173,13 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "UpdateOperation", err)
 		return
 	}
 
 	full, err := h.svc.GetOperation(r.Context(), op.ID, userID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "GetOperation", err)
 		return
 	}
 	h.renderPartial(w, "operations", "operation-row", full)
@@ -218,7 +218,7 @@ func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "CreateTransfer", err)
 		return
 	}
 

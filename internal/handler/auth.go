@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/service"
@@ -31,12 +32,12 @@ func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
 			h.render(w, "login", loginData{NoNav: true, Error: "Неверный email или пароль"})
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "Login", err)
 		return
 	}
 
 	if err := h.sessions.Create(r.Context(), w, user.ID); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "sessions.Create", err)
 		return
 	}
 	http.Redirect(w, r, "/dashboard", http.StatusFound)
@@ -61,18 +62,20 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 			h.render(w, "register", registerData{NoNav: true, Error: "Email уже зарегистрирован"})
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "Register", err)
 		return
 	}
 
 	if err := h.sessions.Create(r.Context(), w, user.ID); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		h.serverError(w, r, "sessions.Create", err)
 		return
 	}
 	http.Redirect(w, r, "/dashboard", http.StatusFound)
 }
 
 func (h *Handler) postLogout(w http.ResponseWriter, r *http.Request) {
-	_ = h.sessions.Delete(r.Context(), w, r)
+	if err := h.sessions.Delete(r.Context(), w, r); err != nil {
+		log.Printf("postLogout sessions.Delete: %v", err)
+	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }
