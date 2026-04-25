@@ -6,124 +6,149 @@
   </div>
 </div>
 
-<!-- Add operation form -->
+<!-- Add operation/transfer form -->
 <div class="card bg-base-100 mb-4">
   <div class="card-body p-6">
     <div class="flex items-center justify-between mb-6">
-      <h3 class="font-semibold text-lg">Добавить операцию</h3>
-      <button form="op-form" type="submit" class="btn btn-primary btn-sm font-semibold">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Добавить
-      </button>
+      <h3 class="font-semibold text-lg">Новая операция</h3>
     </div>
-    <form id="op-form"
-          hx-post="/operations"
-          hx-target="#operations-tbody"
-          hx-swap="afterbegin"
-          hx-on::after-request="if(event.detail.elt===this) this.reset()">
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Тип</label>
-          <select name="type" id="op-type" class="select select-bordered select-sm"
-                  hx-get="/categories/options"
-                  hx-target="#op-category-select"
-                  hx-trigger="change"
-                  hx-include="this">
-            <option value="expense">Расход</option>
-            <option value="income">Доход</option>
-          </select>
+
+    <!-- Operation type selector -->
+    <div class="flex gap-2 mb-6 border-b border-base-content/10 pb-4">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="radio" name="op-mode" value="income" class="radio radio-sm" onchange="updateOpForm()">
+        <span class="text-sm">Доход</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="radio" name="op-mode" value="expense" class="radio radio-sm" checked onchange="updateOpForm()">
+        <span class="text-sm">Расход</span>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="radio" name="op-mode" value="transfer" class="radio radio-sm" onchange="updateOpForm()">
+        <span class="text-sm">Перевод</span>
+      </label>
+    </div>
+
+    <!-- Operation form -->
+    <div id="op-section">
+      <form id="op-form"
+            hx-post="/operations"
+            hx-target="#operations-tbody"
+            hx-swap="afterbegin"
+            hx-on::after-request="if(event.detail.elt===this) this.reset()">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+          <input type="hidden" name="type" id="op-type-hidden" value="expense">
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
+            <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
+                   class="input input-bordered input-sm" required>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
+            <select name="wallet_id" class="select select-bordered select-sm" required>
+              {{range .Wallets}}{{if not .Hidden}}
+              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              {{end}}{{end}}
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
+            <select name="category_id" id="op-category-select" class="select select-bordered select-sm" required>
+              {{range .Categories}}{{if eq .Type "expense"}}
+              <option value="{{.ID}}">{{.Name}}</option>
+              {{end}}{{end}}
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
+            <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
+                   class="input input-bordered input-sm fp-datetime" required>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
+            <input type="text" name="description" placeholder="Необязательно"
+                   class="input input-bordered input-sm">
+          </div>
         </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-          <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                 class="input input-bordered input-sm" required>
+        <button type="submit" class="btn btn-primary btn-sm font-semibold">Добавить</button>
+      </form>
+    </div>
+
+    <!-- Transfer form -->
+    <div id="transfer-section" style="display: none;">
+      <form id="transfer-form"
+            hx-post="/transfers"
+            hx-target="#operations-tbody"
+            hx-swap="afterbegin"
+            hx-on::after-request="this.reset()">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
+            <select name="from_wallet_id" class="select select-bordered select-sm" required>
+              {{range .Wallets}}{{if not .Hidden}}
+              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              {{end}}{{end}}
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
+            <select name="to_wallet_id" class="select select-bordered select-sm" required>
+              {{range .Wallets}}{{if not .Hidden}}
+              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              {{end}}{{end}}
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
+            <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
+                   class="input input-bordered input-sm" required>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
+            <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
+                   class="input input-bordered input-sm fp-datetime" required>
+          </div>
+          <div class="form-control">
+            <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
+            <input type="text" name="description" placeholder="Необязательно"
+                   class="input input-bordered input-sm">
+          </div>
         </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-          <select name="wallet_id" class="select select-bordered select-sm" required>
-            {{range .Wallets}}{{if not .Hidden}}
-            <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
-            {{end}}{{end}}
-          </select>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-          <select name="category_id" id="op-category-select" class="select select-bordered select-sm" required>
-            {{range .Categories}}{{if eq .Type "expense"}}
-            <option value="{{.ID}}">{{.Name}}</option>
-            {{end}}{{end}}
-          </select>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
-          <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                 class="input input-bordered input-sm fp-datetime" required>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
-          <input type="text" name="description" placeholder="Необязательно"
-                 class="input input-bordered input-sm">
-        </div>
-      </div>
-    </form>
+        <button type="submit" class="btn btn-primary btn-sm font-semibold">Перевести</button>
+      </form>
+    </div>
   </div>
 </div>
 
-<!-- Transfer form -->
-<div class="card bg-base-100 mb-4">
-  <div class="card-body p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="font-semibold text-lg">Переводить между кошельками</h3>
-      <button form="transfer-form" type="submit" class="btn btn-primary btn-sm font-semibold">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
-        </svg>
-        Перевести
-      </button>
-    </div>
-    <form id="transfer-form"
-          hx-post="/transfers"
-          hx-target="#operations-tbody"
-          hx-swap="afterbegin"
-          hx-on::after-request="this.reset()">
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
-          <select name="from_wallet_id" class="select select-bordered select-sm" required>
-            {{range .Wallets}}{{if not .Hidden}}
-            <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
-            {{end}}{{end}}
-          </select>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
-          <select name="to_wallet_id" class="select select-bordered select-sm" required>
-            {{range .Wallets}}{{if not .Hidden}}
-            <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
-            {{end}}{{end}}
-          </select>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-          <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                 class="input input-bordered input-sm" required>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
-          <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                 class="input input-bordered input-sm fp-datetime" required>
-        </div>
-        <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
-          <input type="text" name="description" placeholder="Необязательно"
-                 class="input input-bordered input-sm">
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
+<script>
+function updateOpForm() {
+  const mode = document.querySelector('input[name="op-mode"]:checked').value;
+  const opSection = document.getElementById('op-section');
+  const transferSection = document.getElementById('transfer-section');
+  const typeHidden = document.getElementById('op-type-hidden');
+  const categorySelect = document.getElementById('op-category-select');
+
+  if (mode === 'transfer') {
+    opSection.style.display = 'none';
+    transferSection.style.display = 'block';
+  } else {
+    opSection.style.display = 'block';
+    transferSection.style.display = 'none';
+    typeHidden.value = mode;
+
+    const cats = categorySelect.querySelectorAll('option');
+    cats.forEach(cat => cat.remove());
+    {{range .Categories}}
+    if ('{{.Type}}' === mode) {
+      const opt = document.createElement('option');
+      opt.value = '{{.ID}}';
+      opt.textContent = '{{.Name}}';
+      categorySelect.appendChild(opt);
+    }
+    {{end}}
+  }
+}
+</script>
 
 <!-- Filter -->
 <details class="collapse collapse-arrow bg-base-100 mb-4">
