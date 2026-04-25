@@ -22,15 +22,15 @@
           hx-target="#wallets-tbody"
           hx-swap="afterbegin"
           hx-on::after-request="this.reset()">
-      <div class="flex flex-wrap gap-3 items-end mb-3">
+      <div class="flex flex-wrap gap-3 items-end mb-4">
         <div class="form-control flex-1 min-w-40">
           <label class="form-label">Название</label>
           <input type="text" name="name" placeholder="Наличные"
-                 class="input input-bordered" required>
+                 class="input input-bordered input-sm" required>
         </div>
         <div class="form-control">
           <label class="form-label">Валюта</label>
-          <select name="currency" class="select select-bordered">
+          <select name="currency" class="select select-bordered select-sm">
             <option value="RUB">RUB</option>
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
@@ -38,11 +38,11 @@
             <option value="CNY">CNY</option>
           </select>
         </div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label text-xs">Описание (необязательно)</label>
-        <textarea name="description" placeholder="Например: основной счёт, подушка безопасности, инвестиции..."
-                  class="textarea textarea-bordered" rows="2"></textarea>
+        <div class="form-control flex-1">
+          <label class="form-label">Описание</label>
+          <input type="text" name="description" placeholder="Основной счёт, инвестиции, подушка..."
+                 class="input input-bordered input-sm">
+        </div>
       </div>
     </form>
   </div>

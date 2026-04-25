@@ -5,7 +5,7 @@
           hx-put="/wallets/{{.ID}}"
           hx-target="closest tr"
           hx-swap="outerHTML">
-      <div class="flex flex-wrap gap-2 items-end mb-2">
+      <div class="flex flex-wrap gap-2 items-end mb-3">
         <input type="text" name="name" value="{{.Name}}"
                class="input input-bordered input-sm flex-1 min-w-32" required>
         <select name="currency" class="select select-bordered select-sm">
@@ -15,11 +15,9 @@
           <option value="GBP" {{if eq .Currency "GBP"}}selected{{end}}>GBP</option>
           <option value="CNY" {{if eq .Currency "CNY"}}selected{{end}}>CNY</option>
         </select>
-      </div>
-      <div class="mb-3">
-        <textarea name="description" placeholder="Описание (необязательно)"
-                  class="textarea textarea-bordered textarea-sm w-full"
-                  rows="2">{{.Description}}</textarea>
+        <input type="text" name="description" value="{{.Description}}"
+               placeholder="Описание (необязательно)"
+               class="input input-bordered input-sm flex-1">
       </div>
       <div class="flex gap-2">
         <button type="submit" class="btn btn-primary btn-sm font-semibold">Сохранить</button>
