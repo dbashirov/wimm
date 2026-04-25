@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/mail"
+	"strings"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
@@ -14,11 +16,17 @@ import (
 
 var (
 	ErrEmailTaken         = errors.New("email already registered")
+	ErrInvalidEmail       = errors.New("invalid email address")
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrNotFound           = errors.New("not found")
 	ErrWrongCategoryType  = errors.New("category type must match operation type")
 	ErrSameWallet         = errors.New("source and target wallet must differ")
 )
+
+// normalizeEmail приводит email к каноническому виду (lowercase, trimmed).
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
 
 // dummyPasswordHash используется в Login для уравнивания времени работы
 // bcrypt при отсутствии пользователя (защита от timing attack).
@@ -77,6 +85,10 @@ func NewWithRepos(
 // --- Users ---
 
 func (s *Service) Register(ctx context.Context, email, password string) (*model.User, error) {
+	email = normalizeEmail(email)
+	if _, err := mail.ParseAddress(email); err != nil {
+		return nil, ErrInvalidEmail
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, fmt.Errorf("bcrypt: %w", err)
@@ -93,6 +105,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*model.
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (*model.User, error) {
+	email = normalizeEmail(email)
 	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
 		// Сравниваем пароль с фиктивным хешем чтобы выровнять время ответа

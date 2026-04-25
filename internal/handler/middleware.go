@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -33,7 +33,8 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 				http.Redirect(w, r, "/login", http.StatusFound)
 				return
 			}
-			log.Printf("auth %s %s: %v", r.Method, r.URL.Path, err)
+			slog.Error("auth",
+				"method", r.Method, "path", r.URL.Path, "err", err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
@@ -47,8 +48,9 @@ func recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if v := recover(); v != nil {
-				log.Printf("PANIC %s %s: %v\n%s",
-					r.Method, r.URL.Path, v, debug.Stack())
+				slog.Error("PANIC",
+					"method", r.Method, "path", r.URL.Path,
+					"value", v, "stack", string(debug.Stack()))
 				http.Error(w, "internal error", http.StatusInternalServerError)
 			}
 		}()
@@ -85,8 +87,13 @@ func logRequests(next http.Handler) http.Handler {
 		start := time.Now()
 		sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(sr, r)
-		log.Printf("%s %s %s %d %s",
-			clientIP(r), r.Method, r.URL.Path, sr.status, time.Since(start))
+		slog.Info("http",
+			"ip", clientIP(r),
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", sr.status,
+			"duration_ms", time.Since(start).Milliseconds(),
+		)
 	})
 }
 

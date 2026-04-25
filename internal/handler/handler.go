@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -163,7 +163,8 @@ func (h *Handler) Routes() http.Handler {
 
 // serverError логирует ошибку и возвращает клиенту 500.
 func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string, err error) {
-	log.Printf("%s %s %s: %v", r.Method, r.URL.Path, op, err)
+	slog.Error("handler",
+		"op", op, "method", r.Method, "path", r.URL.Path, "err", err)
 	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
@@ -171,21 +172,22 @@ func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, service.ErrNotFound) {
 		http.NotFound(w, r)
 	} else {
-		log.Printf("%s %s delete: %v", r.Method, r.URL.Path, err)
+		slog.Error("handler",
+			"op", "delete", "method", r.Method, "path", r.URL.Path, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 
 func (h *Handler) render(w http.ResponseWriter, page string, data any) {
 	if err := h.tmpls[page].ExecuteTemplate(w, "base", data); err != nil {
-		log.Printf("render %s: %v", page, err)
+		slog.Error("render", "page", page, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 
 func (h *Handler) renderPartial(w http.ResponseWriter, page, name string, data any) {
 	if err := h.tmpls[page].ExecuteTemplate(w, name, data); err != nil {
-		log.Printf("renderPartial %s/%s: %v", page, name, err)
+		slog.Error("renderPartial", "page", page, "name", name, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }

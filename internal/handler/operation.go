@@ -294,7 +294,12 @@ func parseTransferInput(r *http.Request) (model.TransferInput, error) {
 	}, nil
 }
 
-// parseDateTime парсит строку из datetime-local input формата "2006-01-02T15:04"
+// parseDateTime парсит строку из datetime-local input формата "2006-01-02T15:04".
+// Время интерпретируется в UTC — это даёт детерминированное поведение
+// независимо от TZ-настройки контейнера. Frontend (flatpickr) отображает
+// значения как локальные, что для личного финансового учёта приемлемо;
+// если в будущем понадобится корректная мультизона — клиент должен
+// передавать TZ явно.
 func parseDateTime(s string) (time.Time, error) {
-	return time.ParseInLocation("2006-01-02T15:04", s, time.Local)
+	return time.Parse("2006-01-02T15:04", s)
 }

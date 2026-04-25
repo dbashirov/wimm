@@ -2,7 +2,7 @@ package handler
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/service"
@@ -58,6 +58,10 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.svc.Register(r.Context(), email, password)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidEmail) {
+			h.render(w, "register", registerData{NoNav: true, Error: "Некорректный email"})
+			return
+		}
 		if errors.Is(err, service.ErrEmailTaken) {
 			h.render(w, "register", registerData{NoNav: true, Error: "Email уже зарегистрирован"})
 			return
@@ -75,7 +79,7 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) postLogout(w http.ResponseWriter, r *http.Request) {
 	if err := h.sessions.Delete(r.Context(), w, r); err != nil {
-		log.Printf("postLogout sessions.Delete: %v", err)
+		slog.Error("postLogout sessions.Delete", "err", err)
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)
 }

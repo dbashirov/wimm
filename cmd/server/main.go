@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +20,8 @@ import (
 )
 
 func main() {
+	setupLogger()
+
 	dbURL := mustEnv("DB_URL")
 	addr := envOr("SERVER_ADDR", ":8080")
 	sessionTTL := 30 * 24 * time.Hour
@@ -29,7 +32,8 @@ func main() {
 
 	store, err := storage.New(ctx, dbURL)
 	if err != nil {
-		log.Fatalf("storage.New: %v", err)
+		slog.Error("storage.New", "err", err)
+		os.Exit(1)
 	}
 	defer store.Close()
 
@@ -45,12 +49,14 @@ func main() {
 		HSTS:          os.Getenv("HSTS") == "true",
 	})
 	if err != nil {
-		log.Fatalf("handler.New: %v", err)
+		slog.Error("handler.New", "err", err)
+		os.Exit(1)
 	}
 
 	staticFS, err := fs.Sub(web.FS, "static")
 	if err != nil {
-		log.Fatalf("fs.Sub: %v", err)
+		slog.Error("fs.Sub", "err", err)
+		os.Exit(1)
 	}
 
 	mux := http.NewServeMux()
@@ -66,11 +72,12 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    1 << 20,
+		ErrorLog:          log.New(slogWriter{}, "", 0),
 	}
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("Listening on %s", addr)
+		slog.Info("listening", "addr", addr)
 		err := srv.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
@@ -79,9 +86,10 @@ func main() {
 
 	select {
 	case err := <-serverErr:
-		log.Fatalf("ListenAndServe: %v", err)
+		slog.Error("ListenAndServe", "err", err)
+		os.Exit(1)
 	case <-ctx.Done():
-		log.Println("Shutdown signal received")
+		slog.Info("shutdown signal received")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(
@@ -89,9 +97,40 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("srv.Shutdown: %v", err)
+		slog.Error("srv.Shutdown", "err", err)
 	}
-	log.Println("Server stopped")
+	slog.Info("server stopped")
+}
+
+// setupLogger конфигурирует slog: JSON-handler в проде (LOG_FORMAT=json),
+// человекочитаемый text-handler по умолчанию. Уровень из LOG_LEVEL.
+func setupLogger() {
+	level := slog.LevelInfo
+	switch os.Getenv("LOG_LEVEL") {
+	case "debug", "DEBUG":
+		level = slog.LevelDebug
+	case "warn", "WARN":
+		level = slog.LevelWarn
+	case "error", "ERROR":
+		level = slog.LevelError
+	}
+	opts := &slog.HandlerOptions{Level: level}
+	var h slog.Handler
+	if os.Getenv("LOG_FORMAT") == "json" {
+		h = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		h = slog.NewTextHandler(os.Stdout, opts)
+	}
+	slog.SetDefault(slog.New(h))
+}
+
+// slogWriter перенаправляет вывод стандартного log.Logger в slog.
+// Используется для http.Server.ErrorLog, чтобы все ошибки шли единым форматом.
+type slogWriter struct{}
+
+func (slogWriter) Write(p []byte) (int, error) {
+	slog.Error("http", "msg", string(p))
+	return len(p), nil
 }
 
 func cleanSessionsLoop(ctx context.Context, sm *session.Manager) {
@@ -105,7 +144,7 @@ func cleanSessionsLoop(ctx context.Context, sm *session.Manager) {
 			cleanCtx, cancel := context.WithTimeout(
 				context.Background(), 30*time.Second)
 			if err := sm.CleanExpired(cleanCtx); err != nil {
-				log.Printf("CleanExpired: %v", err)
+				slog.Error("CleanExpired", "err", err)
 			}
 			cancel()
 		}
@@ -115,7 +154,8 @@ func cleanSessionsLoop(ctx context.Context, sm *session.Manager) {
 func mustEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		log.Fatalf("required env var %s is not set", key)
+		slog.Error("required env var not set", "key", key)
+		os.Exit(1)
 	}
 	return v
 }

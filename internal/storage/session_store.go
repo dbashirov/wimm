@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -16,12 +18,30 @@ type SessionStore struct {
 	pool *pgxpool.Pool
 }
 
-func (s *SessionStore) Create(ctx context.Context, userID uuid.UUID, expiresAt time.Time) (*model.Session, error) {
+// newSessionID генерирует криптографически стойкий ID сессии:
+// 32 случайных байта в base64 URL-safe без padding (43 символа).
+func newSessionID() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("rand.Read: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func (s *SessionStore) Create(
+	ctx context.Context,
+	userID uuid.UUID,
+	expiresAt time.Time,
+) (*model.Session, error) {
+	id, err := newSessionID()
+	if err != nil {
+		return nil, fmt.Errorf("SessionStore.Create id: %w", err)
+	}
 	var sess model.Session
-	err := s.pool.QueryRow(ctx,
-		`INSERT INTO sessions(user_id, expires_at) VALUES($1, $2)
+	err = s.pool.QueryRow(ctx,
+		`INSERT INTO sessions(id, user_id, expires_at) VALUES($1, $2, $3)
 		 RETURNING id, user_id, expires_at`,
-		userID, expiresAt,
+		id, userID, expiresAt,
 	).Scan(&sess.ID, &sess.UserID, &sess.ExpiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("SessionStore.Create: %w", err)

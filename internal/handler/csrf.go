@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -39,7 +39,7 @@ func newCSRFManager(secret string, secure bool) (*csrfManager, error) {
 		if _, err := rand.Read(s); err != nil {
 			return nil, err
 		}
-		log.Println("CSRF_SECRET не задан — сгенерирован случайный ключ; пользователи увидят CSRF-ошибку при перезапуске")
+		slog.Warn("CSRF_SECRET не задан — сгенерирован случайный ключ; пользователи увидят CSRF-ошибку при перезапуске")
 	}
 	return &csrfManager{secret: s, secure: secure}, nil
 }
@@ -95,8 +95,8 @@ func (h *Handler) csrfProtect(next http.Handler) http.Handler {
 			h.csrf.ensureCookie(w, r, sessionID)
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 			if !h.csrf.validate(r, sessionID) {
-				log.Printf("CSRF rejected %s %s from %s",
-					r.Method, r.URL.Path, clientIP(r))
+				slog.Warn("CSRF rejected",
+					"method", r.Method, "path", r.URL.Path, "ip", clientIP(r))
 				http.Error(w, "CSRF token mismatch", http.StatusForbidden)
 				return
 			}
