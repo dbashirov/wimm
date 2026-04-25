@@ -43,6 +43,7 @@ type Wallet struct {
 	Name        string
 	Currency    string
 	Description string
+	Hidden      bool
 	CreatedAt   time.Time
 }
 

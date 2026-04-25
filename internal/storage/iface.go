@@ -26,6 +26,11 @@ type WalletRepo interface {
 		inp model.WalletInput,
 	) (*model.Wallet, error)
 	Delete(ctx context.Context, id, userID uuid.UUID) error
+	ToggleHidden(
+		ctx context.Context,
+		id uuid.UUID,
+		userID uuid.UUID,
+	) (*model.Wallet, error)
 }
 
 type CategoryRepo interface {

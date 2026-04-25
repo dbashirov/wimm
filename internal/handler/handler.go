@@ -93,6 +93,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("GET /wallets/{id}/edit", h.auth(http.HandlerFunc(h.getWalletEdit)))
 	mux.Handle("PUT /wallets/{id}", h.auth(http.HandlerFunc(h.putWallet)))
 	mux.Handle("DELETE /wallets/{id}", h.auth(http.HandlerFunc(h.deleteWallet)))
+	mux.Handle("POST /wallets/{id}/toggle-hidden", h.auth(http.HandlerFunc(h.postWalletToggleHidden)))
 
 	mux.Handle("GET /categories", h.auth(http.HandlerFunc(h.getCategories)))
 	mux.Handle("POST /categories", h.auth(http.HandlerFunc(h.postCategory)))

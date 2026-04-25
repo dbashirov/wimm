@@ -101,3 +101,18 @@ func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *Handler) postWalletToggleHidden(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	wallet, err := h.svc.ToggleWalletHidden(r.Context(), id, userID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	h.renderPartial(w, "wallets", "wallet-row", wallet)
+}

@@ -170,6 +170,21 @@ func (mr *MockWalletRepoMockRecorder) ListWithBalance(ctx, userID any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWithBalance", reflect.TypeOf((*MockWalletRepo)(nil).ListWithBalance), ctx, userID)
 }
 
+// ToggleHidden mocks base method.
+func (m *MockWalletRepo) ToggleHidden(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ToggleHidden", ctx, id, userID)
+	ret0, _ := ret[0].(*model.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ToggleHidden indicates an expected call of ToggleHidden.
+func (mr *MockWalletRepoMockRecorder) ToggleHidden(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleHidden", reflect.TypeOf((*MockWalletRepo)(nil).ToggleHidden), ctx, id, userID)
+}
+
 // Update mocks base method.
 func (m *MockWalletRepo) Update(ctx context.Context, id, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	m.ctrl.T.Helper()
@@ -354,10 +369,7 @@ func (mr *MockOperationRepoMockRecorder) CreateTransfer(ctx, userID, inp any) *g
 }
 
 // DashboardData mocks base method.
-func (m *MockOperationRepo) DashboardData(
-	ctx context.Context,
-	userID uuid.UUID,
-) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error) {
+func (m *MockOperationRepo) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DashboardData", ctx, userID)
 	ret0, _ := ret[0].([]model.CategoryAmount)

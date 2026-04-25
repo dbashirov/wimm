@@ -120,6 +120,18 @@ func (s *Service) DeleteWallet(ctx context.Context, id uuid.UUID, userID uuid.UU
 	return wrapNotFound(s.wallets.Delete(ctx, id, userID))
 }
 
+func (s *Service) ToggleWalletHidden(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Wallet, error) {
+	w, err := s.wallets.ToggleHidden(ctx, id, userID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return w, err
+}
+
 // --- Categories ---
 
 func (s *Service) ListCategories(ctx context.Context, userID uuid.UUID) ([]model.Category, error) {
