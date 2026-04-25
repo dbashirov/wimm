@@ -6,10 +6,19 @@
   </div>
 </div>
 
-<div class="card bg-base-100 mb-4">
+<div class="card bg-base-100 shadow-sm mb-4">
   <div class="card-body p-6">
-    <h3 class="card-section-title">Добавить кошелёк</h3>
-    <form hx-post="/wallets"
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-bold text-xl">Добавить кошелёк</h3>
+      <button form="wallet-form" type="submit" class="btn btn-primary btn-sm font-semibold">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Добавить
+      </button>
+    </div>
+    <form id="wallet-form"
+          hx-post="/wallets"
           hx-target="#wallets-tbody"
           hx-swap="afterbegin"
           hx-on::after-request="this.reset()">
@@ -35,7 +44,6 @@
         <textarea name="description" placeholder="Например: основной счёт, подушка безопасности, инвестиции..."
                   class="textarea textarea-bordered" rows="2"></textarea>
       </div>
-      <button type="submit" class="btn btn-primary font-semibold">Добавить</button>
     </form>
   </div>
 </div>
