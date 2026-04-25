@@ -15,11 +15,20 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// Config — параметры конфигурации обработчика, влияющие на безопасность.
+type Config struct {
+	CSRFSecret    string
+	SecureCookies bool // true в проде (HTTPS): cookies с Secure-флагом
+	HSTS          bool // true в проде: добавлять Strict-Transport-Security
+}
+
 type Handler struct {
 	svc          *service.Service
 	sessions     *session.Manager
 	tmpls        map[string]*template.Template
 	loginLimiter *rateLimiter
+	csrf         *csrfManager
+	cfg          Config
 }
 
 // basePage встраивается во все структуры данных страниц,
@@ -47,12 +56,22 @@ var tmplFuncs = template.FuncMap{
 	"add": func(a, b int) int { return a + b },
 }
 
-func New(svc *service.Service, sm *session.Manager, webFS fs.FS) (*Handler, error) {
+func New(
+	svc *service.Service,
+	sm *session.Manager,
+	webFS fs.FS,
+	cfg Config,
+) (*Handler, error) {
+	csrf, err := newCSRFManager(cfg.CSRFSecret, cfg.SecureCookies)
+	if err != nil {
+		return nil, fmt.Errorf("newCSRFManager: %w", err)
+	}
 	h := &Handler{
-		svc:      svc,
-		sessions: sm,
-		// 5 попыток логина с разгоном по 1 в минуту с одного IP.
+		svc:          svc,
+		sessions:     sm,
 		loginLimiter: newRateLimiter(rate.Every(time.Minute), 5),
+		csrf:         csrf,
+		cfg:          cfg,
 	}
 	tmpls, err := parseTemplates(webFS)
 	if err != nil {
@@ -79,10 +98,19 @@ func parseTemplates(webFS fs.FS) (map[string]*template.Template, error) {
 	return tmpls, nil
 }
 
+// protected оборачивает обработчик в auth + csrf.
+func (h *Handler) protected(handler http.HandlerFunc) http.Handler {
+	return h.auth(h.csrfProtect(handler))
+}
+
 func (h *Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
 
 	loginRL := limitByIP(h.loginLimiter)
+
+	// Healthcheck — без middleware, без auth
+	mux.HandleFunc("GET /health", h.getHealth)
+	mux.HandleFunc("GET /ready", h.getReady)
 
 	// Public
 	mux.HandleFunc("GET /login", h.getLogin)
@@ -91,39 +119,46 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("POST /register", loginRL(http.HandlerFunc(h.postRegister)))
 	mux.HandleFunc("POST /logout", h.postLogout)
 
-	// Protected
-	mux.Handle("GET /{$}", h.auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// Protected: auth + CSRF
+	mux.Handle("GET /{$}", h.protected(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/dashboard", http.StatusFound)
-	})))
-	mux.Handle("GET /dashboard", h.auth(http.HandlerFunc(h.getDashboard)))
+	}))
+	mux.Handle("GET /dashboard", h.protected(h.getDashboard))
 
-	mux.Handle("GET /wallets", h.auth(http.HandlerFunc(h.getWallets)))
-	mux.Handle("POST /wallets", h.auth(http.HandlerFunc(h.postWallet)))
-	mux.Handle("GET /wallets/{id}", h.auth(http.HandlerFunc(h.getWallet)))
-	mux.Handle("GET /wallets/{id}/edit", h.auth(http.HandlerFunc(h.getWalletEdit)))
-	mux.Handle("PUT /wallets/{id}", h.auth(http.HandlerFunc(h.putWallet)))
-	mux.Handle("DELETE /wallets/{id}", h.auth(http.HandlerFunc(h.deleteWallet)))
-	mux.Handle("POST /wallets/{id}/toggle-hidden", h.auth(http.HandlerFunc(h.postWalletToggleHidden)))
+	mux.Handle("GET /wallets", h.protected(h.getWallets))
+	mux.Handle("POST /wallets", h.protected(h.postWallet))
+	mux.Handle("GET /wallets/{id}", h.protected(h.getWallet))
+	mux.Handle("GET /wallets/{id}/edit", h.protected(h.getWalletEdit))
+	mux.Handle("PUT /wallets/{id}", h.protected(h.putWallet))
+	mux.Handle("DELETE /wallets/{id}", h.protected(h.deleteWallet))
+	mux.Handle("POST /wallets/{id}/toggle-hidden", h.protected(h.postWalletToggleHidden))
 
-	mux.Handle("GET /categories", h.auth(http.HandlerFunc(h.getCategories)))
-	mux.Handle("POST /categories", h.auth(http.HandlerFunc(h.postCategory)))
-	mux.Handle("GET /categories/{id}", h.auth(http.HandlerFunc(h.getCategory)))
-	mux.Handle("GET /categories/{id}/edit", h.auth(http.HandlerFunc(h.getCategoryEdit)))
-	mux.Handle("PUT /categories/{id}", h.auth(http.HandlerFunc(h.putCategory)))
-	mux.Handle("DELETE /categories/{id}", h.auth(http.HandlerFunc(h.deleteCategory)))
-	mux.Handle("GET /categories/options", h.auth(http.HandlerFunc(h.getCategoryOptions)))
+	mux.Handle("GET /categories", h.protected(h.getCategories))
+	mux.Handle("POST /categories", h.protected(h.postCategory))
+	mux.Handle("GET /categories/{id}", h.protected(h.getCategory))
+	mux.Handle("GET /categories/{id}/edit", h.protected(h.getCategoryEdit))
+	mux.Handle("PUT /categories/{id}", h.protected(h.putCategory))
+	mux.Handle("DELETE /categories/{id}", h.protected(h.deleteCategory))
+	mux.Handle("GET /categories/options", h.protected(h.getCategoryOptions))
 
-	mux.Handle("GET /operations", h.auth(http.HandlerFunc(h.getOperations)))
-	mux.Handle("POST /operations", h.auth(http.HandlerFunc(h.postOperation)))
-	mux.Handle("GET /operations/{id}", h.auth(http.HandlerFunc(h.getOperationRow)))
-	mux.Handle("GET /operations/{id}/edit", h.auth(http.HandlerFunc(h.getOperationEdit)))
-	mux.Handle("PUT /operations/{id}", h.auth(http.HandlerFunc(h.putOperation)))
-	mux.Handle("DELETE /operations/{id}", h.auth(http.HandlerFunc(h.deleteOperation)))
+	mux.Handle("GET /operations", h.protected(h.getOperations))
+	mux.Handle("POST /operations", h.protected(h.postOperation))
+	mux.Handle("GET /operations/{id}", h.protected(h.getOperationRow))
+	mux.Handle("GET /operations/{id}/edit", h.protected(h.getOperationEdit))
+	mux.Handle("PUT /operations/{id}", h.protected(h.putOperation))
+	mux.Handle("DELETE /operations/{id}", h.protected(h.deleteOperation))
 
-	mux.Handle("POST /transfers", h.auth(http.HandlerFunc(h.postTransfer)))
-	mux.Handle("DELETE /transfers/{transfer_id}", h.auth(http.HandlerFunc(h.deleteTransfer)))
+	mux.Handle("POST /transfers", h.protected(h.postTransfer))
+	mux.Handle("DELETE /transfers/{transfer_id}", h.protected(h.deleteTransfer))
 
-	return logRequests(recoverPanic(mux))
+	// Глобальный стек middleware: лог → recovery → headers → body limit → timeout → mux
+	var handler http.Handler = mux
+	handler = requestTimeout(15 * time.Second)(handler)
+	handler = limitBody(1 << 20)(handler) // 1 MB
+	handler = securityHeaders(h.cfg.HSTS)(handler)
+	handler = recoverPanic(handler)
+	handler = logRequests(handler)
+	return handler
 }
 
 // serverError логирует ошибку и возвращает клиенту 500.

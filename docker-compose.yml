@@ -7,6 +7,9 @@ services:
       DB_URL: postgres://wimm:wimm@postgres:5432/wimm?sslmode=disable
       SERVER_ADDR: :8080
       COOKIE_INSECURE: "true"
+      # В проде задать стабильный секрет: openssl rand -base64 32
+      CSRF_SECRET: ""
+      HSTS: "false"
     depends_on:
       postgres:
         condition: service_healthy

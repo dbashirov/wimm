@@ -37,6 +37,7 @@ type Service struct {
 	wallets    storage.WalletRepo
 	categories storage.CategoryRepo
 	operations storage.OperationRepo
+	store      *storage.Storage // для Ping в healthcheck; в тестах nil
 }
 
 // New создаёт Service из конкретного storage.Storage (продакшн-путь).
@@ -46,7 +47,16 @@ func New(store *storage.Storage) *Service {
 		wallets:    store.Wallets,
 		categories: store.Categories,
 		operations: store.Operations,
+		store:      store,
 	}
+}
+
+// Ping проверяет работоспособность БД для readiness-проб.
+func (s *Service) Ping(ctx context.Context) error {
+	if s.store == nil {
+		return nil
+	}
+	return s.store.Ping(ctx)
 }
 
 // NewWithRepos создаёт Service из интерфейсов напрямую (используется в тестах).

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -38,13 +39,23 @@ func main() {
 
 	go cleanSessionsLoop(ctx, sm)
 
-	h, err := handler.New(svc, sm, web.FS)
+	h, err := handler.New(svc, sm, web.FS, handler.Config{
+		CSRFSecret:    os.Getenv("CSRF_SECRET"),
+		SecureCookies: secureCookie,
+		HSTS:          os.Getenv("HSTS") == "true",
+	})
 	if err != nil {
 		log.Fatalf("handler.New: %v", err)
 	}
 
+	staticFS, err := fs.Sub(web.FS, "static")
+	if err != nil {
+		log.Fatalf("fs.Sub: %v", err)
+	}
+
 	mux := http.NewServeMux()
-	mux.Handle("GET /static/", http.FileServer(http.FS(web.FS)))
+	mux.Handle("GET /static/",
+		http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	mux.Handle("/", h.Routes())
 
 	srv := &http.Server{

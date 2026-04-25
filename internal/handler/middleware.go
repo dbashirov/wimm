@@ -154,6 +154,59 @@ func limitByIP(rl *rateLimiter) func(http.Handler) http.Handler {
 	}
 }
 
+// securityHeaders добавляет заголовки безопасности ко всем ответам.
+func securityHeaders(hsts bool) func(http.Handler) http.Handler {
+	const csp = "default-src 'self'; " +
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
+		"https://cdn.jsdelivr.net https://unpkg.com https://npmcdn.com " +
+		"https://cdn.tailwindcss.com; " +
+		"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net " +
+		"https://fonts.googleapis.com; " +
+		"font-src 'self' data: https://fonts.gstatic.com; " +
+		"img-src 'self' data:; " +
+		"connect-src 'self'; " +
+		"frame-ancestors 'none'; " +
+		"base-uri 'self'; " +
+		"form-action 'self'"
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := w.Header()
+			h.Set("X-Content-Type-Options", "nosniff")
+			h.Set("X-Frame-Options", "DENY")
+			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			h.Set("Content-Security-Policy", csp)
+			h.Set("Permissions-Policy",
+				"camera=(), microphone=(), geolocation=(), interest-cohort=()")
+			if hsts {
+				h.Set("Strict-Transport-Security",
+					"max-age=31536000; includeSubDomains")
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// limitBody ограничивает размер тела запроса для защиты от DoS.
+func limitBody(maxBytes int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// requestTimeout ставит общий дедлайн для запроса (наследуется в DB-вызовы).
+func requestTimeout(d time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), d)
+			defer cancel()
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 // clientIP достаёт реальный IP клиента, учитывая reverse-proxy headers.
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {

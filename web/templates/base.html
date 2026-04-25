@@ -23,6 +23,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script>
+    // CSRF: htmx автоматически отправляет токен из cookie csrf_token
+    // в заголовке X-CSRF-Token на каждом мутирующем запросе.
+    document.addEventListener('htmx:configRequest', function(evt) {
+      var m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      if (m) evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(m[1]);
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
