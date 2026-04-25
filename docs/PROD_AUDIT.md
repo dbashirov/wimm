@@ -1,316 +1,164 @@
 # План подготовки к продакшену
 
-Аудит проведён по текущему состоянию `main`. Приоритеты: `🔴 Критично` →
-`🟠 Важно` → `🟡 Желательно` → `🟢 Nice to have`.
+Статус задач: ✅ — сделано, ❌ — открыто, ⏸ — отложено.
+Приоритеты: `🔴 Критично` → `🟠 Важно` → `🟡 Желательно` → `🟢 Nice to have`.
 
 ---
 
 ## 🔴 Критично (блокирует деплой)
 
-### 1. HTTP-сервер без таймаутов и graceful shutdown
-**Где:** `cmd/server/main.go`
+### ✅ 1. HTTP-сервер таймауты + graceful shutdown
+`http.Server` с `ReadHeaderTimeout/ReadTimeout/WriteTimeout/IdleTimeout/MaxHeaderBytes`.
+`signal.NotifyContext(SIGINT, SIGTERM)` → `srv.Shutdown` → `store.Close`.
+`time.Tick` заменён на `time.NewTicker` + `<-ctx.Done()`.
 
-Используется `http.ListenAndServe` без настройки. Уязвимо к slowloris,
-при SIGTERM запросы обрываются, пул БД не закрывается корректно.
+### ✅ 2. CSRF-защита
+Stateless double-submit cookie: `token = HMAC-SHA256(sessionID, CSRF_SECRET)`,
+кладётся в cookie `csrf_token`. htmx через `htmx:configRequest` шлёт его
+в заголовке `X-CSRF-Token` на каждом мутирующем запросе.
 
-**Что делать:**
-```go
-srv := &http.Server{
-    Addr:              addr,
-    Handler:           mux,
-    ReadHeaderTimeout: 5 * time.Second,
-    ReadTimeout:       30 * time.Second,
-    WriteTimeout:      30 * time.Second,
-    IdleTimeout:       120 * time.Second,
-    MaxHeaderBytes:    1 << 20,
-}
+### ✅ 3. Rate-limiting на /login и /register
+Token bucket per-IP (`golang.org/x/time/rate`): 5 burst + 1/мин refill.
+Очистка устаревших записей раз в 10 минут.
 
-ctx, stop := signal.NotifyContext(context.Background(),
-    syscall.SIGINT, syscall.SIGTERM)
-defer stop()
+### ✅ 4. Timing-safe Login
+Если пользователя нет — всё равно вызывается `bcrypt.CompareHashAndPassword`
+с фиктивным хешем (генерируется в `init()`).
 
-go func() {
-    if err := srv.ListenAndServe(); err != nil &&
-        !errors.Is(err, http.ErrServerClosed) {
-        log.Fatalf("ListenAndServe: %v", err)
-    }
-}()
+### ✅ 5. Логирование ошибок в хендлерах
+Хелпер `h.serverError(w, r, op, err)` пишет лог + 500.
+Replaced все `http.Error(500)` без логов.
 
-<-ctx.Done()
-shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-defer cancel()
-if err := srv.Shutdown(shutdownCtx); err != nil {
-    log.Printf("Shutdown: %v", err)
-}
-store.Close()
-```
-
-### 2. CSRF-защита отсутствует
-**Где:** все POST/PUT/DELETE-эндпоинты
-
-Все мутирующие эндпоинты уязвимы. `SameSite=Strict` помогает частично,
-но не во всех браузерах/контекстах.
-
-**Что делать:** добавить middleware с double-submit cookie или
-подключить `gorilla/csrf`. Токен встроить в шаблоны через `{{.CSRFToken}}`.
-
-### 3. Brute force на `/login`
-**Где:** `internal/handler/auth.go`
-
-Нет rate-limiting → можно перебирать пароли неограниченно.
-
-**Что делать:** middleware с in-memory rate limiter (`golang.org/x/time/rate`)
-или Redis для распред. деплоя. Минимум: 5 попыток на 15 минут на пару IP+email.
-
-### 4. Timing attack на `/login`
-**Где:** `internal/service/service.go: Login()`
-
-Если пользователя нет — `bcrypt.CompareHashAndPassword` не вызывается →
-быстрый ответ. Можно перечислять зарегистрированных юзеров по времени.
-
-**Что делать:**
-```go
-func (s *Service) Login(ctx context.Context, email, password string) (*model.User, error) {
-    user, err := s.users.GetByEmail(ctx, email)
-    if err != nil {
-        // Сравниваем пароль с фиктивным хешем чтобы выровнять время
-        bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
-        return nil, ErrInvalidCredentials
-    }
-    if err := bcrypt.CompareHashAndPassword(
-        []byte(user.PasswordHash), []byte(password),
-    ); err != nil {
-        return nil, ErrInvalidCredentials
-    }
-    return user, nil
-}
-```
-
-### 5. Логи ошибок не пишутся в хендлерах
-**Где:** все файлы в `internal/handler/`
-
-Все хендлеры делают `http.Error(w, "internal error", 500)` без
-`log.Printf`. В продакшене будет невозможно дебажить.
-
-**Что делать:** middleware-логгер + перед каждым `http.Error(500)` писать
-`log.Printf("handler X: %v", err)`. Лучше — структурированный slog
-с request_id.
-
-### 6. Нет recovery middleware
-**Где:** `internal/handler/middleware.go`
-
-Паника в любом хендлере роняет весь сервер.
-
-**Что делать:**
-```go
-func recover(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        defer func() {
-            if v := recover(); v != nil {
-                log.Printf("PANIC %s %s: %v\n%s",
-                    r.Method, r.URL.Path, v, debug.Stack())
-                http.Error(w, "internal error", 500)
-            }
-        }()
-        next.ServeHTTP(w, r)
-    })
-}
-```
+### ✅ 6. Recovery middleware
+`recoverPanic` ловит панику, логирует stack trace в slog, возвращает 500.
 
 ---
 
-## 🟠 Важно (исправить до прода)
+## 🟠 Важно
 
-### 7. Security headers отсутствуют
-Нужны:
-- `Content-Security-Policy` (с поправкой на CDN htmx/Chart.js/daisyui)
-- `X-Content-Type-Options: nosniff`
-- `Strict-Transport-Security` (если HTTPS)
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `X-Frame-Options: DENY` (или `frame-ancestors 'none'` в CSP)
+### ✅ 7. Security headers
+CSP с whitelist'ом CDN (jsdelivr/unpkg/npmcdn/cdn.tailwindcss.com/fonts.googleapis.com),
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy`, `Permissions-Policy`. HSTS опционально через `HSTS=true`.
 
-### 8. Body size не лимитирован
-`r.FormValue` читает всё в память. DoS через большой POST.
+### ✅ 8. Body size limit
+`limitBody(1 << 20)` middleware → `http.MaxBytesReader` 1 MB.
 
-**Что делать:** middleware с `r.Body = http.MaxBytesReader(w, r.Body, 1<<20)`.
+### ✅ 9. Static FileServer (fs.Sub)
+`fs.Sub(web.FS, "static")` — шаблоны больше не торчат через `/static/templates/...`
 
-### 9. Static FileServer слишком широкий
-**Где:** `cmd/server/main.go`
+### ✅ 10. time.Tick → time.NewTicker
+Сделано в составе пункта 1.
 
-```go
-mux.Handle("GET /static/", http.FileServer(http.FS(web.FS)))
-```
+### ✅ 11. Email-валидация
+`net/mail.ParseAddress` в `service.Register`, нормализация (lowercase + trim)
+в `Register` и `Login`. Ошибка `ErrInvalidEmail`.
 
-Отдаёт весь `web/`, включая шаблоны (если кто-то знает путь).
+### ✅ 12. pgxpool config
+`MaxConns=25`, `MinConns=2`, `MaxConnLifetime=1h`, `MaxConnIdleTime=30m`,
+`HealthCheckPeriod=1m`.
 
-**Что делать:**
-```go
-staticFS, _ := fs.Sub(web.FS, "static")
-mux.Handle("GET /static/",
-    http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
-```
+### ✅ 13. DB query timeouts
+Middleware `requestTimeout(15s)` ставит общий дедлайн на запрос —
+наследуется во все вызовы pgx через `r.Context()`.
 
-### 10. Утечка горутины с `time.Tick`
-**Где:** `cmd/server/main.go`
+### ✅ 14. Healthcheck endpoints
+- `GET /health` — liveness, всегда 200 OK
+- `GET /ready` — readiness, пингует БД с таймаутом 2s
 
-```go
-go func() {
-    for range time.Tick(time.Hour) { ... }
-}()
-```
+### ✅ 15. Удалён dead code `getDashboardJSON`
 
-`time.Tick` нельзя остановить, ticker не GC-ится.
+### ✅ 16. slog — структурированное логирование
+- `LOG_LEVEL` (debug/info/warn/error) и `LOG_FORMAT` (text/json) из env
+- Все хендлеры и middleware пишут структурированно: `method`, `path`,
+  `op`, `err`, `duration_ms`, `ip`, `status`
+- `http.Server.ErrorLog` перенаправлен в slog
 
-**Что делать:**
-```go
-ticker := time.NewTicker(time.Hour)
-defer ticker.Stop()
-for {
-    select {
-    case <-ctx.Done(): return
-    case <-ticker.C: sm.CleanExpired(ctx)
-    }
-}
-```
-
-### 11. Email-валидация отсутствует
-**Где:** `internal/service/service.go: Register()`
-
-Любая строка проходит как email.
-
-**Что делать:** `net/mail.ParseAddress(email)` в Register.
-
-### 12. Connection pool не настроен
-**Где:** `internal/storage/storage.go`
-
-`pgxpool.New(ctx, dsn)` берёт дефолты. Под нагрузкой нужно явно
-указать `MaxConns`, `MinConns`, `MaxConnLifetime`.
-
-```go
-cfg, err := pgxpool.ParseConfig(dsn)
-cfg.MaxConns = 25
-cfg.MinConns = 2
-cfg.MaxConnLifetime = time.Hour
-cfg.MaxConnIdleTime = 30 * time.Minute
-pool, err := pgxpool.NewWithConfig(ctx, cfg)
-```
-
-### 13. DB запросы без таймаутов
-Контекст реквеста наследуется, но отдельных deadline для запросов нет.
-Долгие запросы могут забить пул.
-
-**Что делать:** `context.WithTimeout(ctx, 5*time.Second)` в storage-методах,
-особенно в `DashboardData` и `List`.
-
-### 14. Нет healthcheck-эндпоинта
-Для k8s/load-balancer-а нужен:
-- `GET /health` — живёт ли процесс
-- `GET /ready` — готов БД пинговать
-
-### 15. `getDashboardJSON` — dead code
-**Где:** `internal/handler/dashboard.go:26`
-
-Объявлен, но не зарегистрирован в роутере. Либо удалить, либо подключить.
-
-### 16. Логирование примитивное
-`log.Printf` без уровней, без структуры, без request_id.
-
-**Что делать:** перейти на `log/slog` (std lib с 1.21) с JSON-handler-ом
-для прода.
-
-### 17. Account enumeration на регистрации
-**Где:** `internal/handler/auth.go: postRegister`
-
-Ошибка "Email уже зарегистрирован" → можно перечислять. Спорно
-(UX vs security), но в банковских/финансовых сервисах лучше скрыть и
-писать что-то вроде "Если email не зарегистрирован, мы пришлём
-письмо для подтверждения".
+### ❌ 17. Account enumeration на регистрации
+Ошибка "Email уже зарегистрирован" позволяет перечислять пользователей.
+Спорный пункт UX vs security. Для финансового сервиса в идеале —
+"Если email не зарегистрирован, мы пришлём письмо для подтверждения"
+(требует email-flow). **Пока решено оставить как есть.**
 
 ---
 
 ## 🟡 Желательно
 
-### 18. Session ID — UUIDv4
-122 бита энтропии достаточно, но best practice — `crypto/rand` 32 байта
-в base64.
+### ✅ 18. Session ID на crypto/rand
+Теперь 32 байта в base64 RawURL (43 символа). Миграция 005 меняет
+`sessions.id` с UUID на TEXT.
 
-### 19. Тайм-зоны
-**Где:** `internal/handler/operation.go: parseDateTime`
+### ✅ 19. Тайм-зоны → UTC
+`parseDateTime` парсит в UTC. `Dockerfile` задаёт `TZ=UTC` для
+консистентности `time.Now()` и пр. **Известное ограничение:** клиент
+не передаёт TZ, поэтому "12:00" воспринимается как 12:00 UTC. Для
+мультизоны нужен явный TZ от клиента.
 
-Используется `time.Local` → зависит от TZ контейнера. Лучше форсить
-UTC или передавать TZ от клиента.
-
-### 20. JS template injection (потенциально)
-**Где:** `web/templates/dashboard.html`
-
+### ❌ 20. JS template injection (потенциально)
+В `dashboard.html`:
 ```js
 [{{range .CategoryExpenses}}"{{.Name}}",{{end}}]
 ```
-
 Go's `html/template` делает контекстный экранинг для `<script>`, но
-желательно явно использовать функцию `js` или передавать данные через
-`data-*` атрибуты + `JSON.parse`.
+лучше передавать данные через `data-*` атрибуты + `JSON.parse`.
 
-### 21. Pagination без верхней границы
-`Page=999999` пройдёт через `OFFSET 49999950` — медленный запрос.
-Ограничить, скажем, 10000.
+### ❌ 21. Pagination upper bound
+`Page=999999` → `OFFSET 49999950` — медленный запрос. Ограничить ~10000.
 
-### 22. Категории нельзя редактировать тип
-`Update` принимает только name/description. Возможно намеренно, но если
-пользователь ошибся — придётся удалить и пересоздать.
+### ❌ 22. Редактирование типа категории
+`UpdateCategory` принимает только name/description. Не позволяет
+исправить ошибочный тип — только удалить и пересоздать.
 
-### 23. Индексы по `user_id`
-**Где:** `migrations/001_init.sql`
+### ✅ 23. Индексы по user_id
+Миграция 004: `wallets_user_id_idx`, `categories_user_id_idx`.
 
-`wallets.user_id`, `categories.user_id` не имеют индексов. Все запросы
-фильтруют по `user_id` — нужны индексы.
+### ✅ 24. migrations.go проверка
+Только embed SQL-файлов (для тестов через goose). Никаких автовызовов.
+Противоречий с CLAUDE.md нет.
 
-```sql
-CREATE INDEX wallets_user_id_idx ON wallets(user_id);
-CREATE INDEX categories_user_id_idx ON categories(user_id);
-```
+### ✅ 25. .env.example задокументирован
+`DB_URL`, `SERVER_ADDR`, `CSRF_SECRET`, `COOKIE_INSECURE`, `HSTS`,
+`LOG_LEVEL`, `LOG_FORMAT`.
 
-### 24. `migrations/migrations.go` противоречит CLAUDE.md?
-По правилам миграции запускаются только вручную, но в папке есть
-`migrations.go`. Проверить и убрать вызовы из main, если есть.
-
-### 25. `.env.example` неполный
-Нет `COOKIE_INSECURE`, `MAX_DB_CONNS`, и т.д. Документировать все
-переменные.
-
-### 26. Описания operations не показываются в выдаче
-Запрос делает JOIN, но в шаблонах `operation_row` не везде
-используется. Проверить.
+### ❌ 26. Описания operations в шаблонах
+Запрос делает JOIN по описанию, но в шаблонах `operation_row` оно
+не везде показывается. Нужна проверка/доработка отображения.
 
 ---
 
 ## 🟢 Nice to have
 
-- Метрики Prometheus (`/metrics`)
-- Request ID middleware (для трейсинга)
-- Audit log (кто что когда)
-- Password reset flow
-- Email-верификация при регистрации
-- 2FA
-- Backup-стратегия для PostgreSQL
-- CI с `go test -race`, `golangci-lint`, `gosec`
+- ❌ Метрики Prometheus (`/metrics`)
+- ❌ Request ID middleware (для трейсинга)
+- ❌ Audit log (кто что когда)
+- ❌ Password reset flow
+- ❌ Email-верификация при регистрации
+- ❌ 2FA
+- ❌ Backup-стратегия для PostgreSQL
+- ❌ CI с `go test -race`, `golangci-lint`, `gosec`
 
 ---
 
-## 🎯 Минимальный набор для безопасного прод-деплоя
+## 🎯 Готовность к продакшену
 
-Порядок реализации для MVP-prod:
+**MVP-prod готов** — всё критическое и почти всё важное закрыто.
+Можно деплоить за reverse-proxy с HTTPS (Caddy/nginx).
 
-1. **HTTP server timeouts + graceful shutdown** (#1)
-2. **Recovery middleware** (#6)
-3. **Логирование ошибок в хендлерах** (#5)
-4. **Rate-limiting на /login и /register** (#3)
-5. **Timing-safe login** (#4)
-6. **CSRF-токены** (#2)
-7. **Security headers** (#7)
-8. **MaxBytesReader** (#8)
-9. **pgxpool config + DB query timeouts** (#12, #13)
-10. **Healthcheck endpoint** (#14)
+### Чек-лист перед деплоем:
+- [ ] Сгенерировать стабильный `CSRF_SECRET`: `openssl rand -base64 32`
+- [ ] `COOKIE_INSECURE=` (пусто = Secure)
+- [ ] `HSTS=true`
+- [ ] `LOG_FORMAT=json`, `LOG_LEVEL=info`
+- [ ] Запустить миграции: `goose -dir migrations postgres "$DB_URL" up`
+- [ ] Настроить healthcheck: `/health` для liveness, `/ready` для readiness
+- [ ] Настроить TLS на reverse-proxy
+- [ ] Backup-стратегия для PostgreSQL
 
-С этим списком уже можно ставить в прод за reverse-proxy с HTTPS
-(Caddy/nginx).
+### Что доделать после первого деплоя (по убыванию полезности):
+1. **20** — фикс потенциального JS template injection
+2. **21** — pagination upper bound
+3. **17** — account enumeration mitigation (опционально)
+4. **22** — редактирование типа категории
+5. **26** — описания operations в шаблонах
+6. Метрики Prometheus + request_id для трейсинга
+7. CI с linters
