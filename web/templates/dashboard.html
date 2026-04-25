@@ -12,6 +12,51 @@
   </a>
 </div>
 
+{{if .MonthlyTotals}}
+<div class="card bg-base-100 mb-8">
+  <div class="card-body p-6">
+    <div class="mb-4">
+      <h3 class="font-medium text-sm">Доходы, расходы и баланс</h3>
+      <p id="monthChartSubtitle" class="text-xs text-base-content/30 mt-0.5"></p>
+    </div>
+    <div class="relative h-72">
+      <canvas id="monthChart"></canvas>
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{if or .CategoryExpenses .CategoryIncomes}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  {{if .CategoryIncomes}}
+  <div class="card bg-base-100">
+    <div class="card-body p-6">
+      <div class="mb-4">
+        <h3 class="font-medium text-sm">Доходы по категориям</h3>
+        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
+      </div>
+      <div class="relative h-60">
+        <canvas id="catIncomeChart"></canvas>
+      </div>
+    </div>
+  </div>
+  {{end}}
+  {{if .CategoryExpenses}}
+  <div class="card bg-base-100">
+    <div class="card-body p-6">
+      <div class="mb-4">
+        <h3 class="font-medium text-sm">Расходы по категориям</h3>
+        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
+      </div>
+      <div class="relative h-60">
+        <canvas id="catExpenseChart"></canvas>
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
 {{if .WalletBalances}}
 <div class="card bg-base-100 mb-4">
   <div class="card-body p-6 pb-4">
@@ -53,51 +98,6 @@
 </div>
 {{end}}
 
-{{if or .CategoryExpenses .CategoryIncomes}}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-  {{if .CategoryExpenses}}
-  <div class="card bg-base-100">
-    <div class="card-body p-6">
-      <div class="mb-4">
-        <h3 class="font-medium text-sm">Расходы по категориям</h3>
-        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
-      </div>
-      <div class="relative h-60">
-        <canvas id="catExpenseChart"></canvas>
-      </div>
-    </div>
-  </div>
-  {{end}}
-  {{if .CategoryIncomes}}
-  <div class="card bg-base-100">
-    <div class="card-body p-6">
-      <div class="mb-4">
-        <h3 class="font-medium text-sm">Доходы по категориям</h3>
-        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
-      </div>
-      <div class="relative h-60">
-        <canvas id="catIncomeChart"></canvas>
-      </div>
-    </div>
-  </div>
-  {{end}}
-</div>
-{{end}}
-
-{{if .MonthlyTotals}}
-<div class="card bg-base-100 mb-8">
-  <div class="card-body p-6">
-    <div class="mb-4">
-      <h3 class="font-medium text-sm">Доходы, расходы и баланс</h3>
-      <p id="monthChartSubtitle" class="text-xs text-base-content/30 mt-0.5"></p>
-    </div>
-    <div class="relative h-72">
-      <canvas id="monthChart"></canvas>
-    </div>
-  </div>
-</div>
-{{end}}
-
 {{if or .CategoryExpenses .CategoryIncomes .MonthlyTotals}}
 <script>
 (function() {
@@ -128,13 +128,13 @@
     };
   }
 
-  {{if .CategoryExpenses}}
-  new Chart(document.getElementById('catExpenseChart'), {
+  {{if .CategoryIncomes}}
+  new Chart(document.getElementById('catIncomeChart'), {
     type: 'doughnut',
     data: {
-      labels: [{{range .CategoryExpenses}}"{{.Name}}",{{end}}],
+      labels: [{{range .CategoryIncomes}}"{{.Name}}",{{end}}],
       datasets: [{
-        data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
+        data: [{{range .CategoryIncomes}}{{money .Amount}},{{end}}],
         backgroundColor: palette,
         borderWidth: 2,
         borderColor: isDark ? '#13141F' : '#ffffff',
@@ -145,13 +145,13 @@
   });
   {{end}}
 
-  {{if .CategoryIncomes}}
-  new Chart(document.getElementById('catIncomeChart'), {
+  {{if .CategoryExpenses}}
+  new Chart(document.getElementById('catExpenseChart'), {
     type: 'doughnut',
     data: {
-      labels: [{{range .CategoryIncomes}}"{{.Name}}",{{end}}],
+      labels: [{{range .CategoryExpenses}}"{{.Name}}",{{end}}],
       datasets: [{
-        data: [{{range .CategoryIncomes}}{{money .Amount}},{{end}}],
+        data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
         backgroundColor: palette,
         borderWidth: 2,
         borderColor: isDark ? '#13141F' : '#ffffff',
