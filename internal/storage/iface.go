@@ -74,4 +74,9 @@ type OperationRepo interface {
 		ctx context.Context,
 		userID uuid.UUID,
 	) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error)
+	WalletDashboardData(
+		ctx context.Context,
+		walletID uuid.UUID,
+		userID uuid.UUID,
+	) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error)
 }

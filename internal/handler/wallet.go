@@ -15,6 +15,14 @@ type walletsData struct {
 	Error   string
 }
 
+type walletStatsData struct {
+	basePage
+	*model.DashboardData
+	WalletName     string
+	WalletCurrency string
+	BackURL        string
+}
+
 func (h *Handler) getWallets(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	wallets, err := h.svc.ListWallets(r.Context(), userID)
@@ -111,6 +119,31 @@ func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) getWalletStats(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	data, err := h.svc.WalletStats(r.Context(), id, userID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	backURL := "/wallets"
+	if r.URL.Query().Get("from") == "dashboard" {
+		backURL = "/dashboard"
+	}
+	wallet := data.WalletBalances[0].Wallet
+	h.render(w, "wallet_stats", walletStatsData{
+		DashboardData:  data,
+		WalletName:     wallet.Name,
+		WalletCurrency: wallet.Currency,
+		BackURL:        backURL,
+	})
 }
 
 func (h *Handler) postWalletsReorder(w http.ResponseWriter, r *http.Request) {

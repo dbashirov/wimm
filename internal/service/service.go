@@ -341,6 +341,40 @@ func (s *Service) DeleteTransfer(ctx context.Context, transferID uuid.UUID, user
 	return wrapNotFound(s.operations.DeleteTransfer(ctx, transferID, userID))
 }
 
+// --- Wallet stats ---
+
+func (s *Service) WalletStats(
+	ctx context.Context,
+	walletID uuid.UUID,
+	userID uuid.UUID,
+) (*model.DashboardData, error) {
+	wallet, err := s.wallets.GetByID(ctx, walletID, userID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	expenses, incomes, monthly, err := s.operations.WalletDashboardData(ctx, walletID, userID)
+	if err != nil {
+		return nil, err
+	}
+	var balance float64
+	for _, mt := range monthly {
+		balance = mt.Balance
+	}
+	return &model.DashboardData{
+		WalletBalances: []model.WalletBalance{{
+			Wallet:  *wallet,
+			Balance: balance,
+		}},
+		TotalBalance:    balance,
+		MonthlyExpenses: expenses,
+		MonthlyIncomes:  incomes,
+		MonthlyTotals:   monthly,
+	}, nil
+}
+
 // --- Dashboard ---
 
 func (s *Service) DashboardData(ctx context.Context, userID uuid.UUID) (*model.DashboardData, error) {

@@ -333,6 +333,115 @@ func (s *OperationStore) fetchMonthlyCategories(
 	return result, nil
 }
 
+func (s *OperationStore) fetchWalletMonthlyCategories(
+	ctx context.Context,
+	userID uuid.UUID,
+	walletID uuid.UUID,
+	opType model.OperationType,
+) ([]model.MonthlyCategoryData, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT
+			to_char(date_trunc('month', o.operated_at), 'YYYY-MM') AS month,
+			c.name,
+			SUM(o.amount)::float8
+		FROM categories c
+		JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
+		WHERE c.user_id = $1 AND o.type = $2 AND o.wallet_id = $3
+		  AND o.operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '2 months'
+		GROUP BY date_trunc('month', o.operated_at), c.name
+		ORDER BY date_trunc('month', o.operated_at), SUM(o.amount) DESC`,
+		userID, opType, walletID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetchWalletMonthlyCategories %s: %w", opType, err)
+	}
+	defer rows.Close()
+
+	type entry = model.MonthlyCategoryData
+	index := make(map[string]*entry)
+	var order []string
+
+	for rows.Next() {
+		var month string
+		var ca model.CategoryAmount
+		if err := rows.Scan(&month, &ca.Name, &ca.Amount); err != nil {
+			return nil, fmt.Errorf("fetchWalletMonthlyCategories scan: %w", err)
+		}
+		if _, ok := index[month]; !ok {
+			index[month] = &entry{Label: monthLabel(month)}
+			order = append(order, month)
+		}
+		index[month].Items = append(index[month].Items, ca)
+		index[month].Total += ca.Amount
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := make([]model.MonthlyCategoryData, len(order))
+	for i, m := range order {
+		result[i] = *index[m]
+	}
+	return result, nil
+}
+
+func (s *OperationStore) WalletDashboardData(
+	ctx context.Context,
+	walletID uuid.UUID,
+	userID uuid.UUID,
+) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
+	expenses, err := s.fetchWalletMonthlyCategories(ctx, userID, walletID, model.TypeExpense)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	incomes, err := s.fetchWalletMonthlyCategories(ctx, userID, walletID, model.TypeIncome)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	monthRows, err := s.pool.Query(ctx, `
+		WITH monthly AS (
+			SELECT
+				date_trunc('month', operated_at) AS month,
+				SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8 AS income,
+				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
+			FROM operations
+			WHERE user_id = $1 AND wallet_id = $4
+			  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+			GROUP BY date_trunc('month', operated_at)
+		),
+		pre AS (
+			SELECT COALESCE(
+				SUM(CASE WHEN type=$2 THEN amount ELSE -amount END), 0
+			)::float8 AS base
+			FROM operations
+			WHERE user_id = $1 AND wallet_id = $4
+			  AND operated_at < date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+		)
+		SELECT
+			to_char(m.month, 'YYYY-MM'),
+			m.income,
+			m.expense,
+			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::float8
+		FROM monthly m
+		ORDER BY m.month`,
+		userID, model.TypeIncome, model.TypeExpense, walletID,
+	)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("WalletDashboardData monthly: %w", err)
+	}
+	defer monthRows.Close()
+	var monthly []model.MonthlyTotal
+	for monthRows.Next() {
+		var mt model.MonthlyTotal
+		if err := monthRows.Scan(&mt.Month, &mt.Income, &mt.Expense, &mt.Balance); err != nil {
+			return nil, nil, nil, err
+		}
+		monthly = append(monthly, mt)
+	}
+	return expenses, incomes, monthly, monthRows.Err()
+}
+
 func (s *OperationStore) DashboardData(
 	ctx context.Context,
 	userID uuid.UUID,

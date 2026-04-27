@@ -77,13 +77,14 @@
 {{if .WalletBalances}}
 <div id="wallets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
   {{range .WalletBalances}}
-  <div class="card bg-base-100 wallet-card wallet-sortable" data-id="{{.ID}}">
-    <div class="card-body p-6 gap-3">
+  <div class="card bg-base-100 wallet-card wallet-sortable relative" data-id="{{.ID}}">
+    <a href="/wallets/{{.ID}}/stats?from=dashboard" class="absolute inset-0 z-0 rounded-2xl" aria-label="{{.Name}}"></a>
+    <div class="card-body p-6 gap-3 relative z-10 pointer-events-none">
       <div class="flex items-center justify-between">
         <h3 class="font-medium text-sm text-base-content/70">{{.Name}}</h3>
         <div class="flex items-center gap-2">
           <span class="badge badge-ghost badge-sm font-mono">{{.Currency}}</span>
-          <span class="wallet-drag-handle cursor-grab active:cursor-grabbing text-base-content/20 hover:text-base-content/50 transition-colors" title="Перетащить">
+          <span class="wallet-drag-handle cursor-grab active:cursor-grabbing text-base-content/20 hover:text-base-content/50 transition-colors pointer-events-auto" title="Перетащить">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="9"  cy="5"  r="1.5"/><circle cx="15" cy="5"  r="1.5"/>
               <circle cx="9"  cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>

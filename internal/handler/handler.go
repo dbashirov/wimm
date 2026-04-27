@@ -106,7 +106,7 @@ func New(
 }
 
 func parseTemplates(webFS fs.FS) (map[string]*template.Template, error) {
-	pages := []string{"login", "register", "dashboard", "wallets", "categories", "operations"}
+	pages := []string{"login", "register", "dashboard", "wallets", "categories", "operations", "wallet_stats"}
 	tmpls := make(map[string]*template.Template)
 	for _, page := range pages {
 		t, err := template.New("").Funcs(tmplFuncs).ParseFS(webFS,
@@ -152,6 +152,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("GET /wallets", h.protected(h.getWallets))
 	mux.Handle("POST /wallets", h.protected(h.postWallet))
 	mux.Handle("GET /wallets/{id}", h.protected(h.getWallet))
+	mux.Handle("GET /wallets/{id}/stats", h.protected(h.getWalletStats))
 	mux.Handle("GET /wallets/{id}/edit", h.protected(h.getWalletEdit))
 	mux.Handle("PUT /wallets/{id}", h.protected(h.putWallet))
 	mux.Handle("DELETE /wallets/{id}", h.protected(h.deleteWallet))
