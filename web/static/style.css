@@ -52,15 +52,35 @@ body {
   --radius-selector: 0.5rem;
 }
 
-/* ── Page background — Astro-style fixed gradient ── */
-[data-theme="dark"] body {
-  background-attachment: fixed;
-  background-image: radial-gradient(
-    ellipse 110% 65% at 50% -5%,
-    color-mix(in oklch, var(--color-secondary) 32%, transparent),
-    color-mix(in oklch, var(--color-primary)   18%, transparent) 35%,
-    transparent 65%
-  );
+/* ── Page background — position:fixed div вместо background-attachment:fixed
+   (Safari не поддерживает background-attachment:fixed корректно — даёт
+   полосы и дёргание при скролле. position:fixed на отдельном div
+   работает везде без артефактов.) ── */
+body {
+  background: transparent;
+}
+
+#glow-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+[data-theme="dark"] #glow-bg {
+  /* SVG-шум поверх градиента убирает оставшийся бандинг (дизеринг) */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C%2Fsvg%3E"),
+    radial-gradient(
+      in oklch ellipse 110% 65% at 50% -5%,
+      color-mix(in oklch, var(--color-secondary) 30%, transparent)  0%,
+      color-mix(in oklch, var(--color-secondary) 22%, transparent) 15%,
+      color-mix(in oklch, var(--color-primary)   16%, transparent) 30%,
+      color-mix(in oklch, var(--color-primary)    8%, transparent) 48%,
+      color-mix(in oklch, var(--color-primary)    2%, transparent) 60%,
+      transparent 68%
+    );
+  background-size: 200px 200px, cover;
 }
 
 /* ── Navbar ── */

@@ -1,6 +1,6 @@
 {{define "base"}}
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark" class="h-full">
+<html lang="ru" data-theme="dark" class="h-full bg-base-200">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,7 +35,8 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
 </head>
-<body class="min-h-screen bg-base-200 font-sans">
+<body class="min-h-screen font-sans">
+<div id="glow-bg" aria-hidden="true"></div>
 
 {{if not .NoNav}}
 <div class="navbar-wrap sticky top-0 z-50">
