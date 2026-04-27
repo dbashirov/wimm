@@ -39,6 +39,30 @@ type basePage struct {
 
 var tmplFuncs = template.FuncMap{
 	"money": func(amount float64) string {
+		neg := amount < 0
+		if neg {
+			amount = -amount
+		}
+		intPart := int64(amount)
+		frac := int64((amount-float64(intPart))*100 + 0.5)
+		s := fmt.Sprintf("%d", intPart)
+		// вставляем разделители тысяч
+		n := len(s)
+		var out []byte
+		for i, c := range s {
+			if i > 0 && (n-i)%3 == 0 {
+				out = append(out, ' ')
+			}
+			out = append(out, byte(c))
+		}
+		result := fmt.Sprintf("%s.%02d", out, frac)
+		if neg {
+			return "-" + result
+		}
+		return result
+	},
+	// num выводит число для вставки в JS (без разделителей, с точкой)
+	"num": func(amount float64) string {
 		return fmt.Sprintf("%.2f", amount)
 	},
 	"typeLabel": func(t model.OperationType) string {
@@ -169,9 +193,15 @@ func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string,
 }
 
 func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
-	if errors.Is(err, service.ErrNotFound) {
+	switch {
+	case errors.Is(err, service.ErrNotFound):
 		http.NotFound(w, r)
-	} else {
+	case errors.Is(err, service.ErrHasOperations):
+		http.Error(w,
+			"Нельзя удалить: есть связанные операции. Сначала удалите операции.",
+			http.StatusConflict,
+		)
+	default:
 		slog.Error("handler",
 			"op", "delete", "method", r.Method, "path", r.URL.Path, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

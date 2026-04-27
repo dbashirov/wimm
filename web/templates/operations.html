@@ -61,11 +61,11 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                   class="input input-bordered input-sm" required>
+                   class="input input-bordered" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-            <select name="wallet_id" class="select select-bordered select-sm" required>
+            <select name="wallet_id" class="select select-bordered" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -73,7 +73,7 @@
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-            <select name="category_id" id="op-category-select" class="select select-bordered select-sm" required>
+            <select name="category_id" id="op-category-select" class="select select-bordered" required>
               {{range .Categories}}{{if eq .Type "expense"}}
               <option value="{{.ID}}">{{.Name}}</option>
               {{end}}{{end}}
@@ -82,12 +82,12 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
             <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                   class="input input-bordered input-sm fp-datetime" required>
+                   class="input input-bordered fp-datetime" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
             <input type="text" name="description" placeholder="Необязательно"
-                   class="input input-bordered input-sm">
+                   class="input input-bordered">
           </div>
         </div>
       </form>
@@ -103,7 +103,7 @@
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
-            <select name="from_wallet_id" class="select select-bordered select-sm" required>
+            <select name="from_wallet_id" class="select select-bordered" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -111,7 +111,7 @@
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
-            <select name="to_wallet_id" class="select select-bordered select-sm" required>
+            <select name="to_wallet_id" class="select select-bordered" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -120,17 +120,17 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                   class="input input-bordered input-sm" required>
+                   class="input input-bordered" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
             <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                   class="input input-bordered input-sm fp-datetime" required>
+                   class="input input-bordered fp-datetime" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
             <input type="text" name="description" placeholder="Необязательно"
-                   class="input input-bordered input-sm">
+                   class="input input-bordered">
           </div>
         </div>
       </form>

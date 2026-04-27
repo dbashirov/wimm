@@ -369,11 +369,11 @@ func (mr *MockOperationRepoMockRecorder) CreateTransfer(ctx, userID, inp any) *g
 }
 
 // DashboardData mocks base method.
-func (m *MockOperationRepo) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error) {
+func (m *MockOperationRepo) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DashboardData", ctx, userID)
-	ret0, _ := ret[0].([]model.CategoryAmount)
-	ret1, _ := ret[1].([]model.CategoryAmount)
+	ret0, _ := ret[0].([]model.MonthlyCategoryData)
+	ret1, _ := ret[1].([]model.MonthlyCategoryData)
 	ret2, _ := ret[2].([]model.MonthlyTotal)
 	ret3, _ := ret[3].(error)
 	return ret0, ret1, ret2, ret3

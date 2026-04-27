@@ -21,6 +21,7 @@ var (
 	ErrNotFound           = errors.New("not found")
 	ErrWrongCategoryType  = errors.New("category type must match operation type")
 	ErrSameWallet         = errors.New("source and target wallet must differ")
+	ErrHasOperations      = errors.New("has linked operations")
 )
 
 // normalizeEmail приводит email к каноническому виду (lowercase, trimmed).
@@ -158,7 +159,8 @@ func (s *Service) UpdateWallet(
 }
 
 func (s *Service) DeleteWallet(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
-	return wrapNotFound(s.wallets.Delete(ctx, id, userID))
+	err := s.wallets.Delete(ctx, id, userID)
+	return wrapDeleteErr(err)
 }
 
 func (s *Service) ToggleWalletHidden(
@@ -217,7 +219,8 @@ func (s *Service) UpdateCategory(
 }
 
 func (s *Service) DeleteCategory(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
-	return wrapNotFound(s.categories.Delete(ctx, id, userID))
+	err := s.categories.Delete(ctx, id, userID)
+	return wrapDeleteErr(err)
 }
 
 // --- Operations ---
@@ -334,17 +337,33 @@ func (s *Service) DashboardData(ctx context.Context, userID uuid.UUID) (*model.D
 		total += w.Balance
 	}
 	return &model.DashboardData{
-		WalletBalances:   wallets,
-		TotalBalance:     total,
-		CategoryExpenses: expenses,
-		CategoryIncomes:  incomes,
-		MonthlyTotals:    monthly,
+		WalletBalances:  wallets,
+		TotalBalance:    total,
+		MonthlyExpenses: expenses,
+		MonthlyIncomes:  incomes,
+		MonthlyTotals:   monthly,
 	}, nil
 }
 
 func wrapNotFound(err error) error {
 	if errors.Is(err, storage.ErrNotFound) {
 		return ErrNotFound
+	}
+	return err
+}
+
+// wrapDeleteErr преобразует storage-ошибки при удалении в service-уровневые.
+// pgcode 23503 — нарушение FK, значит на объект ссылаются операции.
+func wrapDeleteErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrNotFound
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+		return ErrHasOperations
 	}
 	return err
 }

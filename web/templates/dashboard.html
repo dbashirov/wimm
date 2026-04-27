@@ -15,9 +15,19 @@
 {{if .MonthlyTotals}}
 <div class="card bg-base-100 mb-8">
   <div class="card-body p-6">
-    <div class="mb-4">
-      <h3 class="font-medium text-sm">Доходы, расходы и баланс</h3>
-      <p id="monthChartSubtitle" class="text-xs text-base-content/30 mt-0.5"></p>
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h3 class="font-medium text-sm">Доходы, расходы и баланс</h3>
+        <p id="monthChartSubtitle" class="text-xs text-base-content/30 mt-0.5"></p>
+      </div>
+      {{if .WalletBalances}}
+      <div class="text-right">
+        <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none mb-1">Текущий баланс</p>
+        <p class="text-2xl font-bold tracking-tight {{if ge .TotalBalance 0.0}}text-success{{else}}text-error{{end}}">
+          {{money .TotalBalance}}
+        </p>
+      </div>
+      {{end}}
     </div>
     <div class="relative h-72">
       <canvas id="monthChart"></canvas>
@@ -26,47 +36,45 @@
 </div>
 {{end}}
 
-{{if or .CategoryExpenses .CategoryIncomes}}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-  {{if .CategoryIncomes}}
-  <div class="card bg-base-100">
-    <div class="card-body p-6">
-      <div class="mb-4">
-        <h3 class="font-medium text-sm">Доходы по категориям</h3>
-        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
-      </div>
-      <div class="relative h-60">
-        <canvas id="catIncomeChart"></canvas>
-      </div>
-    </div>
-  </div>
-  {{end}}
-  {{if .CategoryExpenses}}
-  <div class="card bg-base-100">
-    <div class="card-body p-6">
-      <div class="mb-4">
-        <h3 class="font-medium text-sm">Расходы по категориям</h3>
-        <p class="text-xs text-base-content/30 mt-0.5">Текущий месяц</p>
-      </div>
-      <div class="relative h-60">
-        <canvas id="catExpenseChart"></canvas>
+{{if .MonthlyExpenses}}
+<div class="mb-8">
+  <h3 class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">Расходы по категориям</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {{range $i, $m := .MonthlyExpenses}}
+    <div class="card bg-base-100">
+      <div class="card-body p-5">
+        <div class="mb-3">
+          <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none">{{$m.Label}}</p>
+          <p class="text-xl font-bold text-error/80 mt-1 tracking-tight">{{money $m.Total}}</p>
+        </div>
+        <div id="exp-{{$i}}" class="h-72 w-full"></div>
       </div>
     </div>
+    {{end}}
   </div>
-  {{end}}
+</div>
+{{end}}
+
+{{if .MonthlyIncomes}}
+<div class="mb-8">
+  <h3 class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">Доходы по категориям</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {{range $i, $m := .MonthlyIncomes}}
+    <div class="card bg-base-100">
+      <div class="card-body p-5">
+        <div class="mb-3">
+          <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none">{{$m.Label}}</p>
+          <p class="text-xl font-bold text-success/80 mt-1 tracking-tight">{{money $m.Total}}</p>
+        </div>
+        <div id="inc-{{$i}}" class="h-72 w-full"></div>
+      </div>
+    </div>
+    {{end}}
+  </div>
 </div>
 {{end}}
 
 {{if .WalletBalances}}
-<div class="card bg-base-100 mb-4">
-  <div class="card-body p-6 pb-4">
-    <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider mb-1">Общий остаток</p>
-    <p class="text-4xl font-bold tracking-tight {{if ge .TotalBalance 0.0}}text-success{{else}}text-error{{end}}">
-      {{money .TotalBalance}}
-    </p>
-  </div>
-</div>
-
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
   {{range .WalletBalances}}
   <div class="card bg-base-100 wallet-card">
@@ -98,12 +106,13 @@
 </div>
 {{end}}
 
-{{if or .CategoryExpenses .CategoryIncomes .MonthlyTotals}}
+{{if or .MonthlyExpenses .MonthlyIncomes .MonthlyTotals}}
 <script>
 (function() {
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   var gridColor = isDark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
-  var textColor = isDark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.45)';
+  var textColor = isDark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
+  var bgColor   = isDark ? '#1d1e2e' : '#ffffff';
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = 'Inter, sans-serif';
   Chart.defaults.font.size = 11;
@@ -114,59 +123,89 @@
     '#06b6d4','#a855f7','#e11d48','#65a30d','#0ea5e9',
   ];
 
-  function doughnutOptions() {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8 }
+  var lineColor = isDark
+    ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
+
+  var roseCharts = [];
+
+  function makeRoseChart(containerId, labels, data) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var total = data.reduce(function(a, b) { return a + b; }, 0);
+    var chart = echarts.init(el, null, { renderer: 'canvas' });
+    roseCharts.push(chart);
+
+    var seriesData = labels.map(function(label, i) {
+      return { value: data[i], name: label };
+    });
+
+    chart.setOption({
+      backgroundColor: 'transparent',
+      color: palette,
+      tooltip: {
+        trigger: 'item',
+        formatter: function(p) {
+          var pct = total > 0
+            ? ' (' + (p.value / total * 100).toFixed(1) + '%)'
+            : '';
+          return p.marker + p.name + ': <b>'
+            + p.value.toLocaleString('ru') + pct + '</b>';
         }
-      }
-    };
+      },
+      series: [{
+        type: 'pie',
+        radius: ['35%', '60%'],
+        center: ['50%', '50%'],
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: bgColor,
+          borderWidth: 3,
+        },
+        label: {
+          show: true,
+          position: 'outside',
+          color: textColor,
+          fontSize: 10,
+          fontFamily: 'Inter, sans-serif',
+        },
+        labelLine: {
+          show: true,
+          length: 14,
+          length2: 8,
+          lineStyle: { color: lineColor },
+        },
+        minShowLabelAngle: 3,
+        labelLayout: { hideOverlap: true },
+        emphasis: {
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0,
+            shadowColor: 'rgba(0,0,0,0.3)' }
+        },
+        data: seriesData,
+      }]
+    });
+
+    new ResizeObserver(function() { chart.resize(); }).observe(el);
   }
 
-  {{if .CategoryIncomes}}
-  new Chart(document.getElementById('catIncomeChart'), {
-    type: 'doughnut',
-    data: {
-      labels: [{{range .CategoryIncomes}}"{{.Name}}",{{end}}],
-      datasets: [{
-        data: [{{range .CategoryIncomes}}{{money .Amount}},{{end}}],
-        backgroundColor: palette,
-        borderWidth: 2,
-        borderColor: isDark ? '#13141F' : '#ffffff',
-        hoverBorderColor: isDark ? '#13141F' : '#ffffff',
-      }]
-    },
-    options: doughnutOptions(),
-  });
+  {{range $i, $m := .MonthlyExpenses}}
+  makeRoseChart('exp-{{$i}}',
+    [{{range $m.Items}}"{{.Name}}",{{end}}],
+    [{{range $m.Items}}{{num .Amount}},{{end}}]
+  );
   {{end}}
 
-  {{if .CategoryExpenses}}
-  new Chart(document.getElementById('catExpenseChart'), {
-    type: 'doughnut',
-    data: {
-      labels: [{{range .CategoryExpenses}}"{{.Name}}",{{end}}],
-      datasets: [{
-        data: [{{range .CategoryExpenses}}{{money .Amount}},{{end}}],
-        backgroundColor: palette,
-        borderWidth: 2,
-        borderColor: isDark ? '#13141F' : '#ffffff',
-        hoverBorderColor: isDark ? '#13141F' : '#ffffff',
-      }]
-    },
-    options: doughnutOptions(),
-  });
+  {{range $i, $m := .MonthlyIncomes}}
+  makeRoseChart('inc-{{$i}}',
+    [{{range $m.Items}}"{{.Name}}",{{end}}],
+    [{{range $m.Items}}{{num .Amount}},{{end}}]
+  );
   {{end}}
 
   {{if .MonthlyTotals}}
   var allLabels  = [{{range .MonthlyTotals}}"{{.Month}}",{{end}}];
-  var allIncome  = [{{range .MonthlyTotals}}{{money .Income}},{{end}}];
-  var allExpense = [{{range .MonthlyTotals}}{{money .Expense}},{{end}}];
-  var allBalance = [{{range .MonthlyTotals}}{{money .Balance}},{{end}}];
+  var allIncome  = [{{range .MonthlyTotals}}{{num .Income}},{{end}}];
+  var allExpense = [{{range .MonthlyTotals}}{{num .Expense}},{{end}}];
+  var allBalance = [{{range .MonthlyTotals}}{{num .Balance}},{{end}}];
 
   var wideQuery = window.matchMedia('(min-width: 768px)');
 
@@ -232,8 +271,26 @@
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8 }
-        }
+          labels: {
+            padding: 16,
+            usePointStyle: false,
+            boxWidth: 12,
+            boxHeight: 4,
+            generateLabels: function(chart) {
+              var labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+              labels.forEach(function(label) {
+                if (label.datasetIndex === 2) {
+                  label.fillStyle = balanceColor;
+                  label.strokeStyle = balanceColor;
+                  label.lineWidth = 0;
+                  label.lineDash = [];
+                }
+              });
+              return labels;
+            }
+          }
+        },
+        datalabels: { display: false }
       },
       scales: {
         x: {
@@ -264,6 +321,44 @@
     document.getElementById('monthChartSubtitle').textContent = d.title;
   });
   {{end}}
+
+  // Обновляем цвета всех графиков при смене темы
+  new MutationObserver(function() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var tc = dark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
+    var bg = dark ? '#1d1e2e' : '#ffffff';
+    var lc = dark ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
+    var gc = dark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
+    var bc = dark ? 'rgba(139,92,246,0.9)' : 'rgba(99,102,241,0.9)';
+    var bf = dark ? 'rgba(139,92,246,0.08)' : 'rgba(99,102,241,0.08)';
+
+    roseCharts.forEach(function(c) {
+      c.setOption({ series: [{
+        label:     { color: tc },
+        labelLine: { lineStyle: { color: lc } },
+        itemStyle: { borderColor: bg },
+      }]});
+    });
+
+    if (typeof monthChart !== 'undefined') {
+      balanceColor = bc;
+      Chart.defaults.color = tc;
+      monthChart.data.datasets[0].backgroundColor =
+        dark ? 'rgba(52,211,153,0.6)' : 'rgba(5,150,105,0.6)';
+      monthChart.data.datasets[1].backgroundColor =
+        dark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.6)';
+      monthChart.data.datasets[2].borderColor = bc;
+      monthChart.data.datasets[2].backgroundColor = bf;
+      monthChart.options.plugins.legend.labels.color = tc;
+      monthChart.options.scales.x.ticks = { color: tc };
+      monthChart.options.scales.y.grid.color = gc;
+      monthChart.options.scales.y.ticks = { color: tc };
+      monthChart.options.scales.yBalance.ticks.color = bc;
+      monthChart.update('none');
+    }
+  }).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme']
+  });
 })();
 </script>
 {{end}}

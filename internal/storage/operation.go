@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/google/uuid"
@@ -260,51 +261,87 @@ func (s *OperationStore) DeleteTransfer(
 	return nil
 }
 
-const catAmountSQL = `
-	SELECT c.name, COALESCE(SUM(o.amount), 0)::float8
+var ruMonths = [12]string{
+	"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+	"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+}
+
+func monthLabel(yyyymm string) string {
+	t, err := time.Parse("2006-01", yyyymm)
+	if err != nil {
+		return yyyymm
+	}
+	now := time.Now().UTC()
+	if t.Year() == now.Year() && t.Month() == now.Month() {
+		return "Текущий месяц"
+	}
+	label := ruMonths[t.Month()-1]
+	if t.Year() != now.Year() {
+		label += fmt.Sprintf(" %d", t.Year())
+	}
+	return label
+}
+
+const catByMonthSQL = `
+	SELECT
+		to_char(date_trunc('month', o.operated_at), 'YYYY-MM') AS month,
+		c.name,
+		SUM(o.amount)::float8
 	FROM categories c
 	JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
 	WHERE c.user_id = $1 AND o.type = $2
-	  AND date_trunc('month', o.operated_at) = date_trunc('month', CURRENT_DATE)
-	GROUP BY c.name
-	ORDER BY SUM(o.amount) DESC`
+	  AND o.operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '2 months'
+	GROUP BY date_trunc('month', o.operated_at), c.name
+	ORDER BY date_trunc('month', o.operated_at), SUM(o.amount) DESC`
 
-func scanCatAmounts(rows interface {
-	Next() bool
-	Scan(...any) error
-	Err() error
-	Close()
-}, label string) ([]model.CategoryAmount, error) {
-	defer rows.Close()
-	var out []model.CategoryAmount
-	for rows.Next() {
-		var ca model.CategoryAmount
-		if err := rows.Scan(&ca.Name, &ca.Amount); err != nil {
-			return nil, fmt.Errorf("DashboardData %s scan: %w", label, err)
-		}
-		out = append(out, ca)
+func (s *OperationStore) fetchMonthlyCategories(
+	ctx context.Context,
+	userID uuid.UUID,
+	opType model.OperationType,
+) ([]model.MonthlyCategoryData, error) {
+	rows, err := s.pool.Query(ctx, catByMonthSQL, userID, opType)
+	if err != nil {
+		return nil, fmt.Errorf("fetchMonthlyCategories %s: %w", opType, err)
 	}
-	return out, rows.Err()
+	defer rows.Close()
+
+	type entry = model.MonthlyCategoryData
+	index := make(map[string]*entry)
+	var order []string
+
+	for rows.Next() {
+		var month string
+		var ca model.CategoryAmount
+		if err := rows.Scan(&month, &ca.Name, &ca.Amount); err != nil {
+			return nil, fmt.Errorf("fetchMonthlyCategories scan: %w", err)
+		}
+		if _, ok := index[month]; !ok {
+			index[month] = &entry{Label: monthLabel(month)}
+			order = append(order, month)
+		}
+		index[month].Items = append(index[month].Items, ca)
+		index[month].Total += ca.Amount
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := make([]model.MonthlyCategoryData, len(order))
+	for i, m := range order {
+		result[i] = *index[m]
+	}
+	return result, nil
 }
 
 func (s *OperationStore) DashboardData(
 	ctx context.Context,
 	userID uuid.UUID,
-) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error) {
-	expRows, err := s.pool.Query(ctx, catAmountSQL, userID, model.TypeExpense)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("DashboardData expenses: %w", err)
-	}
-	expenses, err := scanCatAmounts(expRows, "expenses")
+) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
+	expenses, err := s.fetchMonthlyCategories(ctx, userID, model.TypeExpense)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	incRows, err := s.pool.Query(ctx, catAmountSQL, userID, model.TypeIncome)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("DashboardData incomes: %w", err)
-	}
-	incomes, err := scanCatAmounts(incRows, "incomes")
+	incomes, err := s.fetchMonthlyCategories(ctx, userID, model.TypeIncome)
 	if err != nil {
 		return nil, nil, nil, err
 	}

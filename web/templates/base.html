@@ -32,6 +32,8 @@
     });
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
 </head>
@@ -164,6 +166,33 @@
       }
     });
   })();
+</script>
+
+<!-- Toast-уведомления (ошибки htmx) -->
+<div id="toast-container"
+     class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+</div>
+<script>
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    var color = type === 'error' ? 'alert-error' : 'alert-warning';
+    toast.className = 'alert ' + color + ' shadow-lg max-w-sm pointer-events-auto text-sm';
+    toast.innerHTML = '<span>' + msg + '</span>';
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.transition = 'opacity 0.4s';
+      toast.style.opacity = '0';
+      setTimeout(function() { container.removeChild(toast); }, 400);
+    }, 5000);
+  }
+  document.addEventListener('htmx:responseError', function(evt) {
+    var xhr = evt.detail.xhr;
+    var msg = xhr.responseText
+      ? xhr.responseText.trim()
+      : 'Ошибка сервера (' + xhr.status + ')';
+    showToast(msg, xhr.status === 409 ? 'warning' : 'error');
+  });
 </script>
 </body>
 </html>

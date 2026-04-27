@@ -71,5 +71,5 @@ type OperationRepo interface {
 	DashboardData(
 		ctx context.Context,
 		userID uuid.UUID,
-	) ([]model.CategoryAmount, []model.CategoryAmount, []model.MonthlyTotal, error)
+	) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error)
 }

@@ -123,16 +123,23 @@ type TransferInput struct {
 }
 
 type DashboardData struct {
-	WalletBalances   []WalletBalance
-	TotalBalance     float64
-	CategoryExpenses []CategoryAmount
-	CategoryIncomes  []CategoryAmount
-	MonthlyTotals    []MonthlyTotal
+	WalletBalances  []WalletBalance
+	TotalBalance    float64
+	MonthlyExpenses []MonthlyCategoryData
+	MonthlyIncomes  []MonthlyCategoryData
+	MonthlyTotals   []MonthlyTotal
 }
 
 type CategoryAmount struct {
 	Name   string
 	Amount float64
+}
+
+// MonthlyCategoryData — агрегат по категориям за один месяц.
+type MonthlyCategoryData struct {
+	Label string          // "Февраль", "Март", "Текущий месяц"
+	Total float64
+	Items []CategoryAmount
 }
 
 type MonthlyTotal struct {
