@@ -133,9 +133,22 @@
       instance.altInput.className = instance.input.className.replace('fp-datetime', '').trim();
     },
   };
+  var fpDateConfig = {
+    enableTime: false,
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd.m.Y',
+    locale: 'ru',
+    onReady: function(_, __, instance) {
+      instance.altInput.className = instance.input.className.replace('fp-date', '').trim();
+    },
+  };
   function initFlatpickr() {
     document.querySelectorAll('.fp-datetime:not(.flatpickr-input)').forEach(function(el) {
       flatpickr(el, fpConfig);
+    });
+    document.querySelectorAll('.fp-date:not(.flatpickr-input)').forEach(function(el) {
+      flatpickr(el, fpDateConfig);
     });
   }
   document.addEventListener('DOMContentLoaded', initFlatpickr);

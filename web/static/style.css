@@ -320,6 +320,122 @@ html {
   color: var(--color-primary);
 }
 
+/* ── Flatpickr dark theme ── */
+[data-theme="dark"] .flatpickr-calendar {
+  background: var(--color-base-100);
+  border-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  color: var(--color-base-content);
+}
+[data-theme="dark"] .flatpickr-calendar.arrowTop::before,
+[data-theme="dark"] .flatpickr-calendar.arrowTop::after {
+  border-bottom-color: var(--color-base-100);
+}
+[data-theme="dark"] .flatpickr-calendar.arrowBottom::before,
+[data-theme="dark"] .flatpickr-calendar.arrowBottom::after {
+  border-top-color: var(--color-base-100);
+}
+[data-theme="dark"] .flatpickr-months {
+  background: var(--color-base-200);
+  border-radius: 8px 8px 0 0;
+}
+[data-theme="dark"] .flatpickr-months .flatpickr-month,
+[data-theme="dark"] .flatpickr-months .flatpickr-prev-month,
+[data-theme="dark"] .flatpickr-months .flatpickr-next-month {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  fill: var(--color-base-content);
+}
+[data-theme="dark"] .flatpickr-months .flatpickr-prev-month:hover,
+[data-theme="dark"] .flatpickr-months .flatpickr-next-month:hover {
+  color: var(--color-primary);
+  fill: var(--color-primary);
+}
+[data-theme="dark"] .flatpickr-current-month input.cur-year,
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: var(--color-base-content);
+  background: transparent;
+}
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months option {
+  background: var(--color-base-300);
+}
+[data-theme="dark"] .flatpickr-weekdays {
+  background: var(--color-base-100);
+}
+[data-theme="dark"] span.flatpickr-weekday {
+  background: var(--color-base-100);
+  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+}
+[data-theme="dark"] .flatpickr-days {
+  border-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+[data-theme="dark"] .dayContainer {
+  background: var(--color-base-100);
+}
+[data-theme="dark"] .flatpickr-day {
+  color: var(--color-base-content);
+  border-color: transparent;
+}
+[data-theme="dark"] .flatpickr-day:hover,
+[data-theme="dark"] .flatpickr-day:focus {
+  background: color-mix(in oklch, var(--color-primary) 18%, transparent);
+  border-color: transparent;
+  color: var(--color-base-content);
+}
+[data-theme="dark"] .flatpickr-day.today {
+  border-color: color-mix(in oklch, var(--color-primary) 55%, transparent);
+}
+[data-theme="dark"] .flatpickr-day.today:hover {
+  background: color-mix(in oklch, var(--color-primary) 25%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary) 55%, transparent);
+}
+[data-theme="dark"] .flatpickr-day.selected,
+[data-theme="dark"] .flatpickr-day.selected:hover,
+[data-theme="dark"] .flatpickr-day.startRange,
+[data-theme="dark"] .flatpickr-day.endRange {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-content);
+}
+[data-theme="dark"] .flatpickr-day.flatpickr-disabled,
+[data-theme="dark"] .flatpickr-day.prevMonthDay,
+[data-theme="dark"] .flatpickr-day.nextMonthDay {
+  color: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+}
+[data-theme="dark"] .flatpickr-time {
+  background: var(--color-base-100);
+  border-top-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+[data-theme="dark"] .flatpickr-time input,
+[data-theme="dark"] .flatpickr-time .flatpickr-time-separator,
+[data-theme="dark"] .flatpickr-time .flatpickr-am-pm {
+  color: var(--color-base-content);
+  background: transparent;
+}
+[data-theme="dark"] .flatpickr-time input:hover,
+[data-theme="dark"] .flatpickr-time input:focus,
+[data-theme="dark"] .flatpickr-time .flatpickr-am-pm:hover,
+[data-theme="dark"] .flatpickr-time .flatpickr-am-pm:focus {
+  background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+}
+[data-theme="dark"] .numInputWrapper:hover {
+  background: color-mix(in oklch, var(--color-base-content) 5%, transparent);
+}
+[data-theme="dark"] .numInputWrapper span.arrowUp::after {
+  border-bottom-color: var(--color-base-content);
+}
+[data-theme="dark"] .numInputWrapper span.arrowDown::after {
+  border-top-color: var(--color-base-content);
+}
+
+/* ── Hide number input spinners ── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
 /* ── Wallet drag-and-drop ── */
 .wallet-drag-ghost {
   opacity: 0.35;

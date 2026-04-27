@@ -91,7 +91,17 @@
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   var gridColor = isDark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
   var textColor = isDark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
-  var bgColor   = isDark ? '#1d1e2e' : '#ffffff';
+
+  function readCardBg() {
+    var tmp = document.createElement('div');
+    tmp.className = 'bg-base-100';
+    tmp.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+    document.body.appendChild(tmp);
+    var color = getComputedStyle(tmp).backgroundColor;
+    document.body.removeChild(tmp);
+    return color;
+  }
+  var bgColor = readCardBg();
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = 'Inter, sans-serif';
   Chart.defaults.font.size = 11;
@@ -103,6 +113,43 @@
   ];
 
   var lineColor = isDark ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
+
+  function fmtMoney(val) {
+    var neg = val < 0;
+    if (neg) val = -val;
+    var int = Math.floor(val);
+    var frac = Math.round((val - int) * 100);
+    var s = String(int), out = '';
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 === 0) out += ' ';
+      out += s[i];
+    }
+    return (neg ? '−' : '') + out + '.' + (frac < 10 ? '0' : '') + frac;
+  }
+
+  function tooltipOpts(total) {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      trigger: 'item',
+      backgroundColor: dark ? 'rgba(18,19,32,0.96)' : 'rgba(255,255,255,0.97)',
+      borderColor:     dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
+      borderWidth: 1,
+      padding: [8, 12],
+      extraCssText: 'border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.35)',
+      textStyle: {
+        color:      dark ? 'rgba(224,230,248,0.85)' : 'rgba(0,0,0,0.72)',
+        fontFamily: 'Inter, sans-serif',
+        fontSize:   12,
+      },
+      formatter: function(p) {
+        var pct = total > 0
+          ? ' <span style="opacity:.55">(' + (p.value / total * 100).toFixed(1) + '%)</span>'
+          : '';
+        return p.marker + p.name + ': <b>' + fmtMoney(p.value) + '</b>' + pct;
+      },
+    };
+  }
+
   var roseCharts = [];
 
   function makeRoseChart(containerId, labels, data) {
@@ -115,13 +162,7 @@
     chart.setOption({
       backgroundColor: 'transparent',
       color: palette,
-      tooltip: {
-        trigger: 'item',
-        formatter: function(p) {
-          var pct = total > 0 ? ' (' + (p.value / total * 100).toFixed(1) + '%)' : '';
-          return p.marker + p.name + ': <b>' + p.value.toLocaleString('ru') + pct + '</b>';
-        }
-      },
+      tooltip: tooltipOpts(total),
       series: [{
         type: 'pie',
         radius: ['35%', '60%'],
@@ -276,18 +317,23 @@
   new MutationObserver(function() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     var tc = dark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
-    var bg = dark ? '#1d1e2e' : '#ffffff';
+    var bg = readCardBg();
     var lc = dark ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
     var gc = dark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
     var bc = dark ? 'rgba(139,92,246,0.9)' : 'rgba(99,102,241,0.9)';
     var bf = dark ? 'rgba(139,92,246,0.08)' : 'rgba(99,102,241,0.08)';
 
+    var tt = tooltipOpts(0);
+    delete tt.formatter;
     roseCharts.forEach(function(c) {
-      c.setOption({ series: [{
-        label:     { color: tc },
-        labelLine: { lineStyle: { color: lc } },
-        itemStyle: { borderColor: bg },
-      }]});
+      c.setOption({
+        tooltip: tt,
+        series: [{
+          label:     { color: tc },
+          labelLine: { lineStyle: { color: lc } },
+          itemStyle: { borderColor: bg },
+        }],
+      });
     });
 
     if (typeof monthChart !== 'undefined') {

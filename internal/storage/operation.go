@@ -407,6 +407,7 @@ func (s *OperationStore) WalletDashboardData(
 				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
 			FROM operations
 			WHERE user_id = $1 AND wallet_id = $4
+			  AND transfer_id IS NULL
 			  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
 			GROUP BY date_trunc('month', operated_at)
 		),
@@ -416,6 +417,7 @@ func (s *OperationStore) WalletDashboardData(
 			)::float8 AS base
 			FROM operations
 			WHERE user_id = $1 AND wallet_id = $4
+			  AND transfer_id IS NULL
 			  AND operated_at < date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
 		)
 		SELECT
@@ -463,6 +465,7 @@ func (s *OperationStore) DashboardData(
 				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
 			FROM operations
 			WHERE user_id = $1
+			  AND transfer_id IS NULL
 			  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
 			GROUP BY date_trunc('month', operated_at)
 		),
@@ -472,6 +475,7 @@ func (s *OperationStore) DashboardData(
 			)::float8 AS base
 			FROM operations
 			WHERE user_id = $1
+			  AND transfer_id IS NULL
 			  AND operated_at < date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
 		)
 		SELECT

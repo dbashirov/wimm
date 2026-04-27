@@ -60,8 +60,8 @@
           <input type="hidden" name="type" id="op-type-hidden" value="income">
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-            <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                   class="input input-bordered" required>
+            <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
+                   class="input input-bordered amount-input" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
@@ -119,8 +119,8 @@
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-            <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00"
-                   class="input input-bordered" required>
+            <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
+                   class="input input-bordered amount-input" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
@@ -139,6 +139,37 @@
 </div>
 
 <script>
+(function() {
+  function stripSpaces(v) { return v.replace(/ /g, ''); }
+
+  function formatAmount(v) {
+    v = stripSpaces(v);
+    var dot = v.indexOf('.');
+    var intPart  = dot >= 0 ? v.slice(0, dot) : v;
+    var fracPart = dot >= 0 ? v.slice(dot)    : '';
+    return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + fracPart;
+  }
+
+  document.querySelectorAll('.amount-input').forEach(function(el) {
+    el.addEventListener('blur',  function() {
+      if (el.value) el.value = formatAmount(el.value);
+    });
+    el.addEventListener('focus', function() {
+      el.value = stripSpaces(el.value);
+    });
+  });
+
+  ['op-form', 'transfer-form'].forEach(function(id) {
+    var form = document.getElementById(id);
+    if (!form) return;
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('.amount-input').forEach(function(el) {
+        el.value = stripSpaces(el.value);
+      });
+    }, true);
+  });
+})();
+
 function updateOpForm(mode) {
   const opSection = document.getElementById('op-section');
   const transferSection = document.getElementById('transfer-section');
@@ -190,7 +221,7 @@ function updateOpForm(mode) {
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-          <select name="wallet_id" class="select select-bordered select-sm">
+          <select name="wallet_id" class="select select-bordered">
             <option value="">Все</option>
             {{range .Wallets}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
@@ -199,7 +230,7 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Тип</label>
-          <select name="type" class="select select-bordered select-sm">
+          <select name="type" class="select select-bordered">
             <option value="">Все</option>
             <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
             <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
@@ -207,7 +238,7 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-          <select name="category_id" class="select select-bordered select-sm">
+          <select name="category_id" class="select select-bordered">
             <option value="">Все</option>
             {{range .Categories}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
@@ -216,13 +247,13 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата от</label>
-          <input type="date" name="date_from" class="input input-bordered input-sm"
+          <input type="text" name="date_from" class="input input-bordered fp-date"
                  value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата до</label>
-          <input type="date" name="date_to" class="input input-bordered input-sm"
-                 value="{{if not .Filter.DateTo.IsZero}}{{.Filter.DateTo.Format "2006-01-02"}}{{end}}">
+          <input type="text" name="date_to" class="input input-bordered fp-date"
+                 value="{{if not .Filter.DateTo.IsZero}}{{(.Filter.DateTo.AddDate 0 0 -1).Format "2006-01-02"}}{{end}}">
         </div>
       </div>
       <div class="flex gap-2 mt-3">
