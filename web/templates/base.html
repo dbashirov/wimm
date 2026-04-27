@@ -24,8 +24,6 @@
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <script>
-    // CSRF: htmx автоматически отправляет токен из cookie csrf_token
-    // в заголовке X-CSRF-Token на каждом мутирующем запросе.
     document.addEventListener('htmx:configRequest', function(evt) {
       var m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
       if (m) evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(m[1]);
@@ -40,79 +38,71 @@
 <body class="min-h-screen bg-base-200 font-sans">
 
 {{if not .NoNav}}
-<div class="navbar sticky top-0 z-50 px-6">
-  <div class="navbar-start">
+<div class="navbar-wrap sticky top-0 z-50">
+  <div class="flex items-center h-16 gap-4 max-w-6xl mx-auto px-4 sm:px-6">
+
     <!-- Mobile hamburger -->
-    <div class="dropdown">
-      <div tabindex="0" role="button" class="btn btn-ghost btn-sm lg:hidden">
+    <div class="dropdown lg:hidden">
+      <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
         </svg>
       </div>
-      <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-50 mt-3 w-48 p-2 shadow-xl border border-base-300">
-        <li><a href="/dashboard">Дашборд</a></li>
+      <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-50 mt-3 w-48 p-2 shadow-xl border border-base-content/10">
+        <li><a href="/dashboard">Обзор</a></li>
         <li><a href="/wallets">Кошельки</a></li>
         <li><a href="/categories">Категории</a></li>
         <li><a href="/operations">Операции</a></li>
-        <li class="mt-1 border-t border-base-200 pt-1">
+        <li class="mt-1 border-t border-base-content/10 pt-1">
           <form method="POST" action="/logout">
             <button type="submit" class="w-full text-left text-error text-sm">Выйти</button>
           </form>
         </li>
       </ul>
     </div>
-    <a href="/dashboard" class="text-xl font-bold tracking-tight logo-text ml-1">wimm</a>
-  </div>
 
-  <div class="navbar-center hidden lg:flex">
-    <ul class="flex items-center gap-1">
-      <li>
-        <a href="/dashboard"
-           class="nav-link px-3 py-1.5 rounded-md text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-content/5 transition-colors">
-          Дашборд
-        </a>
-      </li>
-      <li>
-        <a href="/wallets"
-           class="nav-link px-3 py-1.5 rounded-md text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-content/5 transition-colors">
-          Кошельки
-        </a>
-      </li>
-      <li>
-        <a href="/categories"
-           class="nav-link px-3 py-1.5 rounded-md text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-content/5 transition-colors">
-          Категории
-        </a>
-      </li>
-      <li>
-        <a href="/operations"
-           class="nav-link px-3 py-1.5 rounded-md text-sm font-medium text-base-content/70 hover:text-base-content hover:bg-base-content/5 transition-colors">
-          Операции
-        </a>
-      </li>
-    </ul>
-  </div>
+    <!-- Logo -->
+    <a href="/dashboard" class="text-xl font-bold tracking-tight logo-text shrink-0">wimm</a>
 
-  <div class="navbar-end gap-2">
-    <!-- Theme toggle -->
-    <label class="swap swap-rotate btn btn-ghost btn-sm btn-circle opacity-60 hover:opacity-100">
-      <input type="checkbox" id="theme-toggle">
-      <svg class="swap-on h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
-      </svg>
-      <svg class="swap-off h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>
-      </svg>
-    </label>
-    <!-- Logout -->
-    <form method="POST" action="/logout" class="hidden lg:block">
-      <button type="submit" class="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content text-xs">
-        Выйти
-      </button>
-    </form>
+    <!-- Desktop nav links — centered -->
+    <nav class="hidden lg:flex flex-1 justify-center">
+      <ul class="flex items-center gap-1">
+        <li>
+          <a href="/dashboard" class="nav-link nav-pill">Обзор</a>
+        </li>
+        <li>
+          <a href="/wallets" class="nav-link nav-pill">Кошельки</a>
+        </li>
+        <li>
+          <a href="/categories" class="nav-link nav-pill">Категории</a>
+        </li>
+        <li>
+          <a href="/operations" class="nav-link nav-pill">Операции</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Right: theme + logout -->
+    <div class="flex items-center gap-1 ml-auto lg:ml-0">
+      <label class="swap swap-rotate btn btn-ghost btn-sm btn-circle opacity-50 hover:opacity-100 transition-opacity">
+        <input type="checkbox" id="theme-toggle">
+        <svg class="swap-on h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
+        </svg>
+        <svg class="swap-off h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/>
+        </svg>
+      </label>
+      <form method="POST" action="/logout" class="hidden lg:block">
+        <button type="submit" class="btn btn-ghost btn-sm text-base-content/40 hover:text-base-content text-xs font-medium">
+          Выйти
+        </button>
+      </form>
+    </div>
   </div>
 </div>
-<main class="container mx-auto px-4 py-10 max-w-6xl">
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
   {{template "content" .}}
 </main>
 {{else}}
@@ -120,7 +110,6 @@
 {{end}}
 
 <script>
-  // flatpickr init
   var fpConfig = {
     enableTime: true,
     dateFormat: 'Y-m-dTH:i',
@@ -156,7 +145,6 @@
 </script>
 <script>
   (function() {
-    // Theme toggle
     var toggle = document.getElementById('theme-toggle');
     if (toggle) {
       toggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -167,27 +155,21 @@
       });
     }
 
-    // Active nav link highlight
     var path = window.location.pathname;
     document.querySelectorAll('.nav-link').forEach(function(a) {
       var href = a.getAttribute('href');
       var isActive = href === path ||
         (href !== '/dashboard' && path.startsWith(href));
-      if (isActive) {
-        a.classList.add('nav-link-active');
-        a.classList.remove('text-base-content/70');
-      }
+      if (isActive) a.classList.add('nav-link-active');
     });
   })();
 </script>
 
-<!-- Toast-уведомления (ошибки htmx) -->
 <div id="toast-container"
      class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 pointer-events-none">
 </div>
 <script>
   var TOAST_DURATION = 5000;
-
   var ICON_ERROR = '<svg class="wimm-toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/></svg>';
   var ICON_WARNING = '<svg class="wimm-toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
 
@@ -196,7 +178,6 @@
     var isError = type === 'error';
     var typeClass = isError ? 'wimm-toast-error' : 'wimm-toast-warning';
     var icon = isError ? ICON_ERROR : ICON_WARNING;
-
     var toast = document.createElement('div');
     toast.className = 'wimm-toast ' + typeClass + ' pointer-events-auto';
     toast.innerHTML =
@@ -206,25 +187,18 @@
         '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>' +
       '</button>' +
       '<div class="wimm-toast-progress" style="animation-duration:' + TOAST_DURATION + 'ms"></div>';
-
     container.appendChild(toast);
-
     function dismiss() {
       toast.classList.add('hiding');
-      setTimeout(function() {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-      }, 280);
+      setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 280);
     }
-
     toast.querySelector('.wimm-toast-close').addEventListener('click', dismiss);
     setTimeout(dismiss, TOAST_DURATION);
   }
 
   document.addEventListener('htmx:responseError', function(evt) {
     var xhr = evt.detail.xhr;
-    var msg = xhr.responseText
-      ? xhr.responseText.trim()
-      : 'Ошибка сервера (' + xhr.status + ')';
+    var msg = xhr.responseText ? xhr.responseText.trim() : 'Ошибка сервера (' + xhr.status + ')';
     showToast(msg, xhr.status === 409 ? 'warning' : 'error');
   });
 </script>
