@@ -67,7 +67,7 @@
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
             <select name="wallet_id" class="select select-bordered" required>
               {{range .Wallets}}{{if not .Hidden}}
-              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              <option value="{{.ID}}" {{if .IsDefault}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>

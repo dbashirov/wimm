@@ -170,22 +170,43 @@
 
 <!-- Toast-уведомления (ошибки htmx) -->
 <div id="toast-container"
-     class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+     class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 pointer-events-none">
 </div>
 <script>
+  var TOAST_DURATION = 5000;
+
+  var ICON_ERROR = '<svg class="wimm-toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/></svg>';
+  var ICON_WARNING = '<svg class="wimm-toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>';
+
   function showToast(msg, type) {
     var container = document.getElementById('toast-container');
+    var isError = type === 'error';
+    var typeClass = isError ? 'wimm-toast-error' : 'wimm-toast-warning';
+    var icon = isError ? ICON_ERROR : ICON_WARNING;
+
     var toast = document.createElement('div');
-    var color = type === 'error' ? 'alert-error' : 'alert-warning';
-    toast.className = 'alert ' + color + ' shadow-lg max-w-sm pointer-events-auto text-sm';
-    toast.innerHTML = '<span>' + msg + '</span>';
+    toast.className = 'wimm-toast ' + typeClass + ' pointer-events-auto';
+    toast.innerHTML =
+      icon +
+      '<div class="wimm-toast-body">' + msg + '</div>' +
+      '<button class="wimm-toast-close" aria-label="Закрыть">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>' +
+      '</button>' +
+      '<div class="wimm-toast-progress" style="animation-duration:' + TOAST_DURATION + 'ms"></div>';
+
     container.appendChild(toast);
-    setTimeout(function() {
-      toast.style.transition = 'opacity 0.4s';
-      toast.style.opacity = '0';
-      setTimeout(function() { container.removeChild(toast); }, 400);
-    }, 5000);
+
+    function dismiss() {
+      toast.classList.add('hiding');
+      setTimeout(function() {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 280);
+    }
+
+    toast.querySelector('.wimm-toast-close').addEventListener('click', dismiss);
+    setTimeout(dismiss, TOAST_DURATION);
   }
+
   document.addEventListener('htmx:responseError', function(evt) {
     var xhr = evt.detail.xhr;
     var msg = xhr.responseText

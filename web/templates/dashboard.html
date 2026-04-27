@@ -75,13 +75,22 @@
 {{end}}
 
 {{if .WalletBalances}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+<div id="wallets-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
   {{range .WalletBalances}}
-  <div class="card bg-base-100 wallet-card">
+  <div class="card bg-base-100 wallet-card wallet-sortable" data-id="{{.ID}}">
     <div class="card-body p-6 gap-3">
       <div class="flex items-center justify-between">
         <h3 class="font-medium text-sm text-base-content/70">{{.Name}}</h3>
-        <span class="badge badge-ghost badge-sm font-mono">{{.Currency}}</span>
+        <div class="flex items-center gap-2">
+          <span class="badge badge-ghost badge-sm font-mono">{{.Currency}}</span>
+          <span class="wallet-drag-handle cursor-grab active:cursor-grabbing text-base-content/20 hover:text-base-content/50 transition-colors" title="Перетащить">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="9"  cy="5"  r="1.5"/><circle cx="15" cy="5"  r="1.5"/>
+              <circle cx="9"  cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9"  cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+            </svg>
+          </span>
+        </div>
       </div>
       <div class="text-3xl font-bold tracking-tight {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
         {{money .Balance}} <span class="text-base font-medium opacity-50">{{.Currency}}</span>
@@ -94,6 +103,35 @@
   </div>
   {{end}}
 </div>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script>
+(function() {
+  var grid = document.getElementById('wallets-grid');
+  if (!grid) return;
+
+  Sortable.create(grid, {
+    handle: '.wallet-drag-handle',
+    animation: 180,
+    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    ghostClass: 'wallet-drag-ghost',
+    chosenClass: 'wallet-drag-chosen',
+    onEnd: function() {
+      var ids = Array.from(grid.querySelectorAll('.wallet-sortable')).map(function(el) {
+        return el.dataset.id;
+      });
+      var csrf = (document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/) || [])[1];
+      fetch('/wallets/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrf ? decodeURIComponent(csrf) : '',
+        },
+        body: JSON.stringify({ ids: ids }),
+      });
+    },
+  });
+})();
+</script>
 {{else}}
 <div class="alert mb-8">
   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">

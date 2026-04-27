@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const walletCols = `id, user_id, name, currency, description, hidden, is_default, sort_order, created_at`
+
 type WalletStore struct {
 	pool *pgxpool.Pool
 }
@@ -20,8 +22,7 @@ func (s *WalletStore) ListByUser(
 	userID uuid.UUID,
 ) ([]model.Wallet, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, user_id, name, currency, description, hidden, created_at
-		 FROM wallets WHERE user_id=$1 ORDER BY name`,
+		`SELECT `+walletCols+` FROM wallets WHERE user_id=$1 ORDER BY sort_order, name`,
 		userID,
 	)
 	if err != nil {
@@ -32,7 +33,8 @@ func (s *WalletStore) ListByUser(
 	for rows.Next() {
 		var w model.Wallet
 		if err := rows.Scan(
-			&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.Hidden, &w.CreatedAt,
+			&w.ID, &w.UserID, &w.Name, &w.Currency,
+			&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -46,14 +48,15 @@ func (s *WalletStore) ListWithBalance(
 	userID uuid.UUID,
 ) ([]model.WalletBalance, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT w.id, w.user_id, w.name, w.currency, w.description, w.hidden, w.created_at,
+		`SELECT w.id, w.user_id, w.name, w.currency, w.description, w.hidden, w.is_default,
+		        w.sort_order, w.created_at,
 		        COALESCE(SUM(CASE WHEN o.type=$2 THEN o.amount ELSE 0 END), 0)::float8,
 		        COALESCE(SUM(CASE WHEN o.type=$3 THEN o.amount ELSE 0 END), 0)::float8
 		 FROM wallets w
 		 LEFT JOIN operations o ON o.wallet_id = w.id AND o.user_id = w.user_id
 		 WHERE w.user_id = $1 AND w.hidden = false
 		 GROUP BY w.id
-		 ORDER BY w.name`,
+		 ORDER BY w.sort_order, w.name`,
 		userID, model.TypeIncome, model.TypeExpense,
 	)
 	if err != nil {
@@ -65,7 +68,7 @@ func (s *WalletStore) ListWithBalance(
 		var wb model.WalletBalance
 		if err := rows.Scan(
 			&wb.ID, &wb.UserID, &wb.Name, &wb.Currency, &wb.Description, &wb.Hidden,
-			&wb.CreatedAt, &wb.Income, &wb.Expense,
+			&wb.IsDefault, &wb.SortOrder, &wb.CreatedAt, &wb.Income, &wb.Expense,
 		); err != nil {
 			return nil, err
 		}
@@ -83,9 +86,12 @@ func (s *WalletStore) Create(
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
 		`INSERT INTO wallets(user_id, name, currency, description) VALUES($1, $2, $3, $4)
-		 RETURNING id, user_id, name, currency, description, hidden, created_at`,
+		 RETURNING `+walletCols,
 		userID, inp.Name, inp.Currency, inp.Description,
-	).Scan(&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.Hidden, &w.CreatedAt)
+	).Scan(
+		&w.ID, &w.UserID, &w.Name, &w.Currency,
+		&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("WalletStore.Create: %w", err)
 	}
@@ -98,11 +104,11 @@ func (s *WalletStore) GetByID(
 ) (*model.Wallet, error) {
 	var w model.Wallet
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, user_id, name, currency, description, hidden, created_at
-		 FROM wallets WHERE id=$1 AND user_id=$2`,
+		`SELECT `+walletCols+` FROM wallets WHERE id=$1 AND user_id=$2`,
 		id, userID,
 	).Scan(
-		&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.Hidden, &w.CreatedAt,
+		&w.ID, &w.UserID, &w.Name, &w.Currency,
+		&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -123,10 +129,11 @@ func (s *WalletStore) Update(
 	err := s.pool.QueryRow(ctx,
 		`UPDATE wallets SET name=$1, currency=$2, description=$3
 		 WHERE id=$4 AND user_id=$5
-		 RETURNING id, user_id, name, currency, description, hidden, created_at`,
+		 RETURNING `+walletCols,
 		inp.Name, inp.Currency, inp.Description, id, userID,
 	).Scan(
-		&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.Hidden, &w.CreatedAt,
+		&w.ID, &w.UserID, &w.Name, &w.Currency,
+		&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -155,10 +162,11 @@ func (s *WalletStore) ToggleHidden(
 	err := s.pool.QueryRow(ctx,
 		`UPDATE wallets SET hidden = NOT hidden
 		 WHERE id=$1 AND user_id=$2
-		 RETURNING id, user_id, name, currency, description, hidden, created_at`,
+		 RETURNING `+walletCols,
 		id, userID,
 	).Scan(
-		&w.ID, &w.UserID, &w.Name, &w.Currency, &w.Description, &w.Hidden, &w.CreatedAt,
+		&w.ID, &w.UserID, &w.Name, &w.Currency,
+		&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -167,4 +175,68 @@ func (s *WalletStore) ToggleHidden(
 		return nil, fmt.Errorf("WalletStore.ToggleHidden: %w", err)
 	}
 	return &w, nil
+}
+
+func (s *WalletStore) SetDefault(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Wallet, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("WalletStore.SetDefault begin: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx,
+		`UPDATE wallets SET is_default = false WHERE user_id = $1 AND is_default = true`,
+		userID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("WalletStore.SetDefault clear: %w", err)
+	}
+
+	var w model.Wallet
+	err = tx.QueryRow(ctx,
+		`UPDATE wallets SET is_default = true WHERE id = $1 AND user_id = $2
+		 RETURNING `+walletCols,
+		id, userID,
+	).Scan(
+		&w.ID, &w.UserID, &w.Name, &w.Currency,
+		&w.Description, &w.Hidden, &w.IsDefault, &w.SortOrder, &w.CreatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("WalletStore.SetDefault: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("WalletStore.SetDefault commit: %w", err)
+	}
+	return &w, nil
+}
+
+func (s *WalletStore) Reorder(
+	ctx context.Context,
+	userID uuid.UUID,
+	ids []uuid.UUID,
+) error {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("WalletStore.Reorder begin: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for i, id := range ids {
+		if _, err := tx.Exec(ctx,
+			`UPDATE wallets SET sort_order=$1 WHERE id=$2 AND user_id=$3`,
+			i, id, userID,
+		); err != nil {
+			return fmt.Errorf("WalletStore.Reorder: %w", err)
+		}
+	}
+
+	return tx.Commit(ctx)
 }

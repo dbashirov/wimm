@@ -156,6 +156,8 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("PUT /wallets/{id}", h.protected(h.putWallet))
 	mux.Handle("DELETE /wallets/{id}", h.protected(h.deleteWallet))
 	mux.Handle("POST /wallets/{id}/toggle-hidden", h.protected(h.postWalletToggleHidden))
+	mux.Handle("POST /wallets/{id}/set-default", h.protected(h.postWalletSetDefault))
+	mux.Handle("POST /wallets/reorder", h.protected(h.postWalletsReorder))
 
 	mux.Handle("GET /categories", h.protected(h.getCategories))
 	mux.Handle("POST /categories", h.protected(h.postCategory))

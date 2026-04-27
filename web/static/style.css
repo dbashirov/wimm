@@ -319,3 +319,100 @@ html {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
+/* ── Wallet drag-and-drop ── */
+.wallet-drag-ghost {
+  opacity: 0.35;
+  border: 2px dashed color-mix(in oklch, var(--color-primary) 50%, transparent);
+  border-radius: 1rem;
+}
+.wallet-drag-chosen {
+  box-shadow:
+    0 8px 20px -4px rgba(0,0,0,0.3),
+    0 0 0 2px color-mix(in oklch, var(--color-primary) 40%, transparent);
+  transform: scale(1.02);
+  transition: box-shadow 0.15s, transform 0.15s;
+  z-index: 10;
+}
+
+/* ── Toast notifications ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(110%) scale(0.92); }
+  to   { opacity: 1; transform: translateX(0)   scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0)   scale(1)    max-height: 120px; }
+  to   { opacity: 0; transform: translateX(110%) scale(0.92); }
+}
+@keyframes toastProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+.wimm-toast {
+  animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  position: relative;
+  overflow: hidden;
+  min-width: 280px;
+  max-width: 380px;
+  border-radius: 12px;
+  padding: 14px 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.3),
+    0 10px 30px -5px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(255,255,255,0.05) inset;
+  backdrop-filter: blur(12px);
+  cursor: default;
+}
+.wimm-toast.hiding {
+  animation: toastOut 0.25s ease-in forwards;
+}
+.wimm-toast-error {
+  background: color-mix(in oklch, var(--color-error) 18%, var(--color-base-100));
+  border-left: 3px solid var(--color-error);
+  color: var(--color-base-content);
+}
+.wimm-toast-warning {
+  background: color-mix(in oklch, var(--color-warning) 18%, var(--color-base-100));
+  border-left: 3px solid var(--color-warning);
+  color: var(--color-base-content);
+}
+.wimm-toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+.wimm-toast-error .wimm-toast-icon   { color: var(--color-error); }
+.wimm-toast-warning .wimm-toast-icon { color: var(--color-warning); }
+.wimm-toast-body {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.wimm-toast-close {
+  flex-shrink: 0;
+  opacity: 0.4;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+  background: none;
+  border: none;
+  color: inherit;
+}
+.wimm-toast-close:hover { opacity: 0.9; }
+.wimm-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 12px 12px;
+  animation: toastProgress linear forwards;
+}
+.wimm-toast-error   .wimm-toast-progress { background: var(--color-error); }
+.wimm-toast-warning .wimm-toast-progress { background: var(--color-warning); }

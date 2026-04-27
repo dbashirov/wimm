@@ -163,6 +163,26 @@ func (s *Service) DeleteWallet(ctx context.Context, id uuid.UUID, userID uuid.UU
 	return wrapDeleteErr(err)
 }
 
+func (s *Service) ReorderWallets(
+	ctx context.Context,
+	userID uuid.UUID,
+	ids []uuid.UUID,
+) error {
+	return s.wallets.Reorder(ctx, userID, ids)
+}
+
+func (s *Service) SetDefaultWallet(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*model.Wallet, error) {
+	w, err := s.wallets.SetDefault(ctx, id, userID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrNotFound
+	}
+	return w, err
+}
+
 func (s *Service) ToggleWalletHidden(
 	ctx context.Context,
 	id uuid.UUID,

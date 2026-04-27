@@ -185,6 +185,35 @@ func (mr *MockWalletRepoMockRecorder) ToggleHidden(ctx, id, userID any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleHidden", reflect.TypeOf((*MockWalletRepo)(nil).ToggleHidden), ctx, id, userID)
 }
 
+// Reorder mocks base method.
+func (m *MockWalletRepo) Reorder(ctx context.Context, userID uuid.UUID, ids []uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reorder", ctx, userID, ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reorder indicates an expected call of Reorder.
+func (mr *MockWalletRepoMockRecorder) Reorder(ctx, userID, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reorder", reflect.TypeOf((*MockWalletRepo)(nil).Reorder), ctx, userID, ids)
+}
+
+// SetDefault mocks base method.
+func (m *MockWalletRepo) SetDefault(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetDefault", ctx, id, userID)
+	ret0, _ := ret[0].(*model.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetDefault indicates an expected call of SetDefault.
+func (mr *MockWalletRepoMockRecorder) SetDefault(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDefault", reflect.TypeOf((*MockWalletRepo)(nil).SetDefault), ctx, id, userID)
+}
+
 // Update mocks base method.
 func (m *MockWalletRepo) Update(ctx context.Context, id, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
 	m.ctrl.T.Helper()

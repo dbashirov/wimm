@@ -31,6 +31,8 @@ type WalletRepo interface {
 		id uuid.UUID,
 		userID uuid.UUID,
 	) (*model.Wallet, error)
+	SetDefault(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error)
+	Reorder(ctx context.Context, userID uuid.UUID, ids []uuid.UUID) error
 }
 
 type CategoryRepo interface {

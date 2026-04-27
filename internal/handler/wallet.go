@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"slices"
 
@@ -110,6 +111,53 @@ func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) postWalletsReorder(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	var body struct {
+		IDs []uuid.UUID `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || len(body.IDs) == 0 {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if err := h.svc.ReorderWallets(r.Context(), userID, body.IDs); err != nil {
+		h.serverError(w, r, "ReorderWallets", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) postWalletSetDefault(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if _, err := h.svc.SetDefaultWallet(r.Context(), id, userID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	wallets, err := h.svc.ListWallets(r.Context(), userID)
+	if err != nil {
+		h.serverError(w, r, "SetDefault-ListWallets", err)
+		return
+	}
+	slices.SortStableFunc(wallets, func(a, b model.Wallet) int {
+		if a.Hidden == b.Hidden {
+			return 0
+		}
+		if !a.Hidden {
+			return -1
+		}
+		return 1
+	})
+	w.Header().Set("Content-Type", "text/html")
+	for _, wallet := range wallets {
+		h.renderPartial(w, "wallets", "wallet-row", wallet)
+	}
 }
 
 func (h *Handler) postWalletToggleHidden(w http.ResponseWriter, r *http.Request) {

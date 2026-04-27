@@ -44,6 +44,8 @@ type Wallet struct {
 	Currency    string
 	Description string
 	Hidden      bool
+	IsDefault   bool
+	SortOrder   int
 	CreatedAt   time.Time
 }
 
