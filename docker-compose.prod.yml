@@ -1,0 +1,6 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env
