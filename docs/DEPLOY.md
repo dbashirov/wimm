@@ -48,25 +48,7 @@ sudo -u postgres psql -c "SHOW listen_addresses;"
 
 ---
 
-## Шаг 4. Миграции
-
-Скачай бинарник goose:
-```bash
-sudo curl -fsSL \
-  https://github.com/pressly/goose/releases/latest/download/goose_linux_x86_64 \
-  -o /usr/local/bin/goose
-sudo chmod +x /usr/local/bin/goose
-```
-
-Запусти миграции:
-```bash
-export DB_URL="postgres://wimm:пароль%@localhost:5432/wimm?sslmode=disable"
-goose -dir /home/deploy/wimm/migrations postgres "$DB_URL" up
-```
-
----
-
-## Шаг 5. Репозиторий
+## Шаг 4. Репозиторий
 
 ```bash
 cd /home/deploy
@@ -81,6 +63,24 @@ git clone https://<TOKEN>@github.com/dbashirov/wimm.git
 
 ---
 
+## Шаг 5. Миграции
+
+Скачай бинарник goose:
+```bash
+sudo curl -fsSL \
+  https://github.com/pressly/goose/releases/latest/download/goose_linux_x86_64 \
+  -o /usr/local/bin/goose
+sudo chmod +x /usr/local/bin/goose
+```
+
+Запусти миграции:
+```bash
+export DB_URL="postgres://wimm:Adm25Bsd05T5%25@localhost:5432/wimm?sslmode=disable"
+goose -dir /home/deploy/wimm/migrations postgres "$DB_URL" up
+```
+
+---
+
 ## Шаг 6. Файл .env на сервере
 
 ```bash
@@ -90,7 +90,7 @@ nano /home/deploy/wimm/.env
 Содержимое (`.env` не в git — только на сервере):
 
 ```env
-DB_URL=postgres://wimm:СЛОЖНЫЙ_ПАРОЛЬ@localhost:5432/wimm?sslmode=disable
+DB_URL=postgresql://wimm:пароль@localhost:5432/wimm
 SERVER_ADDR=:8080
 CSRF_SECRET=  # openssl rand -base64 32
 COOKIE_INSECURE=
@@ -132,7 +132,7 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 
 Создай конфиг:
 ```bash
-sudo nano /etc/nginx/sites-available/wimm
+sudo vim /etc/nginx/sites-available/wimm
 ```
 
 ```nginx
@@ -154,7 +154,7 @@ sudo ln -s /etc/nginx/sites-available/wimm /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # SSL — certbot сам допишет listen 443 и редирект 80→443
-sudo certbot --nginx -d ваш-домен.ru
+sudo certbot --nginx -d new.whereismymoney.fun
 ```
 
 ---
@@ -186,7 +186,7 @@ crontab -e  # от пользователя deploy
 
 Проверь вручную:
 ```bash
-pg_dump -U wimm wimm | gzip > /tmp/test-backup.sql.gz
+pg_dump -U wimm -h localhost wimm | gzip > /tmp/test-backup.sql.gz
 ls -lh /tmp/test-backup.sql.gz
 ```
 
