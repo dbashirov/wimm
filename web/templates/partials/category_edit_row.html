@@ -1,22 +1,26 @@
 {{define "category-edit-row"}}
 <tr id="category-{{.ID}}" class="bg-base-200">
   <td colspan="3">
-    <form class="flex flex-wrap gap-2 items-center py-2"
+    <form class="py-2"
           hx-put="/categories/{{.ID}}"
           hx-target="closest tr"
           hx-swap="outerHTML">
-      <input type="text" name="name" value="{{.Name}}"
-             class="input input-bordered input-sm flex-1 min-w-32" required>
-      {{if eq .Type "income"}}
-      <span class="badge badge-success badge-sm">↑ Доход</span>
-      {{else}}
-      <span class="badge badge-error badge-sm">↓ Расход</span>
-      {{end}}
-      <button type="submit" class="btn btn-primary btn-sm font-semibold">Сохранить</button>
-      <button type="button" class="btn btn-ghost btn-sm"
-              hx-get="/categories/{{.ID}}"
-              hx-target="closest tr"
-              hx-swap="outerHTML">Отмена</button>
+      <div class="flex items-center justify-end gap-2 mb-3">
+        <button type="submit" class="btn btn-primary btn-form-submit font-semibold">Сохранить</button>
+        <button type="button" class="btn btn-ghost btn-form-submit"
+                hx-get="/categories/{{.ID}}"
+                hx-target="closest tr"
+                hx-swap="outerHTML">Отмена</button>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <input type="text" name="name" value="{{.Name}}"
+               class="input input-bordered input-form flex-1 min-w-32" required>
+        {{if eq .Type "income"}}
+        <span class="badge badge-success badge-sm">↑ Доход</span>
+        {{else}}
+        <span class="badge badge-error badge-sm">↓ Расход</span>
+        {{end}}
+      </div>
     </form>
   </td>
 </tr>

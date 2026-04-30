@@ -10,7 +10,7 @@
   <div class="card-body p-6">
     <div class="flex items-center justify-between mb-6">
       <h3 class="font-bold text-xl">Добавить кошелёк</h3>
-      <button form="wallet-form" type="submit" class="btn btn-primary btn-sm font-semibold">
+      <button form="wallet-form" type="submit" class="btn btn-primary btn-form-submit font-semibold">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -26,11 +26,11 @@
         <div class="form-control flex-1 min-w-40">
           <label class="form-label">Название</label>
           <input type="text" name="name" placeholder="Наличные"
-                 class="input input-bordered" required>
+                 class="input input-bordered input-form" required>
         </div>
         <div class="form-control">
           <label class="form-label">Валюта</label>
-          <select name="currency" class="select select-bordered">
+          <select name="currency" class="select select-bordered input-form">
             <option value="RUB">RUB</option>
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>
@@ -41,7 +41,7 @@
         <div class="form-control flex-1">
           <label class="form-label">Описание</label>
           <input type="text" name="description" placeholder="Основной счёт, инвестиции, подушка..."
-                 class="input input-bordered">
+                 class="input input-bordered input-form">
         </div>
       </div>
     </form>

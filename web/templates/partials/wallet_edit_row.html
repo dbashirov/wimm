@@ -5,10 +5,17 @@
           hx-put="/wallets/{{.ID}}"
           hx-target="closest tr"
           hx-swap="outerHTML">
-      <div class="flex flex-wrap gap-2 items-end mb-3">
+      <div class="flex items-center justify-end gap-2 mb-3">
+        <button type="submit" class="btn btn-primary btn-form-submit font-semibold">Сохранить</button>
+        <button type="button" class="btn btn-ghost btn-form-submit"
+                hx-get="/wallets/{{.ID}}"
+                hx-target="closest tr"
+                hx-swap="outerHTML">Отмена</button>
+      </div>
+      <div class="flex flex-wrap gap-2 items-end">
         <input type="text" name="name" value="{{.Name}}"
-               class="input input-bordered input-sm flex-1 min-w-32" required>
-        <select name="currency" class="select select-bordered select-sm">
+               class="input input-bordered input-form flex-1 min-w-32" required>
+        <select name="currency" class="select select-bordered input-form">
           <option value="RUB" {{if eq .Currency "RUB"}}selected{{end}}>RUB</option>
           <option value="USD" {{if eq .Currency "USD"}}selected{{end}}>USD</option>
           <option value="EUR" {{if eq .Currency "EUR"}}selected{{end}}>EUR</option>
@@ -17,14 +24,7 @@
         </select>
         <input type="text" name="description" value="{{.Description}}"
                placeholder="Описание (необязательно)"
-               class="input input-bordered input-sm flex-1">
-      </div>
-      <div class="flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm font-semibold">Сохранить</button>
-        <button type="button" class="btn btn-ghost btn-sm"
-                hx-get="/wallets/{{.ID}}"
-                hx-target="closest tr"
-                hx-swap="outerHTML">Отмена</button>
+               class="input input-bordered input-form flex-1">
       </div>
     </form>
   </td>

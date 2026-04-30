@@ -378,6 +378,25 @@ html {
   animation: fadeIn 0.25s ease-out;
 }
 
+/* ── Unified form input height ──
+   44px — мобильный минимум Apple HIG, чуть меньше DaisyUI default (48px) */
+.input-form {
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
+}
+
+/* ── Form submit button — совпадает по высоте с .op-mode-btn ── */
+.btn-form-submit {
+  height: auto !important;
+  min-height: auto !important;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+}
+
 /* ── Form row spacing ── */
 .form-label {
   font-size: 0.78rem;

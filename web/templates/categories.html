@@ -10,7 +10,7 @@
   <div class="card-body p-6">
     <div class="flex items-center justify-between mb-6">
       <h3 class="font-bold text-xl">Добавить категорию</h3>
-      <button form="category-form" type="submit" class="btn btn-primary btn-sm font-semibold">
+      <button form="category-form" type="submit" class="btn btn-primary btn-form-submit font-semibold">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
@@ -26,11 +26,11 @@
         <div class="form-control flex-1 min-w-40">
           <label class="form-label">Название</label>
           <input type="text" name="name" placeholder="Продукты"
-                 class="input input-bordered" required>
+                 class="input input-bordered input-form" required>
         </div>
         <div class="form-control">
           <label class="form-label">Тип</label>
-          <select name="type" class="select select-bordered">
+          <select name="type" class="select select-bordered input-form">
             <option value="expense">Расход</option>
             <option value="income">Доход</option>
           </select>

@@ -12,13 +12,13 @@
     <div class="flex items-center justify-between mb-6">
       <h3 class="font-bold text-xl">Новая операция</h3>
       <div class="flex gap-2">
-        <button id="op-submit-btn" form="op-form" type="submit" class="btn btn-primary btn-sm font-semibold">
+        <button id="op-submit-btn" form="op-form" type="submit" class="btn btn-primary btn-form-submit font-semibold">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
           Добавить
         </button>
-        <button id="transfer-submit-btn" form="transfer-form" type="submit" class="btn btn-primary btn-sm font-semibold" style="display: none;">
+        <button id="transfer-submit-btn" form="transfer-form" type="submit" class="btn btn-primary btn-form-submit font-semibold" style="display: none;">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
           </svg>
@@ -61,11 +61,11 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
-                   class="input input-bordered amount-input" required>
+                   class="input input-bordered input-form amount-input" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-            <select name="wallet_id" class="select select-bordered" required>
+            <select name="wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}" {{if .IsDefault}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -73,7 +73,7 @@
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-            <select name="category_id" id="op-category-select" class="select select-bordered" required>
+            <select name="category_id" id="op-category-select" class="select select-bordered input-form" required>
               {{range .Categories}}{{if eq .Type "expense"}}
               <option value="{{.ID}}">{{.Name}}</option>
               {{end}}{{end}}
@@ -82,12 +82,12 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
             <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                   class="input input-bordered fp-datetime" required>
+                   class="input input-bordered input-form fp-datetime" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
             <input type="text" name="description" placeholder="Необязательно"
-                   class="input input-bordered">
+                   class="input input-bordered input-form">
           </div>
         </div>
       </form>
@@ -103,7 +103,7 @@
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
-            <select name="from_wallet_id" class="select select-bordered" required>
+            <select name="from_wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -111,7 +111,7 @@
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
-            <select name="to_wallet_id" class="select select-bordered" required>
+            <select name="to_wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
@@ -120,17 +120,17 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
-                   class="input input-bordered amount-input" required>
+                   class="input input-bordered input-form amount-input" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
             <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
-                   class="input input-bordered fp-datetime" required>
+                   class="input input-bordered input-form fp-datetime" required>
           </div>
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
             <input type="text" name="description" placeholder="Необязательно"
-                   class="input input-bordered">
+                   class="input input-bordered input-form">
           </div>
         </div>
       </form>
@@ -221,7 +221,7 @@ function updateOpForm(mode) {
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-          <select name="wallet_id" class="select select-bordered">
+          <select name="wallet_id" class="select select-bordered input-form">
             <option value="">Все</option>
             {{range .Wallets}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
@@ -230,7 +230,7 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Тип</label>
-          <select name="type" class="select select-bordered">
+          <select name="type" class="select select-bordered input-form">
             <option value="">Все</option>
             <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
             <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
@@ -238,7 +238,7 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-          <select name="category_id" class="select select-bordered">
+          <select name="category_id" class="select select-bordered input-form">
             <option value="">Все</option>
             {{range .Categories}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
@@ -247,18 +247,18 @@ function updateOpForm(mode) {
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата от</label>
-          <input type="text" name="date_from" class="input input-bordered fp-date"
+          <input type="text" name="date_from" class="input input-bordered input-form fp-date"
                  value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
         </div>
         <div class="form-control">
           <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата до</label>
-          <input type="text" name="date_to" class="input input-bordered fp-date"
+          <input type="text" name="date_to" class="input input-bordered input-form fp-date"
                  value="{{if not .Filter.DateTo.IsZero}}{{(.Filter.DateTo.AddDate 0 0 -1).Format "2006-01-02"}}{{end}}">
         </div>
       </div>
       <div class="flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary btn-sm font-semibold">Применить</button>
-        <a href="/operations" class="btn btn-ghost btn-sm text-base-content/50">Сбросить</a>
+        <button type="submit" class="btn btn-primary btn-form-submit font-semibold">Применить</button>
+        <a href="/operations" class="btn btn-ghost btn-form-submit text-base-content/50">Сбросить</a>
       </div>
     </form>
   </div>
