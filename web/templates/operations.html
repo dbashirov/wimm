@@ -29,17 +29,17 @@
 
     <!-- Operation type selector -->
     <div class="flex gap-2 mb-6 pb-6 border-b border-base-content/10">
-      <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-primary text-primary-content" data-mode="income" onclick="updateOpForm('income')">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-        </svg>
-        Доход
-      </button>
-      <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-base-200 text-base-content hover:bg-base-300" data-mode="expense" onclick="updateOpForm('expense')">
+      <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-primary text-primary-content" data-mode="expense" onclick="updateOpForm('expense')">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
         </svg>
         Расход
+      </button>
+      <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-base-200 text-base-content hover:bg-base-300" data-mode="income" onclick="updateOpForm('income')">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Доход
       </button>
       <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-base-200 text-base-content hover:bg-base-300" data-mode="transfer" onclick="updateOpForm('transfer')">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,9 +55,9 @@
             hx-post="/operations"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="if(event.detail.elt===this) this.reset()">
+            hx-on::after-request="if(event.detail.elt===this){this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)})}">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
-          <input type="hidden" name="type" id="op-type-hidden" value="income">
+          <input type="hidden" name="type" id="op-type-hidden" value="expense">
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
@@ -99,7 +99,7 @@
             hx-post="/transfers"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="this.reset()">
+            hx-on::after-request="this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)})">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
