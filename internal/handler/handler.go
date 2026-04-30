@@ -176,6 +176,9 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("DELETE /operations/{id}", h.protected(h.deleteOperation))
 
 	mux.Handle("POST /transfers", h.protected(h.postTransfer))
+	mux.Handle("GET /transfers/{transfer_id}", h.protected(h.getTransferRows))
+	mux.Handle("GET /transfers/{transfer_id}/edit", h.protected(h.getTransferEdit))
+	mux.Handle("PUT /transfers/{transfer_id}", h.protected(h.putTransfer))
 	mux.Handle("DELETE /transfers/{transfer_id}", h.protected(h.deleteTransfer))
 
 	// Глобальный стек middleware: лог → recovery → headers → body limit → timeout → mux

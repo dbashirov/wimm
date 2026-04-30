@@ -227,6 +227,77 @@ func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 	h.renderPartial(w, "operations", "operation-row", income)
 }
 
+func (h *Handler) getTransferRows(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	transferID, err := uuid.Parse(r.PathValue("transfer_id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	expense, income, err := h.svc.GetTransfer(r.Context(), transferID, userID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	h.renderPartial(w, "operations", "operation-row", expense)
+	h.renderPartial(w, "operations", "operation-row", income)
+}
+
+func (h *Handler) getTransferEdit(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	transferID, err := uuid.Parse(r.PathValue("transfer_id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	expense, income, err := h.svc.GetTransfer(r.Context(), transferID, userID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	wallets, err := h.svc.ListWallets(r.Context(), userID)
+	if err != nil {
+		h.serverError(w, r, "ListWallets", err)
+		return
+	}
+	h.renderPartial(w, "operations", "transfer-edit-row", map[string]any{
+		"Expense": expense,
+		"Income":  income,
+		"Wallets": wallets,
+	})
+}
+
+func (h *Handler) putTransfer(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromCtx(r.Context())
+	transferID, err := uuid.Parse(r.PathValue("transfer_id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	inp, err := parseTransferInput(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	expense, income, err := h.svc.UpdateTransfer(r.Context(), transferID, userID, inp)
+	if err != nil {
+		if errors.Is(err, service.ErrSameWallet) {
+			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		h.serverError(w, r, "UpdateTransfer", err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	h.renderPartial(w, "operations", "operation-row", expense)
+	h.renderPartial(w, "operations", "operation-row", income)
+}
+
 func (h *Handler) deleteTransfer(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 	transferID, err := uuid.Parse(r.PathValue("transfer_id"))

@@ -1,0 +1,55 @@
+{{define "transfer-edit-row"}}
+{{$exp := .Expense}}
+{{$inc := .Income}}
+{{$wallets := .Wallets}}
+<tr id="op-{{$exp.ID}}" class="bg-base-200"
+    hx-on:htmx:load="document.querySelectorAll('[data-transfer-id=&quot;{{$exp.TransferID}}&quot;]').forEach(function(el){el.remove()})">
+  <td colspan="7">
+    <form hx-put="/transfers/{{$exp.TransferID}}"
+          hx-target="closest tr"
+          hx-swap="outerHTML">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 items-end py-2">
+        <div class="form-control">
+          <label class="form-label">Дата и время</label>
+          <input type="text" name="operated_at" class="input input-bordered input-sm fp-datetime"
+                 value="{{$exp.OperatedAt.Format "2006-01-02T15:04"}}" required>
+        </div>
+        <div class="form-control">
+          <label class="form-label">Сумма</label>
+          <input type="number" name="amount" step="0.01" min="0.01"
+                 class="input input-bordered input-sm"
+                 value="{{num $exp.Amount}}" required>
+        </div>
+        <div class="form-control">
+          <label class="form-label">Из кошелька</label>
+          <select name="from_wallet_id" class="select select-bordered select-sm" required>
+            {{range $wallets}}
+            <option value="{{.ID}}" {{if eq .ID $exp.WalletID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="form-label">В кошелёк</label>
+          <select name="to_wallet_id" class="select select-bordered select-sm" required>
+            {{range $wallets}}
+            <option value="{{.ID}}" {{if eq .ID $inc.WalletID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="form-control col-span-2">
+          <label class="form-label">Описание</label>
+          <input type="text" name="description" class="input input-bordered input-sm"
+                 value="{{$exp.Description}}">
+        </div>
+      </div>
+      <div class="flex gap-2 pb-2">
+        <button type="submit" class="btn btn-primary btn-sm font-semibold">Сохранить</button>
+        <button type="button" class="btn btn-ghost btn-sm"
+                hx-get="/transfers/{{$exp.TransferID}}"
+                hx-target="closest tr"
+                hx-swap="outerHTML">Отмена</button>
+      </div>
+    </form>
+  </td>
+</tr>
+{{end}}

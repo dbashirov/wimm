@@ -445,6 +445,51 @@ func (mr *MockOperationRepoMockRecorder) Delete(ctx, id, userID any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOperationRepo)(nil).Delete), ctx, id, userID)
 }
 
+// GetTransfer mocks base method.
+func (m *MockOperationRepo) GetTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+) (*model.Operation, *model.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransfer", ctx, transferID, userID)
+	ret0, _ := ret[0].(*model.Operation)
+	ret1, _ := ret[1].(*model.Operation)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetTransfer indicates an expected call of GetTransfer.
+func (mr *MockOperationRepoMockRecorder) GetTransfer(ctx, transferID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock, "GetTransfer",
+		reflect.TypeOf((*MockOperationRepo)(nil).GetTransfer), ctx, transferID, userID,
+	)
+}
+
+// UpdateTransfer mocks base method.
+func (m *MockOperationRepo) UpdateTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+	inp model.TransferInput,
+) (*model.Operation, *model.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTransfer", ctx, transferID, userID, inp)
+	ret0, _ := ret[0].(*model.Operation)
+	ret1, _ := ret[1].(*model.Operation)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// UpdateTransfer indicates an expected call of UpdateTransfer.
+func (mr *MockOperationRepoMockRecorder) UpdateTransfer(ctx, transferID, userID, inp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock, "UpdateTransfer",
+		reflect.TypeOf((*MockOperationRepo)(nil).UpdateTransfer), ctx, transferID, userID, inp,
+	)
+}
+
 // DeleteTransfer mocks base method.
 func (m *MockOperationRepo) DeleteTransfer(ctx context.Context, transferID, userID uuid.UUID) error {
 	m.ctrl.T.Helper()

@@ -69,6 +69,15 @@ type OperationRepo interface {
 		userID uuid.UUID,
 		inp model.TransferInput,
 	) (*model.Operation, *model.Operation, error)
+	GetTransfer(
+		ctx context.Context,
+		transferID, userID uuid.UUID,
+	) (*model.Operation, *model.Operation, error)
+	UpdateTransfer(
+		ctx context.Context,
+		transferID, userID uuid.UUID,
+		inp model.TransferInput,
+	) (*model.Operation, *model.Operation, error)
 	DeleteTransfer(ctx context.Context, transferID, userID uuid.UUID) error
 	DashboardData(
 		ctx context.Context,

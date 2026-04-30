@@ -243,6 +243,98 @@ func (s *OperationStore) CreateTransfer(
 	return &expense, &income, nil
 }
 
+func (s *OperationStore) GetTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+) (*model.Operation, *model.Operation, error) {
+	rows, err := s.pool.Query(ctx,
+		operationSelect+` WHERE o.transfer_id=$1 AND o.user_id=$2
+		ORDER BY CASE WHEN o.type='expense' THEN 0 ELSE 1 END`,
+		transferID, userID,
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.GetTransfer: %w", err)
+	}
+	defer rows.Close()
+
+	var ops [2]model.Operation
+	i := 0
+	for rows.Next() {
+		if i >= 2 {
+			break
+		}
+		if err := scanOperation(rows, &ops[i]); err != nil {
+			return nil, nil, fmt.Errorf("OperationStore.GetTransfer scan: %w", err)
+		}
+		i++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	if i < 2 {
+		return nil, nil, ErrNotFound
+	}
+	return &ops[0], &ops[1], nil
+}
+
+const transferUpdateSQL = `
+	UPDATE operations
+	SET wallet_id=$1, transfer_wallet_id=$2, amount=$3, operated_at=$4, description=$5
+	WHERE transfer_id=$6 AND user_id=$7 AND type=$8
+	RETURNING id, user_id, wallet_id, category_id, type, amount::float8,
+	          operated_at, description, created_at, transfer_id,
+	          (SELECT name FROM wallets WHERE id=$1),
+	          '',
+	          (SELECT currency FROM wallets WHERE id=$1),
+	          (SELECT name FROM wallets WHERE id=$2)`
+
+func (s *OperationStore) UpdateTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+	inp model.TransferInput,
+) (*model.Operation, *model.Operation, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.UpdateTransfer begin: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	var expense model.Operation
+	if err := scanOperation(
+		tx.QueryRow(ctx, transferUpdateSQL,
+			inp.FromWalletID, inp.ToWalletID,
+			inp.Amount, inp.OperatedAt, inp.Description,
+			transferID, userID, model.TypeExpense,
+		),
+		&expense,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil, ErrNotFound
+		}
+		return nil, nil, fmt.Errorf("OperationStore.UpdateTransfer expense: %w", err)
+	}
+
+	var income model.Operation
+	if err := scanOperation(
+		tx.QueryRow(ctx, transferUpdateSQL,
+			inp.ToWalletID, inp.FromWalletID,
+			inp.Amount, inp.OperatedAt, inp.Description,
+			transferID, userID, model.TypeIncome,
+		),
+		&income,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil, ErrNotFound
+		}
+		return nil, nil, fmt.Errorf("OperationStore.UpdateTransfer income: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, nil, fmt.Errorf("OperationStore.UpdateTransfer commit: %w", err)
+	}
+	return &expense, &income, nil
+}
+
 func (s *OperationStore) DeleteTransfer(
 	ctx context.Context,
 	transferID uuid.UUID,

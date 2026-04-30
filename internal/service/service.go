@@ -337,6 +337,44 @@ func (s *Service) CreateTransfer(
 	return s.operations.CreateTransfer(ctx, userID, inp)
 }
 
+func (s *Service) GetTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+) (*model.Operation, *model.Operation, error) {
+	exp, inc, err := s.operations.GetTransfer(ctx, transferID, userID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, nil, ErrNotFound
+	}
+	return exp, inc, err
+}
+
+func (s *Service) UpdateTransfer(
+	ctx context.Context,
+	transferID, userID uuid.UUID,
+	inp model.TransferInput,
+) (*model.Operation, *model.Operation, error) {
+	if inp.FromWalletID == inp.ToWalletID {
+		return nil, nil, ErrSameWallet
+	}
+	if _, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, nil, ErrNotFound
+		}
+		return nil, nil, err
+	}
+	if _, err := s.wallets.GetByID(ctx, inp.ToWalletID, userID); err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, nil, ErrNotFound
+		}
+		return nil, nil, err
+	}
+	exp, inc, err := s.operations.UpdateTransfer(ctx, transferID, userID, inp)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, nil, ErrNotFound
+	}
+	return exp, inc, err
+}
+
 func (s *Service) DeleteTransfer(ctx context.Context, transferID uuid.UUID, userID uuid.UUID) error {
 	return wrapNotFound(s.operations.DeleteTransfer(ctx, transferID, userID))
 }
