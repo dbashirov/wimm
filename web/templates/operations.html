@@ -9,26 +9,8 @@
 <!-- Add operation/transfer form -->
 <div class="card bg-base-100 shadow-sm mb-4">
   <div class="card-body p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="font-bold text-xl">Новая операция</h3>
-      <div class="flex gap-2">
-        <button id="op-submit-btn" form="op-form" type="submit" class="btn btn-primary btn-form-submit font-semibold">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Добавить
-        </button>
-        <button id="transfer-submit-btn" form="transfer-form" type="submit" class="btn btn-primary btn-form-submit font-semibold" style="display: none;">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
-          </svg>
-          Перевести
-        </button>
-      </div>
-    </div>
-
-    <!-- Operation type selector -->
-    <div class="flex gap-2 mb-6 pb-6 border-b border-base-content/10">
+    <!-- Operation type selector + submit -->
+    <div class="flex items-center gap-2 mb-6 pb-6 border-b border-base-content/10">
       <button type="button" class="op-mode-btn px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-primary text-primary-content" data-mode="expense" onclick="updateOpForm('expense')">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
@@ -47,6 +29,20 @@
         </svg>
         Перевод
       </button>
+      <div class="ml-auto">
+        <button id="op-submit-btn" form="op-form" type="submit" class="btn btn-primary btn-form-submit font-semibold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Добавить
+        </button>
+        <button id="transfer-submit-btn" form="transfer-form" type="submit" class="btn btn-primary btn-form-submit font-semibold" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+          </svg>
+          Перевести
+        </button>
+      </div>
     </div>
 
     <!-- Operation form -->
