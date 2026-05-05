@@ -51,7 +51,7 @@
             hx-post="/operations"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="if(event.detail.elt===this){this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)})}">
+            hx-on::after-request="if(event.detail.elt===this){var ws=this.querySelector('[name=wallet_id]');var wv=ws?ws.value:'';var mode=document.getElementById('op-type-hidden').value;this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});if(ws&&wv)ws.value=wv;updateOpForm(mode);}">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
           <input type="hidden" name="type" id="op-type-hidden" value="expense">
           <div class="form-control">
@@ -70,6 +70,7 @@
           <div class="form-control">
             <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
             <select name="category_id" id="op-category-select" class="select select-bordered input-form" required>
+              <option value="" disabled selected></option>
               {{range .Categories}}{{if eq .Type "expense"}}
               <option value="{{.ID}}">{{.Name}}</option>
               {{end}}{{end}}
@@ -201,8 +202,12 @@ function updateOpForm(mode) {
     transferSubmitBtn.style.display = 'none';
     typeHidden.value = mode;
 
-    const cats = categorySelect.querySelectorAll('option');
-    cats.forEach(cat => cat.remove());
+    categorySelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    categorySelect.appendChild(placeholder);
     {{range .Categories}}
     if ('{{.Type}}' === mode) {
       const opt = document.createElement('option');
@@ -216,7 +221,7 @@ function updateOpForm(mode) {
 </script>
 
 <!-- Filter -->
-<details class="collapse collapse-arrow bg-base-100 mb-4">
+<details class="collapse collapse-arrow bg-base-100 mb-4" {{if .HasFilter}}open{{end}}>
   <summary class="collapse-title flex items-center text-sm font-medium py-3 min-h-0 text-base-content/60">
     Фильтр
   </summary>

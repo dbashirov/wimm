@@ -18,6 +18,7 @@ type operationsData struct {
 	Wallets    []model.Wallet
 	Categories []model.Category
 	Filter     model.OperationFilter
+	HasFilter  bool
 	Page       int
 	Error      string
 }
@@ -62,11 +63,18 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "ListCategories", err)
 		return
 	}
+	hasFilter := filter.WalletID != uuid.Nil ||
+		filter.CategoryID != uuid.Nil ||
+		filter.Type != "" ||
+		!filter.DateFrom.IsZero() ||
+		!filter.DateTo.IsZero()
+
 	h.render(w, "operations", operationsData{
 		Operations: ops,
 		Wallets:    wallets,
 		Categories: cats,
 		Filter:     filter,
+		HasFilter:  hasFilter,
 		Page:       filter.Page,
 	})
 }
