@@ -24,7 +24,11 @@
   <td class="hidden md:table-cell text-sm text-base-content/70">{{.WalletName}}</td>
   <td class="hidden md:table-cell text-sm text-base-content/70">
     {{if .TransferID}}
-      <span class="text-base-content/40">→ {{.TransferWalletName}}</span>
+      {{if eq .Type "expense"}}
+        <span class="text-base-content/50">→ {{.TransferWalletName}}</span>
+      {{else}}
+        <span class="text-base-content/50">← {{.TransferWalletName}}</span>
+      {{end}}
     {{else}}
       {{.CategoryName}}
     {{end}}

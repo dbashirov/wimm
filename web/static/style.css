@@ -263,6 +263,13 @@ body {
   border: 1px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
 }
 
+/* Центрируем стрелку вертикально — DaisyUI ставит её на top:0.9rem,
+   что не совпадает с нашим компактным summary (min-h-0 + py-3).
+   calc(50% - 0.25rem) = середина родителя минус половина высоты стрелки (0.5rem) */
+.collapse-arrow > .collapse-title::after {
+  top: calc(50% - 0.1rem) !important;
+}
+
 /* ── Alert ── */
 [data-theme="dark"] .alert {
   background-color: color-mix(in oklch, var(--color-base-content) 4%, transparent);
