@@ -16,34 +16,37 @@
       </div>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 items-end pb-2">
         <div class="form-control">
-          <label class="form-label">Дата и время</label>
-          <input type="text" name="operated_at" class="input input-bordered input-form fp-datetime"
+          <label for="op-edit-date-{{$op.ID}}" class="form-label">Дата и время</label>
+          <input type="text" id="op-edit-date-{{$op.ID}}" name="operated_at"
+                 class="input input-bordered input-form fp-datetime"
                  value="{{$op.OperatedAt.Format "2006-01-02T15:04"}}" required>
         </div>
         <div class="form-control">
-          <label class="form-label">Тип</label>
-          <select name="type" class="select select-bordered input-form">
+          <label for="op-edit-type-{{$op.ID}}" class="form-label">Тип</label>
+          <select id="op-edit-type-{{$op.ID}}" name="type" class="select select-bordered input-form">
             <option value="expense" {{if eq $op.Type "expense"}}selected{{end}}>Расход</option>
             <option value="income"  {{if eq $op.Type "income"}}selected{{end}}>Доход</option>
           </select>
         </div>
         <div class="form-control">
-          <label class="form-label">Сумма</label>
-          <input type="number" name="amount" step="0.01" min="0.01"
+          <label for="op-edit-amount-{{$op.ID}}" class="form-label">Сумма</label>
+          <input type="number" id="op-edit-amount-{{$op.ID}}" name="amount" step="0.01" min="0.01"
                  class="input input-bordered input-form"
                  value="{{num $op.Amount}}" required>
         </div>
         <div class="form-control">
-          <label class="form-label">Кошелёк</label>
-          <select name="wallet_id" class="select select-bordered input-form" required>
+          <label for="op-edit-wallet-{{$op.ID}}" class="form-label">Кошелёк</label>
+          <select id="op-edit-wallet-{{$op.ID}}" name="wallet_id"
+                  class="select select-bordered input-form" required>
             {{range $wallets}}
             <option value="{{.ID}}" {{if eq .ID $op.WalletID}}selected{{end}}>{{.Name}}</option>
             {{end}}
           </select>
         </div>
         <div class="form-control">
-          <label class="form-label">Категория</label>
-          <select name="category_id" class="select select-bordered input-form" required>
+          <label for="op-edit-category-{{$op.ID}}" class="form-label">Категория</label>
+          <select id="op-edit-category-{{$op.ID}}" name="category_id"
+                  class="select select-bordered input-form" required>
             {{range $cats}}
             <option value="{{.ID}}" {{if eq .ID $op.CategoryID}}selected{{end}}>{{.Name}} ({{typeLabel .Type}})</option>
             {{end}}
@@ -51,8 +54,9 @@
         </div>
       </div>
       <div class="form-control pb-2">
-        <label class="form-label">Описание</label>
-        <input type="text" name="description" class="input input-bordered input-form"
+        <label for="op-edit-description-{{$op.ID}}" class="form-label">Описание</label>
+        <input type="text" id="op-edit-description-{{$op.ID}}" name="description"
+               class="input input-bordered input-form"
                value="{{$op.Description}}">
       </div>
     </form>

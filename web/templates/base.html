@@ -14,14 +14,8 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
-    }
-  </script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="icon" type="image/svg+xml" href="/static/favicon-v2.svg">
+  {{block "head_extra" .}}{{end}}
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <script>
@@ -30,13 +24,9 @@
       if (m) evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(m[1]);
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
 </head>
 <body class="min-h-screen font-sans">
+<a href="#main-content" class="skip-link">Перейти к основному содержимому</a>
 <div id="glow-bg" aria-hidden="true"></div>
 
 {{if not .NoNav}}
@@ -45,11 +35,11 @@
 
     <!-- Mobile hamburger -->
     <div class="dropdown lg:hidden">
-      <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+      <button type="button" tabindex="0" class="btn btn-ghost btn-circle" aria-label="Открыть меню">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
         </svg>
-      </div>
+      </button>
       <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow-xl border border-base-content/10">
         <li><a href="/dashboard" class="text-base py-3">Обзор</a></li>
         <li><a href="/wallets" class="text-base py-3">Кошельки</a></li>
@@ -104,47 +94,14 @@
   </div>
 </div>
 
-<main class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+<main id="main-content" class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
   {{template "content" .}}
 </main>
 {{else}}
 {{template "content" .}}
 {{end}}
 
-<script>
-  var fpConfig = {
-    enableTime: true,
-    dateFormat: 'Y-m-dTH:i',
-    altInput: true,
-    altFormat: 'd.m.Y H:i',
-    time_24hr: true,
-    locale: 'ru',
-    defaultDate: new Date(),
-    onReady: function(_, __, instance) {
-      instance.altInput.className = instance.input.className.replace('fp-datetime', '').trim();
-    },
-  };
-  var fpDateConfig = {
-    enableTime: false,
-    dateFormat: 'Y-m-d',
-    altInput: true,
-    altFormat: 'd.m.Y',
-    locale: 'ru',
-    onReady: function(_, __, instance) {
-      instance.altInput.className = instance.input.className.replace('fp-date', '').trim();
-    },
-  };
-  function initFlatpickr() {
-    document.querySelectorAll('.fp-datetime:not(.flatpickr-input)').forEach(function(el) {
-      flatpickr(el, fpConfig);
-    });
-    document.querySelectorAll('.fp-date:not(.flatpickr-input)').forEach(function(el) {
-      flatpickr(el, fpDateConfig);
-    });
-  }
-  document.addEventListener('DOMContentLoaded', initFlatpickr);
-  document.addEventListener('htmx:afterSettle', initFlatpickr);
-</script>
+{{block "scripts" .}}{{end}}
 <script>
   (function() {
     var toggle = document.getElementById('theme-toggle');

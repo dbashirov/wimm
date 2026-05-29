@@ -24,13 +24,13 @@
           hx-on::after-request="this.reset()">
       <div class="flex flex-wrap gap-3 items-end">
         <div class="form-control flex-1 min-w-40">
-          <label class="form-label">Название</label>
-          <input type="text" name="name" placeholder="Продукты"
+          <label for="category-name" class="form-label">Название</label>
+          <input type="text" id="category-name" name="name" placeholder="Продукты"
                  class="input input-bordered input-form" required>
         </div>
         <div class="form-control">
-          <label class="form-label">Тип</label>
-          <select name="type" class="select select-bordered input-form">
+          <label for="category-type" class="form-label">Тип</label>
+          <select id="category-type" name="type" class="select select-bordered input-form">
             <option value="expense">Расход</option>
             <option value="income">Доход</option>
           </select>

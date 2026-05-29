@@ -55,20 +55,20 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           <input type="hidden" name="type" id="op-type-hidden" value="expense">
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-            <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
+            <label for="op-amount" class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
+            <input type="text" id="op-amount" inputmode="decimal" name="amount" placeholder="0.00"
                    class="input input-bordered input-form amount-input" required>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-            <select name="wallet_id" class="select select-bordered input-form" required>
+            <label for="op-wallet" class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
+            <select id="op-wallet" name="wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}" {{if .IsDefault}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
+            <label for="op-category-select" class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
             <select name="category_id" id="op-category-select" class="select select-bordered input-form" required>
               <option value="" disabled selected></option>
               {{range .Categories}}{{if eq .Type "expense"}}
@@ -77,14 +77,14 @@
             </select>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
-            <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
+            <label for="op-date" class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
+            <input type="text" id="op-date" name="operated_at" placeholder="дд.мм.гггг чч:мм"
                    class="input input-bordered input-form fp-datetime" required>
           </div>
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
-          <input type="text" name="description" placeholder="Необязательно"
+          <label for="op-description" class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
+          <input type="text" id="op-description" name="description" placeholder="Необязательно"
                  class="input input-bordered input-form">
         </div>
       </form>
@@ -99,35 +99,35 @@
             hx-on::after-request="this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)})">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
-            <select name="from_wallet_id" class="select select-bordered input-form" required>
+            <label for="transfer-from" class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
+            <select id="transfer-from" name="from_wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
-            <select name="to_wallet_id" class="select select-bordered input-form" required>
+            <label for="transfer-to" class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
+            <select id="transfer-to" name="to_wallet_id" class="select select-bordered input-form" required>
               {{range .Wallets}}{{if not .Hidden}}
               <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
-            <input type="text" inputmode="decimal" name="amount" placeholder="0.00"
+            <label for="transfer-amount" class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
+            <input type="text" id="transfer-amount" inputmode="decimal" name="amount" placeholder="0.00"
                    class="input input-bordered input-form amount-input" required>
           </div>
           <div class="form-control">
-            <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
-            <input type="text" name="operated_at" placeholder="дд.мм.гггг чч:мм"
+            <label for="transfer-date" class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
+            <input type="text" id="transfer-date" name="operated_at" placeholder="дд.мм.гггг чч:мм"
                    class="input input-bordered input-form fp-datetime" required>
           </div>
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
-          <input type="text" name="description" placeholder="Необязательно"
+          <label for="transfer-description" class="text-xs font-medium text-base-content/50 mb-1.5">Описание</label>
+          <input type="text" id="transfer-description" name="description" placeholder="Необязательно"
                  class="input input-bordered input-form">
         </div>
       </form>
@@ -234,8 +234,8 @@ function updateOpForm(mode) {
       </div>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
-          <select name="wallet_id" class="select select-bordered input-form">
+          <label for="filter-wallet" class="text-xs font-medium text-base-content/50 mb-1.5">Кошелёк</label>
+          <select id="filter-wallet" name="wallet_id" class="select select-bordered input-form">
             <option value="">Все</option>
             {{range .Wallets}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.WalletID}}selected{{end}}>{{.Name}}</option>
@@ -243,16 +243,16 @@ function updateOpForm(mode) {
           </select>
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Тип</label>
-          <select name="type" class="select select-bordered input-form">
+          <label for="filter-type" class="text-xs font-medium text-base-content/50 mb-1.5">Тип</label>
+          <select id="filter-type" name="type" class="select select-bordered input-form">
             <option value="">Все</option>
             <option value="income"  {{if eq $.Filter.Type "income"}}selected{{end}}>Доход</option>
             <option value="expense" {{if eq $.Filter.Type "expense"}}selected{{end}}>Расход</option>
           </select>
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
-          <select name="category_id" class="select select-bordered input-form">
+          <label for="filter-category" class="text-xs font-medium text-base-content/50 mb-1.5">Категория</label>
+          <select id="filter-category" name="category_id" class="select select-bordered input-form">
             <option value="">Все</option>
             {{range .Categories}}
             <option value="{{.ID}}" {{if eq .ID $.Filter.CategoryID}}selected{{end}}>{{.Name}}</option>
@@ -260,13 +260,13 @@ function updateOpForm(mode) {
           </select>
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата от</label>
-          <input type="text" name="date_from" class="input input-bordered input-form fp-date"
+          <label for="filter-date-from" class="text-xs font-medium text-base-content/50 mb-1.5">Дата от</label>
+          <input type="text" id="filter-date-from" name="date_from" class="input input-bordered input-form fp-date"
                  value="{{if not .Filter.DateFrom.IsZero}}{{.Filter.DateFrom.Format "2006-01-02"}}{{end}}">
         </div>
         <div class="form-control">
-          <label class="text-xs font-medium text-base-content/50 mb-1.5">Дата до</label>
-          <input type="text" name="date_to" class="input input-bordered input-form fp-date"
+          <label for="filter-date-to" class="text-xs font-medium text-base-content/50 mb-1.5">Дата до</label>
+          <input type="text" id="filter-date-to" name="date_to" class="input input-bordered input-form fp-date"
                  value="{{if not .Filter.DateTo.IsZero}}{{(.Filter.DateTo.AddDate 0 0 -1).Format "2006-01-02"}}{{end}}">
         </div>
       </div>
@@ -315,4 +315,47 @@ function updateOpForm(mode) {
   </div>
   {{end}}
 </div>
+{{end}}
+{{define "head_extra"}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{{end}}
+{{define "scripts"}}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
+<script>
+  var fpConfig = {
+    enableTime: true,
+    dateFormat: 'Y-m-dTH:i',
+    altInput: true,
+    altFormat: 'd.m.Y H:i',
+    time_24hr: true,
+    locale: 'ru',
+    defaultDate: new Date(),
+    onReady: function(_, __, instance) {
+      instance.altInput.className =
+        instance.input.className.replace('fp-datetime', '').trim();
+    },
+  };
+  var fpDateConfig = {
+    enableTime: false,
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd.m.Y',
+    locale: 'ru',
+    onReady: function(_, __, instance) {
+      instance.altInput.className =
+        instance.input.className.replace('fp-date', '').trim();
+    },
+  };
+  function initFlatpickr() {
+    document.querySelectorAll('.fp-datetime:not(.flatpickr-input)').forEach(
+      function(el) { flatpickr(el, fpConfig); }
+    );
+    document.querySelectorAll('.fp-date:not(.flatpickr-input)').forEach(
+      function(el) { flatpickr(el, fpDateConfig); }
+    );
+  }
+  document.addEventListener('DOMContentLoaded', initFlatpickr);
+  document.addEventListener('htmx:afterSettle', initFlatpickr);
+</script>
 {{end}}

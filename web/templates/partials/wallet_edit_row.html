@@ -13,18 +13,21 @@
                 hx-swap="outerHTML">Отмена</button>
       </div>
       <div class="flex flex-wrap gap-2 items-end">
-        <input type="text" name="name" value="{{.Name}}"
-               class="input input-bordered input-form flex-1 min-w-32" required>
-        <select name="currency" class="select select-bordered input-form">
+        <input type="text" id="wallet-edit-name-{{.ID}}" name="name" value="{{.Name}}"
+               class="input input-bordered input-form flex-1 min-w-32" required
+               aria-label="Название кошелька">
+        <select id="wallet-edit-currency-{{.ID}}" name="currency" class="select select-bordered input-form"
+                aria-label="Валюта кошелька">
           <option value="RUB" {{if eq .Currency "RUB"}}selected{{end}}>RUB</option>
           <option value="USD" {{if eq .Currency "USD"}}selected{{end}}>USD</option>
           <option value="EUR" {{if eq .Currency "EUR"}}selected{{end}}>EUR</option>
           <option value="GBP" {{if eq .Currency "GBP"}}selected{{end}}>GBP</option>
           <option value="CNY" {{if eq .Currency "CNY"}}selected{{end}}>CNY</option>
         </select>
-        <input type="text" name="description" value="{{.Description}}"
+        <input type="text" id="wallet-edit-description-{{.ID}}" name="description" value="{{.Description}}"
                placeholder="Описание (необязательно)"
-               class="input input-bordered input-form flex-1">
+               class="input input-bordered input-form flex-1"
+               aria-label="Описание кошелька">
       </div>
     </form>
   </td>

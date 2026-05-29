@@ -13,8 +13,9 @@
                 hx-swap="outerHTML">Отмена</button>
       </div>
       <div class="flex flex-wrap gap-2 items-center">
-        <input type="text" name="name" value="{{.Name}}"
-               class="input input-bordered input-form flex-1 min-w-32" required>
+        <input type="text" id="category-edit-name-{{.ID}}" name="name" value="{{.Name}}"
+               class="input input-bordered input-form flex-1 min-w-32" required
+               aria-label="Название категории">
         {{if eq .Type "income"}}
         <span class="badge badge-success badge-sm">↑ Доход</span>
         {{else}}

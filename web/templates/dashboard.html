@@ -148,9 +148,51 @@
 {{if or .MonthlyExpenses .MonthlyIncomes .MonthlyTotals}}
 <script>
 (function() {
-  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  var gridColor = isDark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
-  var textColor = isDark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
+  var root = document.documentElement;
+
+  // Читаем CSS-переменную как oklch-строку через color-mix с прозрачностью
+  function getCSSVar(name) {
+    return getComputedStyle(root).getPropertyValue(name).trim();
+  }
+
+  // Возвращает color-mix(in oklch, var(name) alpha%, transparent)
+  // для использования в Canvas API нужно читать реальный вычисленный цвет
+  function readCSSColor(varName, alpha) {
+    var tmp = document.createElement('div');
+    tmp.style.cssText = [
+      'position:absolute',
+      'visibility:hidden',
+      'pointer-events:none',
+      'color:oklch(from ' + getCSSVar(varName) + ' l c h / ' + alpha + ')',
+    ].join(';');
+    document.body.appendChild(tmp);
+    var color = getComputedStyle(tmp).color;
+    document.body.removeChild(tmp);
+    // Если браузер не поддерживает relative color syntax, fallback на CSS var напрямую
+    if (!color || color === 'rgba(0, 0, 0, 0)') {
+      tmp = document.createElement('div');
+      tmp.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;color:' + getCSSVar(varName);
+      document.body.appendChild(tmp);
+      color = getComputedStyle(tmp).color;
+      document.body.removeChild(tmp);
+      // Подставляем альфа если цвет — rgb(r,g,b)
+      color = color.replace(/^rgb\((.+)\)$/, 'rgba($1,' + alpha + ')');
+    }
+    return color;
+  }
+
+  function getTextColor() {
+    // base-content с opacity 0.4
+    return readCSSColor('--color-base-content', 0.4);
+  }
+
+  function getGridColor() {
+    return readCSSColor('--color-base-content', 0.05);
+  }
+
+  function getLineColor() {
+    return readCSSColor('--color-base-content', 0.2);
+  }
 
   function readCardBg() {
     var tmp = document.createElement('div');
@@ -161,7 +203,11 @@
     document.body.removeChild(tmp);
     return color;
   }
+
+  var textColor = getTextColor();
+  var gridColor = getGridColor();
   var bgColor = readCardBg();
+
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = 'Inter, sans-serif';
   Chart.defaults.font.size = 11;
@@ -172,8 +218,7 @@
     '#06b6d4','#a855f7','#e11d48','#65a30d','#0ea5e9',
   ];
 
-  var lineColor = isDark
-    ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
+  var lineColor = getLineColor();
 
   function fmtMoney(val) {
     var neg = val < 0;
@@ -189,7 +234,7 @@
   }
 
   function tooltipOpts(total) {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var dark = root.getAttribute('data-theme') === 'dark';
     return {
       trigger: 'item',
       backgroundColor: dark ? 'rgba(18,19,32,0.96)' : 'rgba(255,255,255,0.97)',
@@ -301,8 +346,8 @@
   var d = sliceData();
   document.getElementById('monthChartSubtitle').textContent = d.title;
 
-  var balanceColor = isDark ? 'rgba(139,92,246,0.9)' : 'rgba(99,102,241,0.9)';
-  var balanceFill  = isDark ? 'rgba(139,92,246,0.08)' : 'rgba(99,102,241,0.08)';
+  var balanceColor = readCSSColor('--color-primary', 0.9);
+  var balanceFill  = readCSSColor('--color-primary', 0.08);
 
   var monthChart = new Chart(document.getElementById('monthChart'), {
     type: 'bar',
@@ -312,7 +357,7 @@
         {
           label: 'Доходы',
           data: d.income,
-          backgroundColor: isDark ? 'rgba(52,211,153,0.6)' : 'rgba(5,150,105,0.6)',
+          backgroundColor: readCSSColor('--color-success', 0.6),
           borderRadius: 4,
           borderSkipped: false,
           yAxisID: 'y',
@@ -320,7 +365,7 @@
         {
           label: 'Расходы',
           data: d.expense,
-          backgroundColor: isDark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.6)',
+          backgroundColor: readCSSColor('--color-error', 0.6),
           borderRadius: 4,
           borderSkipped: false,
           yAxisID: 'y',
@@ -400,13 +445,12 @@
 
   // Обновляем цвета всех графиков при смене темы
   new MutationObserver(function() {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var tc = dark ? 'rgba(201,211,238,0.4)' : 'rgba(0,0,0,0.65)';
+    var tc = getTextColor();
     var bg = readCardBg();
-    var lc = dark ? 'rgba(201,211,238,0.25)' : 'rgba(0,0,0,0.2)';
-    var gc = dark ? 'rgba(201,211,238,0.05)' : 'rgba(0,0,0,0.05)';
-    var bc = dark ? 'rgba(139,92,246,0.9)' : 'rgba(99,102,241,0.9)';
-    var bf = dark ? 'rgba(139,92,246,0.08)' : 'rgba(99,102,241,0.08)';
+    var lc = getLineColor();
+    var gc = getGridColor();
+    var bc = readCSSColor('--color-primary', 0.9);
+    var bf = readCSSColor('--color-primary', 0.08);
 
     var tt = tooltipOpts(0);
     delete tt.formatter;
@@ -425,9 +469,9 @@
       balanceColor = bc;
       Chart.defaults.color = tc;
       monthChart.data.datasets[0].backgroundColor =
-        dark ? 'rgba(52,211,153,0.6)' : 'rgba(5,150,105,0.6)';
+        readCSSColor('--color-success', 0.6);
       monthChart.data.datasets[1].backgroundColor =
-        dark ? 'rgba(248,113,113,0.6)' : 'rgba(220,38,38,0.6)';
+        readCSSColor('--color-error', 0.6);
       monthChart.data.datasets[2].borderColor = bc;
       monthChart.data.datasets[2].backgroundColor = bf;
       monthChart.options.plugins.legend.labels.color = tc;
@@ -443,4 +487,9 @@
 })();
 </script>
 {{end}}
+{{end}}
+{{define "scripts"}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 {{end}}
