@@ -26,7 +26,7 @@
   </script>
 </head>
 <body class="min-h-screen font-sans">
-<a href="#main-content" class="skip-link">Перейти к основному содержимому</a>
+{{if not .NoNav}}<a href="#main-content" class="skip-link">Перейти к основному содержимому</a>{{end}}
 <div id="glow-bg" aria-hidden="true"></div>
 
 {{if not .NoNav}}
@@ -35,7 +35,7 @@
 
     <!-- Mobile hamburger -->
     <div class="dropdown lg:hidden">
-      <button type="button" tabindex="0" class="btn btn-ghost btn-circle" aria-label="Открыть меню">
+      <button type="button" class="btn btn-ghost btn-circle" aria-label="Открыть меню">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
         </svg>

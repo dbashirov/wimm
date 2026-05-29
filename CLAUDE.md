@@ -44,7 +44,9 @@ handler → session.Manager
 
 ## Frontend
 
-htmx 2.x + Chart.js + Pico.css (CDN). Шаблоны рендерятся сервером. Партиалы — именованные `{{define "name"}}` блоки, возвращаются на htmx-запросы (inline edit, удаление строк таблицы).
+htmx 2.x + Chart.js + ECharts + DaisyUI (CDN). Шаблоны рендерятся сервером. Партиалы — именованные `{{define "name"}}` блоки, возвращаются на htmx-запросы (inline edit, удаление строк таблицы).
+
+Расширение базового шаблона: страницы могут определять `{{define "head_extra"}}` (добавляется в `<head>`, для CSS/шрифтов) и `{{define "scripts"}}` (добавляется перед `</body>`, для page-specific JS-библиотек). Тяжёлые скрипты (Chart.js, ECharts, Flatpickr) подключаются только в тех шаблонах, где они нужны.
 
 ## База данных
 
