@@ -14,6 +14,12 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
   <link rel="icon" type="image/svg+xml" href="/static/favicon-v2.svg">
   {{block "head_extra" .}}{{end}}
   <link rel="stylesheet" href="/static/style.css">
