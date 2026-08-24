@@ -40,13 +40,14 @@
   <div class="flex items-center h-[72px] gap-4 max-w-6xl mx-auto px-4 sm:px-6">
 
     <!-- Mobile hamburger -->
-    <div class="dropdown lg:hidden">
-      <button type="button" class="btn btn-ghost btn-circle" aria-label="Открыть меню">
+    <div class="dropdown lg:hidden" id="mobile-menu-wrap">
+      <button type="button" id="mobile-menu-btn" class="btn btn-ghost btn-circle"
+              aria-label="Открыть меню" aria-expanded="false" aria-controls="mobile-menu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
         </svg>
       </button>
-      <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow-xl border border-base-content/10">
+      <ul id="mobile-menu" class="menu dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow-xl border border-base-content/10">
         <li><a href="/dashboard" class="text-base py-3">Обзор</a></li>
         <li><a href="/wallets" class="text-base py-3">Кошельки</a></li>
         <li><a href="/categories" class="text-base py-3">Категории</a></li>
@@ -117,6 +118,34 @@
         var theme = toggle.checked ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+      });
+    }
+
+    // Бургер-меню: DaisyUI открывает dropdown через :focus-within, но Safari
+    // (macOS и iOS) не даёт кнопке фокус по клику — переключаем класс явно.
+    var menuWrap = document.getElementById('mobile-menu-wrap');
+    var menuBtn = document.getElementById('mobile-menu-btn');
+    if (menuWrap && menuBtn) {
+      var setMenu = function(open) {
+        menuWrap.classList.toggle('dropdown-open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        menuBtn.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+      };
+
+      menuBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        setMenu(!menuWrap.classList.contains('dropdown-open'));
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!menuWrap.contains(e.target)) setMenu(false);
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && menuWrap.classList.contains('dropdown-open')) {
+          setMenu(false);
+          menuBtn.focus();
+        }
       });
     }
 
