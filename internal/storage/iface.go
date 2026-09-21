@@ -88,4 +88,13 @@ type OperationRepo interface {
 		walletID uuid.UUID,
 		userID uuid.UUID,
 	) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error)
+	ReportBounds(
+		ctx context.Context,
+		filter model.ReportFilter,
+	) (model.ReportBounds, error)
+	ReportRows(
+		ctx context.Context,
+		filter model.ReportFilter,
+		granularity model.Granularity,
+	) ([]model.ReportRow, error)
 }

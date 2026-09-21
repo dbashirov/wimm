@@ -170,21 +170,6 @@ func (mr *MockWalletRepoMockRecorder) ListWithBalance(ctx, userID any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWithBalance", reflect.TypeOf((*MockWalletRepo)(nil).ListWithBalance), ctx, userID)
 }
 
-// ToggleHidden mocks base method.
-func (m *MockWalletRepo) ToggleHidden(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ToggleHidden", ctx, id, userID)
-	ret0, _ := ret[0].(*model.Wallet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ToggleHidden indicates an expected call of ToggleHidden.
-func (mr *MockWalletRepoMockRecorder) ToggleHidden(ctx, id, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleHidden", reflect.TypeOf((*MockWalletRepo)(nil).ToggleHidden), ctx, id, userID)
-}
-
 // Reorder mocks base method.
 func (m *MockWalletRepo) Reorder(ctx context.Context, userID uuid.UUID, ids []uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -212,6 +197,21 @@ func (m *MockWalletRepo) SetDefault(ctx context.Context, id, userID uuid.UUID) (
 func (mr *MockWalletRepoMockRecorder) SetDefault(ctx, id, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDefault", reflect.TypeOf((*MockWalletRepo)(nil).SetDefault), ctx, id, userID)
+}
+
+// ToggleHidden mocks base method.
+func (m *MockWalletRepo) ToggleHidden(ctx context.Context, id, userID uuid.UUID) (*model.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ToggleHidden", ctx, id, userID)
+	ret0, _ := ret[0].(*model.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ToggleHidden indicates an expected call of ToggleHidden.
+func (mr *MockWalletRepoMockRecorder) ToggleHidden(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToggleHidden", reflect.TypeOf((*MockWalletRepo)(nil).ToggleHidden), ctx, id, userID)
 }
 
 // Update mocks base method.
@@ -397,23 +397,6 @@ func (mr *MockOperationRepoMockRecorder) CreateTransfer(ctx, userID, inp any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTransfer", reflect.TypeOf((*MockOperationRepo)(nil).CreateTransfer), ctx, userID, inp)
 }
 
-// WalletDashboardData mocks base method.
-func (m *MockOperationRepo) WalletDashboardData(ctx context.Context, walletID, userID uuid.UUID) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WalletDashboardData", ctx, walletID, userID)
-	ret0, _ := ret[0].([]model.MonthlyCategoryData)
-	ret1, _ := ret[1].([]model.MonthlyCategoryData)
-	ret2, _ := ret[2].([]model.MonthlyTotal)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
-}
-
-// WalletDashboardData indicates an expected call of WalletDashboardData.
-func (mr *MockOperationRepoMockRecorder) WalletDashboardData(ctx, walletID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WalletDashboardData", reflect.TypeOf((*MockOperationRepo)(nil).WalletDashboardData), ctx, walletID, userID)
-}
-
 // DashboardData mocks base method.
 func (m *MockOperationRepo) DashboardData(ctx context.Context, userID uuid.UUID) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
 	m.ctrl.T.Helper()
@@ -445,51 +428,6 @@ func (mr *MockOperationRepoMockRecorder) Delete(ctx, id, userID any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOperationRepo)(nil).Delete), ctx, id, userID)
 }
 
-// GetTransfer mocks base method.
-func (m *MockOperationRepo) GetTransfer(
-	ctx context.Context,
-	transferID, userID uuid.UUID,
-) (*model.Operation, *model.Operation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTransfer", ctx, transferID, userID)
-	ret0, _ := ret[0].(*model.Operation)
-	ret1, _ := ret[1].(*model.Operation)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetTransfer indicates an expected call of GetTransfer.
-func (mr *MockOperationRepoMockRecorder) GetTransfer(ctx, transferID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock, "GetTransfer",
-		reflect.TypeOf((*MockOperationRepo)(nil).GetTransfer), ctx, transferID, userID,
-	)
-}
-
-// UpdateTransfer mocks base method.
-func (m *MockOperationRepo) UpdateTransfer(
-	ctx context.Context,
-	transferID, userID uuid.UUID,
-	inp model.TransferInput,
-) (*model.Operation, *model.Operation, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTransfer", ctx, transferID, userID, inp)
-	ret0, _ := ret[0].(*model.Operation)
-	ret1, _ := ret[1].(*model.Operation)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// UpdateTransfer indicates an expected call of UpdateTransfer.
-func (mr *MockOperationRepoMockRecorder) UpdateTransfer(ctx, transferID, userID, inp any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock, "UpdateTransfer",
-		reflect.TypeOf((*MockOperationRepo)(nil).UpdateTransfer), ctx, transferID, userID, inp,
-	)
-}
-
 // DeleteTransfer mocks base method.
 func (m *MockOperationRepo) DeleteTransfer(ctx context.Context, transferID, userID uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -519,6 +457,22 @@ func (mr *MockOperationRepoMockRecorder) GetByID(ctx, id, userID any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockOperationRepo)(nil).GetByID), ctx, id, userID)
 }
 
+// GetTransfer mocks base method.
+func (m *MockOperationRepo) GetTransfer(ctx context.Context, transferID, userID uuid.UUID) (*model.Operation, *model.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransfer", ctx, transferID, userID)
+	ret0, _ := ret[0].(*model.Operation)
+	ret1, _ := ret[1].(*model.Operation)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetTransfer indicates an expected call of GetTransfer.
+func (mr *MockOperationRepoMockRecorder) GetTransfer(ctx, transferID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransfer", reflect.TypeOf((*MockOperationRepo)(nil).GetTransfer), ctx, transferID, userID)
+}
+
 // List mocks base method.
 func (m *MockOperationRepo) List(ctx context.Context, filter model.OperationFilter) ([]model.Operation, error) {
 	m.ctrl.T.Helper()
@@ -534,6 +488,36 @@ func (mr *MockOperationRepoMockRecorder) List(ctx, filter any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockOperationRepo)(nil).List), ctx, filter)
 }
 
+// ReportBounds mocks base method.
+func (m *MockOperationRepo) ReportBounds(ctx context.Context, filter model.ReportFilter) (model.ReportBounds, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportBounds", ctx, filter)
+	ret0, _ := ret[0].(model.ReportBounds)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReportBounds indicates an expected call of ReportBounds.
+func (mr *MockOperationRepoMockRecorder) ReportBounds(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportBounds", reflect.TypeOf((*MockOperationRepo)(nil).ReportBounds), ctx, filter)
+}
+
+// ReportRows mocks base method.
+func (m *MockOperationRepo) ReportRows(ctx context.Context, filter model.ReportFilter, granularity model.Granularity) ([]model.ReportRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportRows", ctx, filter, granularity)
+	ret0, _ := ret[0].([]model.ReportRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReportRows indicates an expected call of ReportRows.
+func (mr *MockOperationRepoMockRecorder) ReportRows(ctx, filter, granularity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportRows", reflect.TypeOf((*MockOperationRepo)(nil).ReportRows), ctx, filter, granularity)
+}
+
 // Update mocks base method.
 func (m *MockOperationRepo) Update(ctx context.Context, id, userID uuid.UUID, inp model.OperationInput) (*model.Operation, error) {
 	m.ctrl.T.Helper()
@@ -547,4 +531,37 @@ func (m *MockOperationRepo) Update(ctx context.Context, id, userID uuid.UUID, in
 func (mr *MockOperationRepoMockRecorder) Update(ctx, id, userID, inp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockOperationRepo)(nil).Update), ctx, id, userID, inp)
+}
+
+// UpdateTransfer mocks base method.
+func (m *MockOperationRepo) UpdateTransfer(ctx context.Context, transferID, userID uuid.UUID, inp model.TransferInput) (*model.Operation, *model.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTransfer", ctx, transferID, userID, inp)
+	ret0, _ := ret[0].(*model.Operation)
+	ret1, _ := ret[1].(*model.Operation)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// UpdateTransfer indicates an expected call of UpdateTransfer.
+func (mr *MockOperationRepoMockRecorder) UpdateTransfer(ctx, transferID, userID, inp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransfer", reflect.TypeOf((*MockOperationRepo)(nil).UpdateTransfer), ctx, transferID, userID, inp)
+}
+
+// WalletDashboardData mocks base method.
+func (m *MockOperationRepo) WalletDashboardData(ctx context.Context, walletID, userID uuid.UUID) ([]model.MonthlyCategoryData, []model.MonthlyCategoryData, []model.MonthlyTotal, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WalletDashboardData", ctx, walletID, userID)
+	ret0, _ := ret[0].([]model.MonthlyCategoryData)
+	ret1, _ := ret[1].([]model.MonthlyCategoryData)
+	ret2, _ := ret[2].([]model.MonthlyTotal)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// WalletDashboardData indicates an expected call of WalletDashboardData.
+func (mr *MockOperationRepoMockRecorder) WalletDashboardData(ctx, walletID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WalletDashboardData", reflect.TypeOf((*MockOperationRepo)(nil).WalletDashboardData), ctx, walletID, userID)
 }

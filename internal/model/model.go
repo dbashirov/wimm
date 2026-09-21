@@ -150,3 +150,77 @@ type MonthlyTotal struct {
 	Expense float64
 	Balance float64 // нарастающий итог на конец месяца
 }
+
+// Granularity — шаг временной шкалы отчёта, совпадает с полем date_trunc.
+type Granularity string
+
+const (
+	GranularityDay   Granularity = "day"
+	GranularityWeek  Granularity = "week"
+	GranularityMonth Granularity = "month"
+	GranularityYear  Granularity = "year"
+)
+
+// ReportFilter — параметры отчёта по категориям.
+type ReportFilter struct {
+	UserID      uuid.UUID
+	CategoryIDs []uuid.UUID
+	WalletIDs   []uuid.UUID
+	Type        OperationType // "" — оба типа
+	DateFrom    time.Time
+	DateTo      time.Time   // эксклюзивная граница
+	Granularity Granularity // "" — авто
+}
+
+// ReportRow — сырая строка агрегации из БД.
+// Имена db-тегов совпадают с алиасами колонок для pgx.RowToStructByName.
+type ReportRow struct {
+	Bucket     time.Time     `db:"bucket"`
+	CategoryID uuid.UUID     `db:"category_id"`
+	Name       string        `db:"name"`
+	Type       OperationType `db:"type"`
+	Amount     float64       `db:"amount"`
+}
+
+// ReportBounds — фактические границы данных под фильтр.
+type ReportBounds struct {
+	From  time.Time
+	To    time.Time
+	Count int
+}
+
+// ReportCategory — итог по одной категории за весь период.
+type ReportCategory struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name"`
+	Total float64   `json:"total"`
+	Share float64   `json:"share"` // % от итога секции; 0 при нулевом итоге
+}
+
+// ReportBucket — один период на временной шкале, выровнен по Report.Labels.
+type ReportBucket struct {
+	Amounts []float64 `json:"amounts"` // выровнены по ReportSection.Categories
+	Total   float64   `json:"total"`
+}
+
+// ReportSection — отчёт по одному типу операций.
+// json-теги фиксируют контракт с графиками в web/templates/reports.html:
+// секция уезжает в браузер целиком через хелпер jsonData.
+type ReportSection struct {
+	Categories []ReportCategory `json:"categories"`
+	Buckets    []ReportBucket   `json:"buckets"`
+	Total      float64          `json:"total"`
+	Average    float64          `json:"average"` // Total / len(Buckets)
+}
+
+// Report — данные страницы отчёта.
+type Report struct {
+	Granularity Granularity
+	Labels      []string
+	Expense     *ReportSection
+	Income      *ReportSection
+	Net         []float64 // доход − расход по бакетам
+	TotalNet    float64
+	Bounds      ReportBounds
+	Notice      string // «шаг укрупнён до месяцев»; пустая строка — сообщать нечего
+}

@@ -36,11 +36,11 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 	}
 	filter.Type = model.OperationType(q.Get("type"))
 	if s := q.Get("date_from"); s != "" {
-		filter.DateFrom, _ = time.Parse("2006-01-02", s)
+		filter.DateFrom, _ = time.Parse(dateLayout, s)
 	}
 	if s := q.Get("date_to"); s != "" {
-		if t, err := time.Parse("2006-01-02", s); err == nil {
-			filter.DateTo = t.AddDate(0, 0, 1) // начало следующего дня, фильтр в SQL: < DateTo
+		if parsed, err := time.Parse(dateLayout, s); err == nil {
+			filter.DateTo = parsed.AddDate(0, 0, 1) // начало следующего дня, фильтр в SQL: < DateTo
 		}
 	}
 	filter.Page, _ = strconv.Atoi(q.Get("page"))

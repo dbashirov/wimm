@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/dbashirov/wimm/internal/model"
+	"github.com/dbashirov/wimm/internal/storage"
 	"github.com/dbashirov/wimm/migrations"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,7 +17,10 @@ import (
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-var testPool *pgxpool.Pool
+var (
+	testPool *pgxpool.Pool
+	testDSN  string
+)
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -38,6 +43,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "ConnectionString: %v\n", err)
 		os.Exit(1)
 	}
+	testDSN = dsn
 
 	// Migrations via goose
 	sqlDB, err := sql.Open("pgx", dsn)
@@ -87,4 +93,21 @@ func createUser(t *testing.T, email string) uuid.UUID {
 		t.Fatalf("createUser: %v", err)
 	}
 	return id
+}
+
+// createCategory — дополнительная категория сверх созданных фикстурой.
+func createCategory(
+	t *testing.T,
+	userID uuid.UUID,
+	name string,
+	catType model.OperationType,
+) uuid.UUID {
+	t.Helper()
+	s := storage.NewFromPool(testPool)
+	c, err := s.Categories.Create(context.Background(), userID,
+		model.CategoryInput{Name: name, Type: catType})
+	if err != nil {
+		t.Fatalf("createCategory %s: %v", name, err)
+	}
+	return c.ID
 }

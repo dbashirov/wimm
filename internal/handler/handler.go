@@ -1,19 +1,25 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/session"
+	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 )
+
+// dateLayout — формат <input type="date"> и границ периода в query-строке.
+const dateLayout = "2006-01-02"
 
 // Config — параметры конфигурации обработчика, влияющие на безопасность.
 type Config struct {
@@ -78,6 +84,19 @@ var tmplFuncs = template.FuncMap{
 		return string(model.TypeExpense)
 	},
 	"add": func(a, b int) int { return a + b },
+	// jsonData сериализует данные для вставки в JS-литерал.
+	// template.JS отключает контекстное экранирование, поэтому только как
+	// значение внутри <script>: в атрибуте или href это будет XSS.
+	"jsonData": func(v any) (template.JS, error) {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return "", fmt.Errorf("jsonData: %w", err)
+		}
+		return template.JS(data), nil
+	},
+	"hasID": func(ids []uuid.UUID, id uuid.UUID) bool {
+		return slices.Contains(ids, id)
+	},
 }
 
 func New(
@@ -106,7 +125,10 @@ func New(
 }
 
 func parseTemplates(webFS fs.FS) (map[string]*template.Template, error) {
-	pages := []string{"login", "register", "dashboard", "wallets", "categories", "operations", "wallet_stats"}
+	pages := []string{
+		"login", "register", "dashboard", "wallets",
+		"categories", "operations", "wallet_stats", "reports",
+	}
 	tmpls := make(map[string]*template.Template)
 	for _, page := range pages {
 		t, err := template.New("").Funcs(tmplFuncs).ParseFS(webFS,
@@ -174,6 +196,8 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("GET /operations/{id}/edit", h.protected(h.getOperationEdit))
 	mux.Handle("PUT /operations/{id}", h.protected(h.putOperation))
 	mux.Handle("DELETE /operations/{id}", h.protected(h.deleteOperation))
+
+	mux.Handle("GET /reports", h.protected(h.getReport))
 
 	mux.Handle("POST /transfers", h.protected(h.postTransfer))
 	mux.Handle("GET /transfers/{transfer_id}", h.protected(h.getTransferRows))
