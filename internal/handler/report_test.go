@@ -324,3 +324,56 @@ func TestSelectedGranularity_RoundTrip(t *testing.T) {
 		t.Errorf("«Авто» превратилось в %q", got)
 	}
 }
+
+func TestVisibleWallets(t *testing.T) {
+	hidden := model.Wallet{ID: uuid.Must(uuid.NewV7()), Name: "Архив", Hidden: true}
+	shown := model.Wallet{ID: uuid.Must(uuid.NewV7()), Name: "Основной"}
+
+	got := visibleWallets([]model.Wallet{shown, hidden})
+	if len(got) != 1 || got[0].ID != shown.ID {
+		t.Fatalf("скрытый кошелёк попал в список выбора: %+v", got)
+	}
+	if len(visibleWallets(nil)) != 0 {
+		t.Error("пустой список должен оставаться пустым")
+	}
+}
+
+func TestKeepWalletIDs(t *testing.T) {
+	shown := model.Wallet{ID: uuid.Must(uuid.NewV7()), Name: "Основной"}
+	other := model.Wallet{ID: uuid.Must(uuid.NewV7()), Name: "Запасной"}
+	hiddenID := uuid.Must(uuid.NewV7())
+	available := []model.Wallet{shown, other}
+
+	tests := []struct {
+		name string
+		ids  []uuid.UUID
+		want int
+	}{
+		{"пустой фильтр остаётся пустым", nil, 0},
+		{"доступный кошелёк сохраняется", []uuid.UUID{shown.ID}, 1},
+		{"два доступных сохраняются", []uuid.UUID{shown.ID, other.ID}, 2},
+		{"скрытый отбрасывается", []uuid.UUID{shown.ID, hiddenID}, 1},
+		{"только скрытый — фильтр снимается", []uuid.UUID{hiddenID}, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := keepWalletIDs(tc.ids, available)
+			if len(got) != tc.want {
+				t.Fatalf("осталось %d id, ожидалось %d: %v", len(got), tc.want, got)
+			}
+			for _, id := range got {
+				if id == hiddenID {
+					t.Error("id скрытого кошелька просочился в фильтр")
+				}
+			}
+		})
+	}
+}
+
+// TestKeepWalletIDs_NilWhenEmpty — пустой результат обязан быть nil: для storage
+// это «фильтр не задан», то есть отчёт по всем кошелькам, включая скрытые.
+func TestKeepWalletIDs_NilWhenEmpty(t *testing.T) {
+	if got := keepWalletIDs([]uuid.UUID{uuid.Must(uuid.NewV7())}, nil); got != nil {
+		t.Errorf("ожидался nil, получено %v", got)
+	}
+}

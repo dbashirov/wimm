@@ -32,17 +32,22 @@ type reportData struct {
 func (h *Handler) getReport(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromCtx(r.Context())
 
+	wallets, err := h.svc.ListWallets(r.Context(), userID)
+	if err != nil {
+		h.serverError(w, r, "ListWallets", err)
+		return
+	}
+	visible := visibleWallets(wallets)
+
 	filter := parseReportFilter(r)
 	filter.UserID = userID
+	// скрытые кошельки в фильтре не предлагаются, поэтому выбрать их нельзя
+	// и через URL; при пустом списке в отчёт попадают все, включая скрытые
+	filter.WalletIDs = keepWalletIDs(filter.WalletIDs, visible)
 
 	report, err := h.svc.Report(r.Context(), filter)
 	if err != nil {
 		h.serverError(w, r, "Report", err)
-		return
-	}
-	wallets, err := h.svc.ListWallets(r.Context(), userID)
-	if err != nil {
-		h.serverError(w, r, "ListWallets", err)
 		return
 	}
 	cats, err := h.svc.ListCategories(r.Context(), userID)
@@ -54,7 +59,7 @@ func (h *Handler) getReport(w http.ResponseWriter, r *http.Request) {
 	dateFrom, dateTo := reportFormDates(filter)
 	h.render(w, "reports", reportData{
 		Report:      report,
-		Wallets:     wallets,
+		Wallets:     visible,
 		Categories:  cats,
 		Filter:      filter,
 		DateFrom:    dateFrom,
@@ -97,6 +102,39 @@ func hasReportFilter(f model.ReportFilter) bool {
 		f.Granularity != "" ||
 		!f.DateFrom.IsZero() ||
 		!f.DateTo.IsZero()
+}
+
+// visibleWallets отбирает кошельки, доступные для выбора в фильтре отчёта.
+func visibleWallets(wallets []model.Wallet) []model.Wallet {
+	out := make([]model.Wallet, 0, len(wallets))
+	for _, wallet := range wallets {
+		if !wallet.Hidden {
+			out = append(out, wallet)
+		}
+	}
+	return out
+}
+
+// keepWalletIDs оставляет только id доступных кошельков. Пустой результат — nil,
+// то есть фильтр не применяется и отчёт считается по всем кошелькам.
+func keepWalletIDs(ids []uuid.UUID, wallets []model.Wallet) []uuid.UUID {
+	if len(ids) == 0 {
+		return nil
+	}
+	allowed := make(map[uuid.UUID]struct{}, len(wallets))
+	for _, wallet := range wallets {
+		allowed[wallet.ID] = struct{}{}
+	}
+	out := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := allowed[id]; ok {
+			out = append(out, id)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // parseReportFilter разбирает query-параметры отчёта. UserID заполняет вызывающий.

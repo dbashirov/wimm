@@ -675,3 +675,48 @@ func TestOperationStore_ReportRows_SessionTimezone(t *testing.T) {
 		})
 	}
 }
+
+// TestOperationStore_ReportRows_IncludesHiddenWallets — скрытые кошельки убраны
+// только из фильтра в UI; при пустом фильтре их операции обязаны попадать
+// в отчёт. Тест страхует от появления условия по wallets.hidden в SQL.
+func TestOperationStore_ReportRows_IncludesHiddenWallets(t *testing.T) {
+	cleanDB(t)
+	ctx := context.Background()
+	s := storage.NewFromPool(testPool)
+	fx := newReportFixture(t, "hiddenwallet@test.com")
+
+	if _, err := s.Wallets.ToggleHidden(ctx, fx.wallet2, fx.userID); err != nil {
+		t.Fatalf("ToggleHidden: %v", err)
+	}
+	wallet, err := s.Wallets.GetByID(ctx, fx.wallet2, fx.userID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if !wallet.Hidden {
+		t.Fatal("кошелёк не стал скрытым — фикстура неверна")
+	}
+
+	createOp(t, fx.userID, fx.wallet1, fx.expense, model.TypeExpense, 100, utcDate(2026, 3, 10))
+	createOp(t, fx.userID, fx.wallet2, fx.expense, model.TypeExpense, 700, utcDate(2026, 3, 11))
+
+	rows, err := s.Operations.ReportRows(ctx,
+		model.ReportFilter{UserID: fx.userID}, model.GranularityMonth)
+	if err != nil {
+		t.Fatalf("ReportRows: %v", err)
+	}
+	var total float64
+	for _, row := range rows {
+		total += row.Amount
+	}
+	if total != 800 {
+		t.Errorf("итог %.0f, ожидалось 800 — операции скрытого кошелька потеряны", total)
+	}
+
+	bounds, err := s.Operations.ReportBounds(ctx, model.ReportFilter{UserID: fx.userID})
+	if err != nil {
+		t.Fatalf("ReportBounds: %v", err)
+	}
+	if bounds.Count != 2 {
+		t.Errorf("Count = %d, ожидалось 2", bounds.Count)
+	}
+}
