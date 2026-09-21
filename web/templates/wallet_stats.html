@@ -85,7 +85,12 @@
 </div>
 {{end}}
 
+{{end}}
+
+{{define "scripts"}}
 {{if or .MonthlyExpenses .MonthlyIncomes .MonthlyTotals}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script>
 (function() {
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
