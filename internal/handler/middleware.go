@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -30,7 +32,7 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 		sess, err := h.sessions.Get(r.Context(), r)
 		if err != nil {
 			if errors.Is(err, session.ErrNoSession) {
-				http.Redirect(w, r, "/login", http.StatusFound)
+				redirectToLogin(w, r)
 				return
 			}
 			slog.Error("auth",
@@ -41,6 +43,17 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), userIDKey, sess.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// redirectToLogin уводит на страницу входа. На htmx-запрос 302 не годится:
+// htmx молча пройдёт по редиректу и вставит форму логина внутрь цели запроса.
+func redirectToLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/login")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
 // recoverPanic ловит панику в любом хендлере, логирует stack и возвращает 500.
@@ -82,19 +95,21 @@ func (sr *statusRecorder) Write(b []byte) (int, error) {
 }
 
 // logRequests пишет access log для каждого запроса.
-func logRequests(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-		next.ServeHTTP(sr, r)
-		slog.Info("http",
-			"ip", clientIP(r),
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", sr.status,
-			"duration_ms", time.Since(start).Milliseconds(),
-		)
-	})
+func logRequests(ips *ipResolver) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(sr, r)
+			slog.Info("http",
+				"ip", ips.clientIP(r),
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", sr.status,
+				"duration_ms", time.Since(start).Milliseconds(),
+			)
+		})
+	}
 }
 
 // rateLimiter — простой token bucket per-key с автоматической очисткой
@@ -148,10 +163,10 @@ func (rl *rateLimiter) cleanup() {
 }
 
 // limitByIP — middleware с rate-limit по IP клиента.
-func limitByIP(rl *rateLimiter) func(http.Handler) http.Handler {
+func limitByIP(rl *rateLimiter, ips *ipResolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !rl.get(clientIP(r)).Allow() {
+			if !rl.get(ips.clientIP(r)).Allow() {
 				http.Error(w, "слишком много запросов, попробуйте позже",
 					http.StatusTooManyRequests)
 				return
@@ -214,20 +229,77 @@ func requestTimeout(d time.Duration) func(http.Handler) http.Handler {
 	}
 }
 
-// clientIP достаёт реальный IP клиента, учитывая reverse-proxy headers.
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.Index(xff, ","); i >= 0 {
-			return strings.TrimSpace(xff[:i])
+// ipResolver определяет IP клиента. Заголовкам X-Forwarded-For/X-Real-IP
+// верим, только если соединение пришло от доверенного прокси: иначе клиент
+// подставляет их сам и получает свежий rate-limit на каждый запрос.
+type ipResolver struct {
+	trusted []netip.Prefix
+}
+
+// newIPResolver разбирает список доверенных прокси через запятую:
+// CIDR ("10.0.0.0/8") или одиночные адреса ("127.0.0.1").
+func newIPResolver(proxies string) (*ipResolver, error) {
+	var ir ipResolver
+	for _, item := range strings.Split(proxies, ",") {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
 		}
-		return strings.TrimSpace(xff)
+		if !strings.Contains(item, "/") {
+			addr, err := netip.ParseAddr(item)
+			if err != nil {
+				return nil, fmt.Errorf("trusted proxy %q: %w", item, err)
+			}
+			ir.trusted = append(ir.trusted, netip.PrefixFrom(addr, addr.BitLen()))
+			continue
+		}
+		prefix, err := netip.ParsePrefix(item)
+		if err != nil {
+			return nil, fmt.Errorf("trusted proxy %q: %w", item, err)
+		}
+		ir.trusted = append(ir.trusted, prefix.Masked())
 	}
-	if rip := r.Header.Get("X-Real-IP"); rip != "" {
-		return rip
+	return &ir, nil
+}
+
+func (ir *ipResolver) isTrusted(addr netip.Addr) bool {
+	addr = addr.Unmap()
+	for _, prefix := range ir.trusted {
+		if prefix.Contains(addr) {
+			return true
+		}
 	}
+	return false
+}
+
+func (ir *ipResolver) clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	peer, err := netip.ParseAddr(host)
+	if err != nil || !ir.isTrusted(peer) {
+		return host
+	}
+
+	// X-Forwarded-For читаем справа: левые элементы может дописать сам клиент,
+	// первый недоверенный адрес с конца — тот, кто пришёл к нашему прокси
+	hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
+	for i := len(hops) - 1; i >= 0; i-- {
+		hop := strings.TrimSpace(hops[i])
+		if hop == "" {
+			continue
+		}
+		addr, err := netip.ParseAddr(hop)
+		if err != nil {
+			return host
+		}
+		if !ir.isTrusted(addr) {
+			return addr.Unmap().String()
+		}
+	}
+	if realIP, err := netip.ParseAddr(r.Header.Get("X-Real-IP")); err == nil {
+		return realIP.Unmap().String()
 	}
 	return host
 }

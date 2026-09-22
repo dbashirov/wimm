@@ -91,6 +91,12 @@ type OperationFilter struct {
 	Page       int
 }
 
+// UserSeed — стартовые кошелёк и категории, создаются вместе с пользователем.
+type UserSeed struct {
+	Wallet     WalletInput
+	Categories []CategoryInput
+}
+
 // WalletInput — данные для создания/обновления кошелька.
 type WalletInput struct {
 	Name        string

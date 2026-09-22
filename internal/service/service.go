@@ -85,6 +85,31 @@ func NewWithRepos(
 
 // --- Users ---
 
+// newUserSeed — стартовый набор нового пользователя: без кошелька и категорий
+// после регистрации пустой экран и не добавить ни одной операции.
+func newUserSeed() model.UserSeed {
+	expense := []string{
+		"Продукты", "Кафе и рестораны", "Транспорт", "Жильё и ЖКХ",
+		"Связь и интернет", "Здоровье", "Одежда", "Развлечения",
+		"Подарки", "Прочие расходы",
+	}
+	income := []string{"Зарплата", "Подработка", "Проценты и кешбэк", "Прочие доходы"}
+
+	seed := model.UserSeed{
+		Wallet:     model.WalletInput{Name: "Основной", Currency: "RUB"},
+		Categories: make([]model.CategoryInput, 0, len(expense)+len(income)),
+	}
+	for _, name := range expense {
+		seed.Categories = append(seed.Categories,
+			model.CategoryInput{Name: name, Type: model.TypeExpense})
+	}
+	for _, name := range income {
+		seed.Categories = append(seed.Categories,
+			model.CategoryInput{Name: name, Type: model.TypeIncome})
+	}
+	return seed
+}
+
 func (s *Service) Register(ctx context.Context, email, password string) (*model.User, error) {
 	email = normalizeEmail(email)
 	if _, err := mail.ParseAddress(email); err != nil {
@@ -94,7 +119,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*model.
 	if err != nil {
 		return nil, fmt.Errorf("bcrypt: %w", err)
 	}
-	user, err := s.users.Create(ctx, email, string(hash))
+	user, err := s.users.Create(ctx, email, string(hash), newUserSeed())
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {

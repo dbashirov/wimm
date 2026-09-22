@@ -4,17 +4,17 @@
 
 ## 🔴 Высокая важность
 
-**1. `clientIP` слепо доверяет `X-Forwarded-For` / `X-Real-IP` — обход rate-limit на логине/регистрации**
+✅ **1. `clientIP` слепо доверяет `X-Forwarded-For` / `X-Real-IP` — обход rate-limit на логине/регистрации**
 `internal/handler/middleware.go:218-233`. Сервер слушает `:8080` напрямую, без обязательного reverse-proxy. Любой клиент может в каждом запросе подставлять случайный `X-Forwarded-For` и получать свежий token-bucket → лимит «5 попыток в минуту» (`handler.go:96`) полностью обходится → bruteforce паролей.
 
 Фикс: либо принимать XFF только если `r.RemoteAddr` принадлежит белому списку доверенных прокси (env `TRUSTED_PROXIES`), либо при отсутствии доверенного прокси использовать только `r.RemoteAddr`.
 
-**2. `/static/*` отдаётся в обход всего middleware — нет security headers**
+✅ **2. `/static/*` отдаётся в обход всего middleware — нет security headers**
 `cmd/server/main.go:62-65` — `staticFS` повешен на внешний `mux` напрямую, а `securityHeaders`, `recoverPanic`, `logRequests` применяются только внутри `h.Routes()`. На статику не уезжают `X-Content-Type-Options: nosniff`, `X-Frame-Options`, CSP, HSTS. CSP «default-src 'self'» обходится для `/static/*`. Также `/static/` не учитывается в логах.
 
 Фикс: либо завернуть `staticFS` в те же middleware, либо выставлять статику внутри `Routes()` с теми же обёртками.
 
-**3. `POST /logout` не защищён CSRF и не требует `auth`**
+✅ **3. `POST /logout` не защищён CSRF и не требует `auth`**
 `handler.go:144`, маршрут зарегистрирован вне `protected`. Сторонний сайт может разлогинить любого пользователя (logout-CSRF). Низкая severity, но тривиально чинится: добавить CSRF-валидацию и `auth`.
 
 ## 🟡 Средняя важность
@@ -49,7 +49,7 @@
 
 **13. `getCategoryOptions` пишет вручную HTML через `fmt.Fprintf`.** Сейчас безопасно (UUID + `template.HTMLEscapeString` для имени), но хрупко: легко в будущем сломать. Лучше через `text/template` или `html/template`.
 
-**14. `auth` redirect'ит на `/login` на любых XHR/HTMX-запросах (PUT/DELETE).** Не уязвимость, но плохое UX: htmx получит 302 и не покажет внятного сообщения. Для htmx-запросов лучше отдавать 401 с `HX-Redirect: /login`.
+✅ **14. `auth` redirect'ит на `/login` на любых XHR/HTMX-запросах (PUT/DELETE).** Не уязвимость, но плохое UX: htmx получит 302 и не покажет внятного сообщения. Для htmx-запросов лучше отдавать 401 с `HX-Redirect: /login`.
 
 **15. `Wallets.Reorder` не лимитирует размер `ids`** — body-limit 1 MB защищает, но множитель N UPDATE можно ограничить разумным числом.
 

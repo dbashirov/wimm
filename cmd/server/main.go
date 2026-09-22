@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"io/fs"
 	"log"
 	"log/slog"
 	"net/http"
@@ -47,26 +46,17 @@ func main() {
 		CSRFSecret:    os.Getenv("CSRF_SECRET"),
 		SecureCookies: secureCookie,
 		HSTS:          os.Getenv("HSTS") == "true",
+		// по умолчанию — nginx на том же хосте (docs/DEPLOY.md)
+		TrustedProxies: envOr("TRUSTED_PROXIES", "127.0.0.1,::1"),
 	})
 	if err != nil {
 		slog.Error("handler.New", "err", err)
 		os.Exit(1)
 	}
 
-	staticFS, err := fs.Sub(web.FS, "static")
-	if err != nil {
-		slog.Error("fs.Sub", "err", err)
-		os.Exit(1)
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("GET /static/",
-		http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
-	mux.Handle("/", h.Routes())
-
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           h.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,

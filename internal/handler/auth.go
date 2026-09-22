@@ -81,5 +81,5 @@ func (h *Handler) postLogout(w http.ResponseWriter, r *http.Request) {
 	if err := h.sessions.Delete(r.Context(), w, r); err != nil {
 		slog.Error("postLogout sessions.Delete", "err", err)
 	}
-	http.Redirect(w, r, "/login", http.StatusFound)
+	redirectToLogin(w, r)
 }

@@ -96,7 +96,7 @@ func (h *Handler) csrfProtect(next http.Handler) http.Handler {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 			if !h.csrf.validate(r, sessionID) {
 				slog.Warn("CSRF rejected",
-					"method", r.Method, "path", r.URL.Path, "ip", clientIP(r))
+					"method", r.Method, "path", r.URL.Path, "ip", h.ips.clientIP(r))
 				http.Error(w, "CSRF token mismatch", http.StatusForbidden)
 				return
 			}

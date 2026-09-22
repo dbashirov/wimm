@@ -26,6 +26,8 @@ type Config struct {
 	CSRFSecret    string
 	SecureCookies bool // true в проде (HTTPS): cookies с Secure-флагом
 	HSTS          bool // true в проде: добавлять Strict-Transport-Security
+	// TrustedProxies — адреса и CIDR через запятую, чьим X-Forwarded-For верим.
+	TrustedProxies string
 }
 
 type Handler struct {
@@ -34,6 +36,8 @@ type Handler struct {
 	tmpls        map[string]*template.Template
 	loginLimiter *rateLimiter
 	csrf         *csrfManager
+	ips          *ipResolver
+	static       http.Handler
 	cfg          Config
 }
 
@@ -109,11 +113,21 @@ func New(
 	if err != nil {
 		return nil, fmt.Errorf("newCSRFManager: %w", err)
 	}
+	ips, err := newIPResolver(cfg.TrustedProxies)
+	if err != nil {
+		return nil, fmt.Errorf("newIPResolver: %w", err)
+	}
+	staticFS, err := fs.Sub(webFS, "static")
+	if err != nil {
+		return nil, fmt.Errorf("fs.Sub static: %w", err)
+	}
 	h := &Handler{
 		svc:          svc,
 		sessions:     sm,
 		loginLimiter: newRateLimiter(rate.Every(time.Minute), 5),
 		csrf:         csrf,
+		ips:          ips,
+		static:       http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))),
 		cfg:          cfg,
 	}
 	tmpls, err := parseTemplates(webFS)
@@ -152,18 +166,20 @@ func (h *Handler) protected(handler http.HandlerFunc) http.Handler {
 func (h *Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
 
-	loginRL := limitByIP(h.loginLimiter)
+	loginRL := limitByIP(h.loginLimiter, h.ips)
 
 	// Healthcheck — без middleware, без auth
 	mux.HandleFunc("GET /health", h.getHealth)
 	mux.HandleFunc("GET /ready", h.getReady)
+
+	mux.Handle("GET /static/", h.static)
 
 	// Public
 	mux.HandleFunc("GET /login", h.getLogin)
 	mux.Handle("POST /login", loginRL(http.HandlerFunc(h.postLogin)))
 	mux.HandleFunc("GET /register", h.getRegister)
 	mux.Handle("POST /register", loginRL(http.HandlerFunc(h.postRegister)))
-	mux.HandleFunc("POST /logout", h.postLogout)
+	mux.Handle("POST /logout", h.protected(h.postLogout))
 
 	// Protected: auth + CSRF
 	mux.Handle("GET /{$}", h.protected(func(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +227,7 @@ func (h *Handler) Routes() http.Handler {
 	handler = limitBody(1 << 20)(handler) // 1 MB
 	handler = securityHeaders(h.cfg.HSTS)(handler)
 	handler = recoverPanic(handler)
-	handler = logRequests(handler)
+	handler = logRequests(h.ips)(handler)
 	return handler
 }
 

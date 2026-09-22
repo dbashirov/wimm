@@ -59,7 +59,7 @@ func TestRegister_Success(t *testing.T) {
 
 	want := &model.User{ID: uID1, Email: "a@b.com"}
 	users.EXPECT().
-		Create(ctx, "a@b.com", gomock.Any()). // Any — bcrypt-хеш
+		Create(ctx, "a@b.com", gomock.Any(), gomock.Any()). // Any — bcrypt-хеш
 		Return(want, nil)
 
 	got, err := svc.Register(ctx, "a@b.com", "password")
@@ -75,7 +75,7 @@ func TestRegister_EmailTaken(t *testing.T) {
 	svc, users, _, _, _ := newSvc(t)
 
 	pgErr := &pgconn.PgError{Code: "23505"}
-	users.EXPECT().Create(ctx, gomock.Any(), gomock.Any()).Return(nil, pgErr)
+	users.EXPECT().Create(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, pgErr)
 
 	_, err := svc.Register(ctx, "dup@b.com", "password")
 	if !errors.Is(err, service.ErrEmailTaken) {
@@ -87,7 +87,7 @@ func TestRegister_DBError(t *testing.T) {
 	svc, users, _, _, _ := newSvc(t)
 
 	dbErr := errors.New("connection refused")
-	users.EXPECT().Create(ctx, gomock.Any(), gomock.Any()).Return(nil, dbErr)
+	users.EXPECT().Create(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, dbErr)
 
 	_, err := svc.Register(ctx, "a@b.com", "password")
 	if !errors.Is(err, dbErr) {

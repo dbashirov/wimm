@@ -10,7 +10,11 @@ import (
 )
 
 type UserRepo interface {
-	Create(ctx context.Context, email, passwordHash string) (*model.User, error)
+	Create(
+		ctx context.Context,
+		email, passwordHash string,
+		seed model.UserSeed,
+	) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 }
 
