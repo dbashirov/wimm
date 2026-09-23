@@ -31,16 +31,16 @@ func reportSection(labels []string, names ...string) *model.ReportSection {
 		cats = append(cats, model.ReportCategory{
 			ID:    uuid.Must(uuid.NewV7()),
 			Name:  name,
-			Total: float64(100 * (i + 1)),
+			Total: model.Money(10000 * (i + 1)),
 			Share: 100 / float64(len(names)),
 		})
 	}
 	buckets := make([]model.ReportBucket, len(labels))
 	for i := range buckets {
-		amounts := make([]float64, len(cats))
-		var total float64
+		amounts := make([]model.Money, len(cats))
+		var total model.Money
 		for j := range amounts {
-			amounts[j] = float64(10 * (i + j + 1))
+			amounts[j] = model.Money(1000 * (i + j + 1))
 			total += amounts[j]
 		}
 		buckets[i] = model.ReportBucket{Amounts: amounts, Total: total}
@@ -48,8 +48,8 @@ func reportSection(labels []string, names ...string) *model.ReportSection {
 	return &model.ReportSection{
 		Categories: cats,
 		Buckets:    buckets,
-		Total:      600,
-		Average:    300,
+		Total:      60000,
+		Average:    30000,
 	}
 }
 
@@ -72,8 +72,8 @@ func TestRenderReportsTemplate(t *testing.T) {
 		Labels:      labels,
 		Expense:     reportSection(labels, "Еда", "Транспорт"),
 		Income:      reportSection(labels, "Зарплата"),
-		Net:         []float64{10, -20, 30},
-		TotalNet:    20,
+		Net:         []model.Money{1000, -2000, 3000},
+		TotalNet:    2000,
 		Bounds: model.ReportBounds{
 			From:  time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 			To:    time.Date(2026, time.January, 3, 0, 0, 0, 0, time.UTC),
@@ -85,7 +85,7 @@ func TestRenderReportsTemplate(t *testing.T) {
 		Granularity: model.GranularityMonth,
 		Labels:      labels,
 		Expense:     reportSection(labels, "Еда"),
-		Net:         []float64{-10, -20, -30},
+		Net:         []model.Money{-1000, -2000, -3000},
 		Bounds:      full.Bounds,
 	}
 	empty := &model.Report{Granularity: model.GranularityDay}

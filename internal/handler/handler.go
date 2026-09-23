@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
@@ -48,32 +50,13 @@ type basePage struct {
 }
 
 var tmplFuncs = template.FuncMap{
-	"money": func(amount float64) string {
-		neg := amount < 0
-		if neg {
-			amount = -amount
-		}
-		intPart := int64(amount)
-		frac := int64((amount-float64(intPart))*100 + 0.5)
-		s := fmt.Sprintf("%d", intPart)
-		// вставляем разделители тысяч
-		n := len(s)
-		var out []byte
-		for i, c := range s {
-			if i > 0 && (n-i)%3 == 0 {
-				out = append(out, ' ')
-			}
-			out = append(out, byte(c))
-		}
-		result := fmt.Sprintf("%s.%02d", out, frac)
-		if neg {
-			return "-" + result
-		}
-		return result
+	"money": formatMoney,
+	// num выводит сумму для вставки в JS и value инпутов (без разделителей, с точкой)
+	"num": func(amount model.Money) string {
+		return amount.Decimal()
 	},
-	// num выводит число для вставки в JS (без разделителей, с точкой)
-	"num": func(amount float64) string {
-		return fmt.Sprintf("%.2f", amount)
+	"percent": func(v float64) string {
+		return strconv.FormatFloat(v, 'f', 2, 64)
 	},
 	"typeLabel": func(t model.OperationType) string {
 		if t == model.TypeIncome {
@@ -101,6 +84,24 @@ var tmplFuncs = template.FuncMap{
 	"hasID": func(ids []uuid.UUID, id uuid.UUID) bool {
 		return slices.Contains(ids, id)
 	},
+}
+
+// formatMoney форматирует сумму с пробелами между тысячами: "-1 234 567.89".
+func formatMoney(amount model.Money) string {
+	dec := amount.Decimal()
+	sign := ""
+	if strings.HasPrefix(dec, "-") {
+		sign, dec = "-", dec[1:]
+	}
+	intPart, frac, _ := strings.Cut(dec, ".")
+	var out strings.Builder
+	for i, c := range intPart {
+		if i > 0 && (len(intPart)-i)%3 == 0 {
+			out.WriteByte(' ')
+		}
+		out.WriteRune(c)
+	}
+	return sign + out.String() + "." + frac
 }
 
 func New(

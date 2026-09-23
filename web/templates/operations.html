@@ -96,21 +96,23 @@
             hx-post="/transfers"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)})">
+            hx-on::after-request="this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});syncTransferAmount(this)">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <div class="form-control">
             <label for="transfer-from" class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>
-            <select id="transfer-from" name="from_wallet_id" class="select select-bordered input-form" required>
+            <select id="transfer-from" name="from_wallet_id" class="select select-bordered input-form" required
+                    onchange="syncTransferAmount(this.form)">
               {{range .Wallets}}{{if not .Hidden}}
-              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              <option value="{{.ID}}" data-currency="{{.Currency}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>
           <div class="form-control">
             <label for="transfer-to" class="text-xs font-medium text-base-content/50 mb-1.5">В кошелёк</label>
-            <select id="transfer-to" name="to_wallet_id" class="select select-bordered input-form" required>
+            <select id="transfer-to" name="to_wallet_id" class="select select-bordered input-form" required
+                    onchange="syncTransferAmount(this.form)">
               {{range .Wallets}}{{if not .Hidden}}
-              <option value="{{.ID}}">{{.Name}} ({{.Currency}})</option>
+              <option value="{{.ID}}" data-currency="{{.Currency}}">{{.Name}} ({{.Currency}})</option>
               {{end}}{{end}}
             </select>
           </div>
@@ -118,6 +120,11 @@
             <label for="transfer-amount" class="text-xs font-medium text-base-content/50 mb-1.5">Сумма</label>
             <input type="text" id="transfer-amount" inputmode="decimal" name="amount" placeholder="0.00"
                    class="input input-bordered input-form amount-input" required>
+          </div>
+          <div class="form-control to-amount-wrap" style="display: none;">
+            <label for="transfer-to-amount" class="text-xs font-medium text-base-content/50 mb-1.5">Зачислено</label>
+            <input type="text" id="transfer-to-amount" inputmode="decimal" name="to_amount" placeholder="0.00"
+                   class="input input-bordered input-form amount-input" disabled>
           </div>
           <div class="form-control">
             <label for="transfer-date" class="text-xs font-medium text-base-content/50 mb-1.5">Дата и время</label>
@@ -164,6 +171,9 @@
     });
   });
 
+  var transferForm = document.getElementById('transfer-form');
+  if (transferForm) syncTransferAmount(transferForm);
+
   ['op-form', 'transfer-form'].forEach(function(id) {
     var form = document.getElementById(id);
     if (!form) return;
@@ -175,6 +185,24 @@
   });
 
 })();
+
+// syncTransferAmount показывает поле «Зачислено», только если валюты кошельков
+// различаются. Выключенное поле не отправляется — сервер возьмёт сумму списания.
+function syncTransferAmount(form) {
+  function currency(name) {
+    var sel = form.querySelector('select[name="' + name + '"]');
+    var opt = sel && sel.options[sel.selectedIndex];
+    return opt ? opt.dataset.currency : '';
+  }
+  var differ = currency('from_wallet_id') !== currency('to_wallet_id');
+  form.querySelectorAll('.to-amount-wrap').forEach(function(wrap) {
+    wrap.style.display = differ ? '' : 'none';
+    wrap.querySelectorAll('input').forEach(function(input) {
+      input.disabled = !differ;
+      input.required = differ;
+    });
+  });
+}
 
 function updateOpForm(mode) {
   const opSection = document.getElementById('op-section');

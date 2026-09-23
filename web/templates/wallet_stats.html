@@ -15,7 +15,7 @@
   {{with index .WalletBalances 0}}
   <div class="text-right">
     <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none mb-1">Текущий баланс</p>
-    <p class="text-2xl font-bold tracking-tight {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
+    <p class="text-2xl font-bold tracking-tight {{if ge .Balance 0}}text-success{{else}}text-error{{end}}">
       {{money .Balance}}
     </p>
   </div>

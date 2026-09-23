@@ -28,21 +28,32 @@
                  class="input input-bordered input-form"
                  value="{{num $exp.Amount}}" required>
         </div>
+        {{$differ := ne $exp.Currency $inc.Currency}}
+        <div class="form-control to-amount-wrap" {{if not $differ}}style="display: none;"{{end}}>
+          <label for="tr-edit-to-amount-{{$exp.ID}}" class="form-label">Зачислено</label>
+          <input type="number" id="tr-edit-to-amount-{{$exp.ID}}" name="to_amount" step="0.01" min="0.01"
+                 class="input input-bordered input-form"
+                 value="{{num $inc.Amount}}" {{if $differ}}required{{else}}disabled{{end}}>
+        </div>
         <div class="form-control">
           <label for="tr-edit-from-{{$exp.ID}}" class="form-label">Из кошелька</label>
           <select id="tr-edit-from-{{$exp.ID}}" name="from_wallet_id"
-                  class="select select-bordered input-form" required>
+                  class="select select-bordered input-form" required
+                  onchange="syncTransferAmount(this.form)">
             {{range $wallets}}
-            <option value="{{.ID}}" {{if eq .ID $exp.WalletID}}selected{{end}}>{{.Name}}</option>
+            <option value="{{.ID}}" data-currency="{{.Currency}}"
+                    {{if eq .ID $exp.WalletID}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
             {{end}}
           </select>
         </div>
         <div class="form-control">
           <label for="tr-edit-to-{{$exp.ID}}" class="form-label">В кошелёк</label>
           <select id="tr-edit-to-{{$exp.ID}}" name="to_wallet_id"
-                  class="select select-bordered input-form" required>
+                  class="select select-bordered input-form" required
+                  onchange="syncTransferAmount(this.form)">
             {{range $wallets}}
-            <option value="{{.ID}}" {{if eq .ID $inc.WalletID}}selected{{end}}>{{.Name}}</option>
+            <option value="{{.ID}}" data-currency="{{.Currency}}"
+                    {{if eq .ID $inc.WalletID}}selected{{end}}>{{.Name}} ({{.Currency}})</option>
             {{end}}
           </select>
         </div>

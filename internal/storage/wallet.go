@@ -50,8 +50,8 @@ func (s *WalletStore) ListWithBalance(
 	rows, err := s.pool.Query(ctx,
 		`SELECT w.id, w.user_id, w.name, w.currency, w.description, w.hidden, w.is_default,
 		        w.sort_order, w.created_at,
-		        COALESCE(SUM(CASE WHEN o.type=$2 THEN o.amount ELSE 0 END), 0)::float8,
-		        COALESCE(SUM(CASE WHEN o.type=$3 THEN o.amount ELSE 0 END), 0)::float8
+		        COALESCE(SUM(CASE WHEN o.type=$2 THEN o.amount_minor ELSE 0 END), 0)::int8,
+		        COALESCE(SUM(CASE WHEN o.type=$3 THEN o.amount_minor ELSE 0 END), 0)::int8
 		 FROM wallets w
 		 LEFT JOIN operations o ON o.wallet_id = w.id AND o.user_id = w.user_id
 		 WHERE w.user_id = $1 AND w.hidden = false

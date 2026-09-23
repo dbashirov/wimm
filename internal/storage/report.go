@@ -103,7 +103,7 @@ const reportRowsSQL = `
 	       o.category_id                                    AS category_id,
 	       c.name                                           AS name,
 	       c.type                                           AS type,
-	       SUM(o.amount)::float8                            AS amount
+	       SUM(o.amount_minor)::int8                        AS amount
 	FROM operations o
 	JOIN categories c ON c.id = o.category_id AND c.user_id = o.user_id
 	WHERE o.user_id = $1

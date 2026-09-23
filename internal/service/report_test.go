@@ -290,7 +290,7 @@ func reportCatID(n int) uuid.UUID {
 
 // reportRows раскладывает суммы категорий по двум бакетам, чтобы на вход
 // collapseCategories попадали сырые строки, а не готовые итоги.
-func reportRows(totals ...float64) []model.ReportRow {
+func reportRows(totals ...model.Money) []model.ReportRow {
 	rows := make([]model.ReportRow, 0, len(totals)*2)
 	for i, total := range totals {
 		id := reportCatID(i + 1)
@@ -304,7 +304,7 @@ func reportRows(totals ...float64) []model.ReportRow {
 			model.ReportRow{
 				Bucket:     utc(2025, time.February, 1),
 				CategoryID: id, Name: name,
-				Type: model.TypeExpense, Amount: total / 2,
+				Type: model.TypeExpense, Amount: total - total/2,
 			},
 		)
 	}
@@ -314,41 +314,41 @@ func reportRows(totals ...float64) []model.ReportRow {
 func TestCollapseCategories(t *testing.T) {
 	tests := []struct {
 		name      string
-		totals    []float64
+		totals    []model.Money
 		limit     int
 		wantNames []string
-		wantSums  []float64
+		wantSums  []model.Money
 	}{
 		{
 			"меньше лимита",
-			[]float64{100, 300, 200}, 8,
+			[]model.Money{100, 300, 200}, 8,
 			[]string{"Категория 02", "Категория 03", "Категория 01"},
-			[]float64{300, 200, 100},
+			[]model.Money{300, 200, 100},
 		},
 		{
 			"ровно лимит",
-			[]float64{8, 7, 6, 5, 4, 3, 2, 1}, 8,
+			[]model.Money{8, 7, 6, 5, 4, 3, 2, 1}, 8,
 			[]string{
 				"Категория 01", "Категория 02", "Категория 03", "Категория 04",
 				"Категория 05", "Категория 06", "Категория 07", "Категория 08",
 			},
-			[]float64{8, 7, 6, 5, 4, 3, 2, 1},
+			[]model.Money{8, 7, 6, 5, 4, 3, 2, 1},
 		},
 		{
 			"больше лимита — хвост в «Прочее»",
-			[]float64{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 8,
+			[]model.Money{10, 9, 8, 7, 6, 5, 4, 3, 2, 1}, 8,
 			[]string{
 				"Категория 01", "Категория 02", "Категория 03", "Категория 04",
 				"Категория 05", "Категория 06", "Категория 07", "Категория 08",
 				otherCategoryName,
 			},
-			[]float64{10, 9, 8, 7, 6, 5, 4, 3, 3},
+			[]model.Money{10, 9, 8, 7, 6, 5, 4, 3, 3},
 		},
 		{
 			"лимит 1",
-			[]float64{5, 3, 2}, 1,
+			[]model.Money{5, 3, 2}, 1,
 			[]string{"Категория 01", otherCategoryName},
-			[]float64{5, 5},
+			[]model.Money{5, 5},
 		},
 		{
 			"пустой вход",
@@ -403,13 +403,13 @@ func TestCollapseCategories_OrderDesc(t *testing.T) {
 // TestCollapseCategories_OtherSum — сумма «Прочего» равна сумме схлопнутых
 // категорий, а общий итог не меняется от схлопывания.
 func TestCollapseCategories_OtherSum(t *testing.T) {
-	totals := []float64{100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5}
+	totals := []model.Money{100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5}
 	rows := reportRows(totals...)
 
 	full, _ := collapseCategories(rows, 0)
 	collapsed, index := collapseCategories(rows, 8)
 
-	var wantOther float64
+	var wantOther model.Money
 	for _, total := range totals[8:] {
 		wantOther += total
 	}
@@ -418,8 +418,8 @@ func TestCollapseCategories_OtherSum(t *testing.T) {
 		t.Errorf("«Прочее».Total = %v, want %v", other.Total, wantOther)
 	}
 
-	sumOf := func(cats []model.ReportCategory) float64 {
-		var sum float64
+	sumOf := func(cats []model.ReportCategory) model.Money {
+		var sum model.Money
 		for _, cat := range cats {
 			sum += cat.Total
 		}
@@ -583,7 +583,7 @@ func reportRow(
 	id uuid.UUID,
 	name string,
 	opType model.OperationType,
-	amount float64,
+	amount model.Money,
 ) model.ReportRow {
 	return model.ReportRow{
 		Bucket:     bucket,
@@ -594,8 +594,8 @@ func reportRow(
 	}
 }
 
-func approxEqual(got, want float64) bool {
-	return math.Abs(got-want) < 1e-9
+func approxEqual[T model.Money | float64](got, want T) bool {
+	return math.Abs(float64(got-want)) < 1e-9
 }
 
 func TestReport_Sections(t *testing.T) {
@@ -686,7 +686,7 @@ func TestReport_Sections(t *testing.T) {
 		t.Errorf("income: total %v, january %v", inc.Total, inc.Buckets[0].Total)
 	}
 
-	wantNet := []float64{-150, 0, 470}
+	wantNet := []model.Money{-150, 0, 470}
 	for i, want := range wantNet {
 		if !approxEqual(rep.Net[i], want) {
 			t.Errorf("net %d: got %v, want %v", i, rep.Net[i], want)
@@ -777,7 +777,7 @@ func TestReport_TooManyBucketsCoarsened(t *testing.T) {
 	if !approxEqual(rep.Expense.Total, 140) {
 		t.Errorf("expense total: got %v, want 140", rep.Expense.Total)
 	}
-	var byBuckets float64
+	var byBuckets model.Money
 	for _, bucket := range rep.Expense.Buckets {
 		byBuckets += bucket.Total
 	}
@@ -804,7 +804,7 @@ func TestReport_EmptySelection(t *testing.T) {
 	if len(rep.Labels) != 0 || len(rep.Net) != 0 {
 		t.Errorf("labels %v, net %v — want empty", rep.Labels, rep.Net)
 	}
-	if math.IsNaN(rep.TotalNet) || math.IsInf(rep.TotalNet, 0) || rep.TotalNet != 0 {
+	if rep.TotalNet != 0 {
 		t.Errorf("total net: got %v, want 0", rep.TotalNet)
 	}
 	if !validGranularity(rep.Granularity) {
@@ -919,7 +919,7 @@ func TestReport_ZeroAmountsNoNaN(t *testing.T) {
 	if math.IsNaN(exp.Categories[0].Share) || exp.Categories[0].Share != 0 {
 		t.Errorf("share: got %v, want 0", exp.Categories[0].Share)
 	}
-	if math.IsNaN(exp.Average) || math.IsInf(exp.Average, 0) || exp.Average != 0 {
+	if exp.Average != 0 {
 		t.Errorf("average: got %v, want 0", exp.Average)
 	}
 }
@@ -972,7 +972,7 @@ func TestReport_ExplicitCategoriesNotCollapsed(t *testing.T) {
 	for i := 1; i <= count; i++ {
 		id := reportCatID(i)
 		ids = append(ids, id)
-		rows = append(rows, reportRow(bucket, id, fmt.Sprintf("Кат %d", i), model.TypeExpense, float64(i)))
+		rows = append(rows, reportRow(bucket, id, fmt.Sprintf("Кат %d", i), model.TypeExpense, model.Money(i)))
 	}
 
 	filter := model.ReportFilter{
@@ -1027,7 +1027,7 @@ func TestReport_ExplicitCategoriesCeiling(t *testing.T) {
 				id := reportCatID(i)
 				ids = append(ids, id)
 				rows = append(rows,
-					reportRow(bucket, id, fmt.Sprintf("Кат %02d", i), model.TypeExpense, float64(i)))
+					reportRow(bucket, id, fmt.Sprintf("Кат %02d", i), model.TypeExpense, model.Money(i)))
 			}
 
 			filter := model.ReportFilter{
@@ -1056,7 +1056,7 @@ func TestReport_ExplicitCategoriesCeiling(t *testing.T) {
 			if hasOther != tc.wantMore {
 				t.Fatalf("«Прочее» = %v, want %v", hasOther, tc.wantMore)
 			}
-			if !approxEqual(rep.Expense.Total, float64(tc.selected*(tc.selected+1))/2) {
+			if !approxEqual(rep.Expense.Total, model.Money(tc.selected*(tc.selected+1)/2)) {
 				t.Errorf("итог секции = %v — схлопывание не должно терять суммы", rep.Expense.Total)
 			}
 		})
@@ -1073,7 +1073,7 @@ func TestReport_NoFilterStillCollapses(t *testing.T) {
 	bucket := utc(2025, time.March, 1)
 	for i := 1; i <= count; i++ {
 		rows = append(rows,
-			reportRow(bucket, reportCatID(i), fmt.Sprintf("Кат %d", i), model.TypeExpense, float64(i)))
+			reportRow(bucket, reportCatID(i), fmt.Sprintf("Кат %d", i), model.TypeExpense, model.Money(i)))
 	}
 
 	filter := model.ReportFilter{
@@ -1246,8 +1246,8 @@ func TestReport_CategoryTotalsMatchBuckets(t *testing.T) {
 	if rep.Expense == nil {
 		t.Fatal("expense section nil")
 	}
-	byCategory := make([]float64, len(rep.Expense.Categories))
-	var byBuckets float64
+	byCategory := make([]model.Money, len(rep.Expense.Categories))
+	var byBuckets model.Money
 	for _, bucket := range rep.Expense.Buckets {
 		for i, amount := range bucket.Amounts {
 			byCategory[i] += amount

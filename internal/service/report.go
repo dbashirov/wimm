@@ -188,7 +188,7 @@ func collapseCategories(
 ) ([]model.ReportCategory, map[uuid.UUID]int) {
 	totals := make(map[uuid.UUID]*model.ReportCategory, len(rows))
 	order := make([]uuid.UUID, 0, len(rows))
-	var sum float64
+	var sum model.Money
 	for _, row := range rows {
 		cat, ok := totals[row.CategoryID]
 		if !ok {
@@ -231,7 +231,7 @@ func collapseCategories(
 
 	for i := range cats {
 		if sum != 0 {
-			cats[i].Share = cats[i].Total / sum * 100
+			cats[i].Share = float64(cats[i].Total) / float64(sum) * 100
 		}
 	}
 	return cats, index
@@ -470,7 +470,7 @@ func (s *Service) Report(ctx context.Context, f model.ReportFilter) (*model.Repo
 		report.Labels[i] = bucketLabel(start, g, multiYear)
 	}
 
-	report.Net = make([]float64, len(grid))
+	report.Net = make([]model.Money, len(grid))
 	for i := range grid {
 		report.Net[i] = bucketTotal(report.Income, i) - bucketTotal(report.Expense, i)
 		report.TotalNet += report.Net[i]
@@ -506,7 +506,7 @@ func buildSection(
 	cats, index := collapseCategories(rows, limit)
 	buckets := make([]model.ReportBucket, len(grid))
 	for i := range grid {
-		buckets[i] = model.ReportBucket{Amounts: make([]float64, len(cats))}
+		buckets[i] = model.ReportBucket{Amounts: make([]model.Money, len(cats))}
 	}
 
 	section := &model.ReportSection{Categories: cats, Buckets: buckets}
@@ -517,11 +517,13 @@ func buildSection(
 		buckets[i].Total += row.Amount
 		section.Total += row.Amount
 	}
-	section.Average = section.Total / float64(len(buckets))
+	// суммы секции неотрицательны, поэтому округление половин вверх корректно
+	n := model.Money(len(buckets))
+	section.Average = (section.Total + n/2) / n
 	return section
 }
 
-func bucketTotal(section *model.ReportSection, i int) float64 {
+func bucketTotal(section *model.ReportSection, i int) model.Money {
 	if section == nil {
 		return 0
 	}

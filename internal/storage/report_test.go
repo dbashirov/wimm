@@ -73,7 +73,7 @@ func createOp(
 	walletID uuid.UUID,
 	categoryID uuid.UUID,
 	opType model.OperationType,
-	amount float64,
+	amount model.Money,
 	at time.Time,
 ) {
 	t.Helper()
@@ -501,7 +501,7 @@ func TestOperationStore_ReportRows_DateBoundaries(t *testing.T) {
 		}
 		want := []struct {
 			bucket string
-			amount float64
+			amount model.Money
 		}{
 			{"2025-03-24", 100}, // воскресенье 30 марта — ещё прошлая неделя
 			{"2025-03-31", 500}, // понедельник 31 марта и суббота 5 апреля — одна неделя
@@ -579,6 +579,7 @@ func TestOperationStore_ReportRows_ExcludesTransfers(t *testing.T) {
 		FromWalletID: fx.wallet1,
 		ToWalletID:   fx.wallet2,
 		Amount:       5000,
+		ToAmount:     5000,
 		OperatedAt:   utcDate(2025, time.March, 2),
 	})
 	if err != nil {
@@ -606,7 +607,7 @@ func TestOperationStore_ReportRows_NullOperatedAt(t *testing.T) {
 	fx := newReportFixture(t, "rowsnullat@test.com")
 	createOp(t, fx.userID, fx.wallet1, fx.expense, model.TypeExpense, 100, utcDate(2025, time.March, 1))
 	_, err := testPool.Exec(ctx,
-		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at)
+		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount_minor, operated_at)
 		 VALUES($1, $2, $3, 'expense', 999, NULL)`,
 		fx.userID, fx.wallet1, fx.expense)
 	if err != nil {
@@ -704,12 +705,12 @@ func TestOperationStore_ReportRows_IncludesHiddenWallets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReportRows: %v", err)
 	}
-	var total float64
+	var total model.Money
 	for _, row := range rows {
 		total += row.Amount
 	}
 	if total != 800 {
-		t.Errorf("итог %.0f, ожидалось 800 — операции скрытого кошелька потеряны", total)
+		t.Errorf("итог %d, ожидалось 800 — операции скрытого кошелька потеряны", total)
 	}
 
 	bounds, err := s.Operations.ReportBounds(ctx, model.ReportFilter{UserID: fx.userID})

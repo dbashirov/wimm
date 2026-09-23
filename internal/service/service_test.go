@@ -18,12 +18,13 @@ import (
 
 // test UUIDs
 var (
-	wID1  = uuid.MustParse("10000000-0000-0000-0000-000000000001")
-	wID99 = uuid.MustParse("10000000-0000-0000-0000-000000000099")
-	cID1  = uuid.MustParse("20000000-0000-0000-0000-000000000001")
-	cID5  = uuid.MustParse("20000000-0000-0000-0000-000000000005")
-	cID10 = uuid.MustParse("20000000-0000-0000-0000-000000000010")
-	cID99 = uuid.MustParse("20000000-0000-0000-0000-000000000099")
+	wID1   = uuid.MustParse("10000000-0000-0000-0000-000000000001")
+	wID2   = uuid.MustParse("10000000-0000-0000-0000-000000000002")
+	wID99  = uuid.MustParse("10000000-0000-0000-0000-000000000099")
+	cID1   = uuid.MustParse("20000000-0000-0000-0000-000000000001")
+	cID5   = uuid.MustParse("20000000-0000-0000-0000-000000000005")
+	cID10  = uuid.MustParse("20000000-0000-0000-0000-000000000010")
+	cID99  = uuid.MustParse("20000000-0000-0000-0000-000000000099")
 	opID1  = uuid.MustParse("30000000-0000-0000-0000-000000000001")
 	opID5  = uuid.MustParse("30000000-0000-0000-0000-000000000005")
 	opID7  = uuid.MustParse("30000000-0000-0000-0000-000000000007")
@@ -325,5 +326,104 @@ func TestGetOperation_NotFound(t *testing.T) {
 	_, err := svc.GetOperation(ctx, opID1, uID1)
 	if !errors.Is(err, service.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
+	}
+}
+
+// ── Transfers ─────────────────────────────────────────────────────────────────
+
+func TestCreateTransfer_SameCurrencyCopiesAmount(t *testing.T) {
+	svc, _, wallets, _, ops := newSvc(t)
+
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1, Currency: "RUB"}, nil)
+	wallets.EXPECT().GetByID(ctx, wID2, uID1).Return(&model.Wallet{ID: wID2, Currency: "RUB"}, nil)
+
+	// присланная сумма зачисления в одной валюте игнорируется
+	inp := model.TransferInput{FromWalletID: wID1, ToWalletID: wID2, Amount: 50000, ToAmount: 1}
+	want := inp
+	want.ToAmount = 50000
+	ops.EXPECT().CreateTransfer(ctx, uID1, want).Return(&model.Operation{}, &model.Operation{}, nil)
+
+	if _, _, err := svc.CreateTransfer(ctx, uID1, inp); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateTransfer_CrossCurrency(t *testing.T) {
+	svc, _, wallets, _, ops := newSvc(t)
+
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1, Currency: "RUB"}, nil)
+	wallets.EXPECT().GetByID(ctx, wID2, uID1).Return(&model.Wallet{ID: wID2, Currency: "USD"}, nil)
+
+	inp := model.TransferInput{FromWalletID: wID1, ToWalletID: wID2, Amount: 900000, ToAmount: 10000}
+	ops.EXPECT().CreateTransfer(ctx, uID1, inp).Return(&model.Operation{}, &model.Operation{}, nil)
+
+	if _, _, err := svc.CreateTransfer(ctx, uID1, inp); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateTransfer_CrossCurrencyWithoutToAmount(t *testing.T) {
+	svc, _, wallets, _, _ := newSvc(t)
+
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1, Currency: "RUB"}, nil)
+	wallets.EXPECT().GetByID(ctx, wID2, uID1).Return(&model.Wallet{ID: wID2, Currency: "USD"}, nil)
+
+	inp := model.TransferInput{FromWalletID: wID1, ToWalletID: wID2, Amount: 900000}
+	_, _, err := svc.CreateTransfer(ctx, uID1, inp)
+	if !errors.Is(err, service.ErrToAmountRequired) {
+		t.Errorf("got %v, want ErrToAmountRequired", err)
+	}
+}
+
+func TestUpdateTransfer_CrossCurrencyWithoutToAmount(t *testing.T) {
+	svc, _, wallets, _, _ := newSvc(t)
+
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1, Currency: "EUR"}, nil)
+	wallets.EXPECT().GetByID(ctx, wID2, uID1).Return(&model.Wallet{ID: wID2, Currency: "RUB"}, nil)
+
+	inp := model.TransferInput{FromWalletID: wID1, ToWalletID: wID2, Amount: 10000}
+	_, _, err := svc.UpdateTransfer(ctx, opID1, uID1, inp)
+	if !errors.Is(err, service.ErrToAmountRequired) {
+		t.Errorf("got %v, want ErrToAmountRequired", err)
+	}
+}
+
+func TestCreateTransfer_SameWallet(t *testing.T) {
+	svc, _, _, _, _ := newSvc(t)
+
+	inp := model.TransferInput{FromWalletID: wID1, ToWalletID: wID1, Amount: 100}
+	_, _, err := svc.CreateTransfer(ctx, uID1, inp)
+	if !errors.Is(err, service.ErrSameWallet) {
+		t.Errorf("got %v, want ErrSameWallet", err)
+	}
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+func TestDashboardData_TotalsByCurrency(t *testing.T) {
+	svc, _, wallets, _, ops := newSvc(t)
+
+	wallets.EXPECT().ListWithBalance(ctx, uID1).Return([]model.WalletBalance{
+		{Wallet: model.Wallet{Currency: "RUB"}, Balance: 100000},
+		{Wallet: model.Wallet{Currency: "USD"}, Balance: 5000},
+		{Wallet: model.Wallet{Currency: "RUB"}, Balance: -30000},
+	}, nil)
+	ops.EXPECT().DashboardData(ctx, uID1).Return(nil, nil, nil, nil)
+
+	got, err := svc.DashboardData(ctx, uID1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []model.CurrencyAmount{
+		{Currency: "RUB", Amount: 70000},
+		{Currency: "USD", Amount: 5000},
+	}
+	if len(got.TotalBalances) != len(want) {
+		t.Fatalf("TotalBalances = %+v, want %+v", got.TotalBalances, want)
+	}
+	for i := range want {
+		if got.TotalBalances[i] != want[i] {
+			t.Errorf("TotalBalances[%d] = %+v, want %+v", i, got.TotalBalances[i], want[i])
+		}
 	}
 }

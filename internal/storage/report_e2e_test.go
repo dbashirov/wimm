@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"math"
 	"slices"
 	"testing"
 	"time"
@@ -53,6 +52,7 @@ func seedReportE2E(t *testing.T) reportE2EFixture {
 		FromWalletID: fx.wallet1,
 		ToWalletID:   fx.wallet2,
 		Amount:       5000,
+		ToAmount:     5000,
 		OperatedAt:   utcDate(2025, time.February, 10),
 	})
 	if err != nil {
@@ -69,17 +69,13 @@ func seedReportE2E(t *testing.T) reportE2EFixture {
 }
 
 // scalarFromSQL выполняет прямой запрос к той же БД — эталон для сверки сумм.
-func scalarFromSQL(t *testing.T, query string, args ...any) float64 {
+func scalarFromSQL(t *testing.T, query string, args ...any) model.Money {
 	t.Helper()
-	var value float64
+	var value model.Money
 	if err := testPool.QueryRow(context.Background(), query, args...).Scan(&value); err != nil {
 		t.Fatalf("прямой SQL-запрос: %v", err)
 	}
 	return value
-}
-
-func approxEqual(got, want float64) bool {
-	return math.Abs(got-want) < 1e-6
 }
 
 func TestReportE2E_AgainstDirectSQL(t *testing.T) {
@@ -89,7 +85,7 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 	svc := service.New(storage.NewFromPool(testPool))
 
 	const sumByCategories = `
-		SELECT COALESCE(SUM(o.amount), 0)::float8
+		SELECT COALESCE(SUM(o.amount_minor), 0)::int8
 		FROM operations o
 		WHERE o.user_id = $1
 		  AND o.transfer_id IS NULL
@@ -112,7 +108,7 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 		if rep.Expense == nil {
 			t.Fatalf("секция расходов пуста, ожидалась сумма %v", want)
 		}
-		if !approxEqual(rep.Expense.Total, want) {
+		if rep.Expense.Total != want {
 			t.Errorf("Expense.Total = %v, прямой SQL даёт %v", rep.Expense.Total, want)
 		}
 		if rep.Income != nil {
@@ -130,21 +126,21 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 		if rep.Expense == nil {
 			t.Fatalf("секция расходов пуста, ожидалась сумма %v", want)
 		}
-		if !approxEqual(rep.Expense.Total, want) {
+		if rep.Expense.Total != want {
 			t.Errorf("Expense.Total = %v, прямой SQL даёт %v", rep.Expense.Total, want)
 		}
 
-		var byCategories, byBuckets float64
+		var byCategories, byBuckets model.Money
 		for _, cat := range rep.Expense.Categories {
 			byCategories += cat.Total
 		}
 		for _, bucket := range rep.Expense.Buckets {
 			byBuckets += bucket.Total
 		}
-		if !approxEqual(byCategories, want) {
+		if byCategories != want {
 			t.Errorf("сумма по категориям = %v, прямой SQL даёт %v", byCategories, want)
 		}
-		if !approxEqual(byBuckets, want) {
+		if byBuckets != want {
 			t.Errorf("сумма по бакетам = %v, прямой SQL даёт %v", byBuckets, want)
 		}
 	})
@@ -169,19 +165,19 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 		}
 
 		const sumByType = `
-			SELECT COALESCE(SUM(o.amount), 0)::float8
+			SELECT COALESCE(SUM(o.amount_minor), 0)::int8
 			FROM operations o
 			JOIN categories c ON c.id = o.category_id AND c.user_id = o.user_id
 			WHERE o.user_id = $1 AND o.transfer_id IS NULL AND o.type = $2`
 		wantExpense := scalarFromSQL(t, sumByType, fx.userID, model.TypeExpense)
 		wantIncome := scalarFromSQL(t, sumByType, fx.userID, model.TypeIncome)
-		if !approxEqual(rep.Expense.Total, wantExpense) {
+		if rep.Expense.Total != wantExpense {
 			t.Errorf("Expense.Total = %v, прямой SQL даёт %v", rep.Expense.Total, wantExpense)
 		}
-		if !approxEqual(rep.Income.Total, wantIncome) {
+		if rep.Income.Total != wantIncome {
 			t.Errorf("Income.Total = %v, прямой SQL даёт %v", rep.Income.Total, wantIncome)
 		}
-		if !approxEqual(rep.TotalNet, wantIncome-wantExpense) {
+		if rep.TotalNet != wantIncome-wantExpense {
 			t.Errorf("TotalNet = %v, ожидалось %v", rep.TotalNet, wantIncome-wantExpense)
 		}
 	})
@@ -212,18 +208,18 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 			t.Fatalf("Report: %v", err)
 		}
 		withTransfers := scalarFromSQL(t,
-			`SELECT COALESCE(SUM(amount), 0)::float8
+			`SELECT COALESCE(SUM(amount_minor), 0)::int8
 			 FROM operations WHERE user_id = $1 AND type = 'expense'`,
 			fx.userID)
 		want := scalarFromSQL(t,
-			`SELECT COALESCE(SUM(amount), 0)::float8
+			`SELECT COALESCE(SUM(amount_minor), 0)::int8
 			 FROM operations
 			 WHERE user_id = $1 AND type = 'expense' AND transfer_id IS NULL`,
 			fx.userID)
-		if approxEqual(withTransfers, want) {
+		if withTransfers == want {
 			t.Fatal("фикстура без переводных расходов — проверка бессмысленна")
 		}
-		if !approxEqual(rep.Expense.Total, want) {
+		if rep.Expense.Total != want {
 			t.Errorf("Expense.Total = %v, прямой SQL без переводов даёт %v",
 				rep.Expense.Total, want)
 		}
@@ -235,17 +231,17 @@ func TestReportE2E_AgainstDirectSQL(t *testing.T) {
 			t.Fatalf("Report: %v", err)
 		}
 		all := scalarFromSQL(t,
-			`SELECT COALESCE(SUM(amount), 0)::float8
+			`SELECT COALESCE(SUM(amount_minor), 0)::int8
 			 FROM operations WHERE type = 'expense' AND transfer_id IS NULL`)
 		want := scalarFromSQL(t,
-			`SELECT COALESCE(SUM(amount), 0)::float8
+			`SELECT COALESCE(SUM(amount_minor), 0)::int8
 			 FROM operations
 			 WHERE user_id = $1 AND type = 'expense' AND transfer_id IS NULL`,
 			fx.userID)
-		if approxEqual(all, want) {
+		if all == want {
 			t.Fatal("в БД нет чужих операций — проверка бессмысленна")
 		}
-		if !approxEqual(rep.Expense.Total, want) {
+		if rep.Expense.Total != want {
 			t.Errorf("Expense.Total = %v, прямой SQL по своему user_id даёт %v",
 				rep.Expense.Total, want)
 		}
@@ -279,7 +275,7 @@ func TestReportE2E_CollapsesToOther(t *testing.T) {
 	createOp(t, fx.userID, fx.wallet1, fx.expense, model.TypeExpense, 1000, utcDate(2025, time.March, 1))
 	for i := 1; i <= 11; i++ {
 		id := createCategory(t, fx.userID, "Категория "+string(rune('A'+i-1)), model.TypeExpense)
-		createOp(t, fx.userID, fx.wallet1, id, model.TypeExpense, float64(i), utcDate(2025, time.March, 2))
+		createOp(t, fx.userID, fx.wallet1, id, model.TypeExpense, model.Money(i), utcDate(2025, time.March, 2))
 	}
 
 	rep, err := svc.Report(ctx, model.ReportFilter{UserID: fx.userID})
@@ -294,18 +290,18 @@ func TestReportE2E_CollapsesToOther(t *testing.T) {
 		t.Errorf("последняя категория = %q, ожидалось «Прочее»", cats[len(cats)-1].Name)
 	}
 	want := scalarFromSQL(t,
-		`SELECT COALESCE(SUM(amount), 0)::float8
+		`SELECT COALESCE(SUM(amount_minor), 0)::int8
 		 FROM operations WHERE user_id = $1 AND type = 'expense' AND transfer_id IS NULL`,
 		fx.userID)
-	var total float64
+	var total model.Money
 	for _, cat := range cats {
 		total += cat.Total
 	}
-	if !approxEqual(total, want) {
+	if total != want {
 		t.Errorf("сумма категорий после схлопывания = %v, прямой SQL даёт %v", total, want)
 	}
 	// 12 категорий: в топ-8 не попали четыре самые мелкие — 1 + 2 + 3 + 4
-	if !approxEqual(cats[len(cats)-1].Total, 10) {
+	if cats[len(cats)-1].Total != 10 {
 		t.Errorf("«Прочее» = %v, ожидалось 10", cats[len(cats)-1].Total)
 	}
 }

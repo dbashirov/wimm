@@ -22,6 +22,8 @@ var (
 	ErrWrongCategoryType  = errors.New("category type must match operation type")
 	ErrSameWallet         = errors.New("source and target wallet must differ")
 	ErrHasOperations      = errors.New("has linked operations")
+	// ErrToAmountRequired — перевод между валютами без суммы зачисления.
+	ErrToAmountRequired = errors.New("target amount required for cross-currency transfer")
 )
 
 // normalizeEmail приводит email к каноническому виду (lowercase, trimmed).
@@ -344,22 +346,39 @@ func (s *Service) CreateTransfer(
 	userID uuid.UUID,
 	inp model.TransferInput,
 ) (*model.Operation, *model.Operation, error) {
-	if inp.FromWalletID == inp.ToWalletID {
-		return nil, nil, ErrSameWallet
-	}
-	if _, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return nil, nil, ErrNotFound
-		}
-		return nil, nil, err
-	}
-	if _, err := s.wallets.GetByID(ctx, inp.ToWalletID, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return nil, nil, ErrNotFound
-		}
+	inp, err := s.prepareTransfer(ctx, userID, inp)
+	if err != nil {
 		return nil, nil, err
 	}
 	return s.operations.CreateTransfer(ctx, userID, inp)
+}
+
+// prepareTransfer проверяет кошельки перевода и выставляет сумму зачисления:
+// в одной валюте она всегда равна списанию, между валютами — обязательна.
+func (s *Service) prepareTransfer(
+	ctx context.Context,
+	userID uuid.UUID,
+	inp model.TransferInput,
+) (model.TransferInput, error) {
+	if inp.FromWalletID == inp.ToWalletID {
+		return inp, ErrSameWallet
+	}
+	from, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID)
+	if err != nil {
+		return inp, wrapNotFound(err)
+	}
+	to, err := s.wallets.GetByID(ctx, inp.ToWalletID, userID)
+	if err != nil {
+		return inp, wrapNotFound(err)
+	}
+	if from.Currency == to.Currency {
+		inp.ToAmount = inp.Amount
+		return inp, nil
+	}
+	if inp.ToAmount <= 0 {
+		return inp, ErrToAmountRequired
+	}
+	return inp, nil
 }
 
 func (s *Service) GetTransfer(
@@ -378,19 +397,8 @@ func (s *Service) UpdateTransfer(
 	transferID, userID uuid.UUID,
 	inp model.TransferInput,
 ) (*model.Operation, *model.Operation, error) {
-	if inp.FromWalletID == inp.ToWalletID {
-		return nil, nil, ErrSameWallet
-	}
-	if _, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return nil, nil, ErrNotFound
-		}
-		return nil, nil, err
-	}
-	if _, err := s.wallets.GetByID(ctx, inp.ToWalletID, userID); err != nil {
-		if errors.Is(err, storage.ErrNotFound) {
-			return nil, nil, ErrNotFound
-		}
+	inp, err := s.prepareTransfer(ctx, userID, inp)
+	if err != nil {
 		return nil, nil, err
 	}
 	exp, inc, err := s.operations.UpdateTransfer(ctx, transferID, userID, inp)
@@ -422,7 +430,7 @@ func (s *Service) WalletStats(
 	if err != nil {
 		return nil, err
 	}
-	var balance float64
+	var balance model.Money
 	for _, mt := range monthly {
 		balance = mt.Balance
 	}
@@ -431,7 +439,10 @@ func (s *Service) WalletStats(
 			Wallet:  *wallet,
 			Balance: balance,
 		}},
-		TotalBalance:    balance,
+		TotalBalances: []model.CurrencyAmount{{
+			Currency: wallet.Currency,
+			Amount:   balance,
+		}},
 		MonthlyExpenses: expenses,
 		MonthlyIncomes:  incomes,
 		MonthlyTotals:   monthly,
@@ -449,17 +460,30 @@ func (s *Service) DashboardData(ctx context.Context, userID uuid.UUID) (*model.D
 	if err != nil {
 		return nil, err
 	}
-	var total float64
-	for _, w := range wallets {
-		total += w.Balance
-	}
 	return &model.DashboardData{
 		WalletBalances:  wallets,
-		TotalBalance:    total,
+		TotalBalances:   totalsByCurrency(wallets),
 		MonthlyExpenses: expenses,
 		MonthlyIncomes:  incomes,
 		MonthlyTotals:   monthly,
 	}, nil
+}
+
+// totalsByCurrency суммирует балансы кошельков отдельно по каждой валюте,
+// в порядке первого появления валюты в списке кошельков.
+func totalsByCurrency(wallets []model.WalletBalance) []model.CurrencyAmount {
+	var totals []model.CurrencyAmount
+	index := make(map[string]int)
+	for _, w := range wallets {
+		i, ok := index[w.Currency]
+		if !ok {
+			i = len(totals)
+			index[w.Currency] = i
+			totals = append(totals, model.CurrencyAmount{Currency: w.Currency})
+		}
+		totals[i].Amount += w.Balance
+	}
+	return totals
 }
 
 func wrapNotFound(err error) error {

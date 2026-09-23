@@ -21,7 +21,7 @@ type OperationStore struct {
 // category_id and transfer_id can be NULL (transfers), so LEFT JOINs are used.
 const operationSelect = `
 	SELECT o.id, o.user_id, o.wallet_id, o.category_id, o.type,
-	       o.amount::float8, o.operated_at, o.description, o.created_at,
+	       o.amount_minor, o.operated_at, o.description, o.created_at,
 	       o.transfer_id,
 	       w.name, COALESCE(c.name, ''), w.currency,
 	       COALESCE(tw.name, '')
@@ -118,9 +118,9 @@ func (s *OperationStore) Create(
 ) (*model.Operation, error) {
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
-		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount, operated_at, description)
+		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount_minor, operated_at, description)
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		 RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		           transfer_id,
 		           (SELECT name FROM wallets     WHERE id=$2),
 		           (SELECT name FROM categories  WHERE id=$3),
@@ -162,9 +162,9 @@ func (s *OperationStore) Update(
 	var o model.Operation
 	row := s.pool.QueryRow(ctx,
 		`UPDATE operations
-		 SET wallet_id=$1, category_id=$2, type=$3, amount=$4, operated_at=$5, description=$6
+		 SET wallet_id=$1, category_id=$2, type=$3, amount_minor=$4, operated_at=$5, description=$6
 		 WHERE id=$7 AND user_id=$8 AND transfer_id IS NULL
-		 RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		 RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		           transfer_id,
 		           (SELECT name FROM wallets     WHERE id=$1),
 		           (SELECT name FROM categories  WHERE id=$2),
@@ -208,9 +208,9 @@ func (s *OperationStore) CreateTransfer(
 	transferID := uuid.Must(uuid.NewV7())
 
 	insertSQL := `
-		INSERT INTO operations(user_id, wallet_id, type, amount, operated_at, description, transfer_id, transfer_wallet_id)
+		INSERT INTO operations(user_id, wallet_id, type, amount_minor, operated_at, description, transfer_id, transfer_wallet_id)
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, user_id, wallet_id, category_id, type, amount::float8, operated_at, description, created_at,
+		RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		          transfer_id,
 		          (SELECT name FROM wallets WHERE id=$2),
 		          '',
@@ -230,7 +230,7 @@ func (s *OperationStore) CreateTransfer(
 	var income model.Operation
 	if err := scanOperation(
 		tx.QueryRow(ctx, insertSQL,
-			userID, inp.ToWalletID, model.TypeIncome, inp.Amount, inp.OperatedAt, inp.Description, transferID, inp.FromWalletID,
+			userID, inp.ToWalletID, model.TypeIncome, inp.ToAmount, inp.OperatedAt, inp.Description, transferID, inp.FromWalletID,
 		),
 		&income,
 	); err != nil {
@@ -279,9 +279,9 @@ func (s *OperationStore) GetTransfer(
 
 const transferUpdateSQL = `
 	UPDATE operations
-	SET wallet_id=$1, transfer_wallet_id=$2, amount=$3, operated_at=$4, description=$5
+	SET wallet_id=$1, transfer_wallet_id=$2, amount_minor=$3, operated_at=$4, description=$5
 	WHERE transfer_id=$6 AND user_id=$7 AND type=$8
-	RETURNING id, user_id, wallet_id, category_id, type, amount::float8,
+	RETURNING id, user_id, wallet_id, category_id, type, amount_minor,
 	          operated_at, description, created_at, transfer_id,
 	          (SELECT name FROM wallets WHERE id=$1),
 	          '',
@@ -318,7 +318,7 @@ func (s *OperationStore) UpdateTransfer(
 	if err := scanOperation(
 		tx.QueryRow(ctx, transferUpdateSQL,
 			inp.ToWalletID, inp.FromWalletID,
-			inp.Amount, inp.OperatedAt, inp.Description,
+			inp.ToAmount, inp.OperatedAt, inp.Description,
 			transferID, userID, model.TypeIncome,
 		),
 		&income,
@@ -378,13 +378,13 @@ const catByMonthSQL = `
 	SELECT
 		to_char(date_trunc('month', o.operated_at), 'YYYY-MM') AS month,
 		c.name,
-		SUM(o.amount)::float8
+		SUM(o.amount_minor)::int8
 	FROM categories c
 	JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
 	WHERE c.user_id = $1 AND o.type = $2
 	  AND o.operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '2 months'
 	GROUP BY date_trunc('month', o.operated_at), c.name
-	ORDER BY date_trunc('month', o.operated_at), SUM(o.amount) DESC`
+	ORDER BY date_trunc('month', o.operated_at), SUM(o.amount_minor) DESC`
 
 func (s *OperationStore) fetchMonthlyCategories(
 	ctx context.Context,
@@ -435,13 +435,13 @@ func (s *OperationStore) fetchWalletMonthlyCategories(
 		SELECT
 			to_char(date_trunc('month', o.operated_at), 'YYYY-MM') AS month,
 			c.name,
-			SUM(o.amount)::float8
+			SUM(o.amount_minor)::int8
 		FROM categories c
 		JOIN operations o ON o.category_id = c.id AND o.user_id = c.user_id
 		WHERE c.user_id = $1 AND o.type = $2 AND o.wallet_id = $3
 		  AND o.operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '2 months'
 		GROUP BY date_trunc('month', o.operated_at), c.name
-		ORDER BY date_trunc('month', o.operated_at), SUM(o.amount) DESC`,
+		ORDER BY date_trunc('month', o.operated_at), SUM(o.amount_minor) DESC`,
 		userID, opType, walletID,
 	)
 	if err != nil {
@@ -495,8 +495,8 @@ func (s *OperationStore) WalletDashboardData(
 		WITH monthly AS (
 			SELECT
 				date_trunc('month', operated_at) AS month,
-				SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8 AS income,
-				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
+				SUM(CASE WHEN type=$2 THEN amount_minor ELSE 0 END)::int8 AS income,
+				SUM(CASE WHEN type=$3 THEN amount_minor ELSE 0 END)::int8 AS expense
 			FROM operations
 			WHERE user_id = $1 AND wallet_id = $4
 			  AND operated_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
@@ -504,8 +504,8 @@ func (s *OperationStore) WalletDashboardData(
 		),
 		pre AS (
 			SELECT COALESCE(
-				SUM(CASE WHEN type=$2 THEN amount ELSE -amount END), 0
-			)::float8 AS base
+				SUM(CASE WHEN type=$2 THEN amount_minor ELSE -amount_minor END), 0
+			)::int8 AS base
 			FROM operations
 			WHERE user_id = $1 AND wallet_id = $4
 			  AND operated_at < date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
@@ -514,7 +514,7 @@ func (s *OperationStore) WalletDashboardData(
 			to_char(m.month, 'YYYY-MM'),
 			m.income,
 			m.expense,
-			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::float8
+			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::int8
 		FROM monthly m
 		ORDER BY m.month`,
 		userID, model.TypeIncome, model.TypeExpense, walletID,
@@ -551,8 +551,8 @@ func (s *OperationStore) DashboardData(
 		WITH monthly AS (
 			SELECT
 				date_trunc('month', operated_at) AS month,
-				SUM(CASE WHEN type=$2 THEN amount ELSE 0 END)::float8 AS income,
-				SUM(CASE WHEN type=$3 THEN amount ELSE 0 END)::float8 AS expense
+				SUM(CASE WHEN type=$2 THEN amount_minor ELSE 0 END)::int8 AS income,
+				SUM(CASE WHEN type=$3 THEN amount_minor ELSE 0 END)::int8 AS expense
 			FROM operations
 			WHERE user_id = $1
 			  AND transfer_id IS NULL
@@ -561,8 +561,8 @@ func (s *OperationStore) DashboardData(
 		),
 		pre AS (
 			SELECT COALESCE(
-				SUM(CASE WHEN type=$2 THEN amount ELSE -amount END), 0
-			)::float8 AS base
+				SUM(CASE WHEN type=$2 THEN amount_minor ELSE -amount_minor END), 0
+			)::int8 AS base
 			FROM operations
 			WHERE user_id = $1
 			  AND transfer_id IS NULL
@@ -572,7 +572,7 @@ func (s *OperationStore) DashboardData(
 			to_char(m.month, 'YYYY-MM'),
 			m.income,
 			m.expense,
-			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::float8
+			((SELECT base FROM pre) + SUM(m.income - m.expense) OVER (ORDER BY m.month))::int8
 		FROM monthly m
 		ORDER BY m.month`,
 		userID, model.TypeIncome, model.TypeExpense,

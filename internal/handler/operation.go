@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
@@ -222,6 +223,11 @@ func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
 			return
 		}
+		if errors.Is(err, service.ErrToAmountRequired) {
+			http.Error(w, "Кошельки в разных валютах: укажите сумму зачисления",
+				http.StatusBadRequest)
+			return
+		}
 		if errors.Is(err, service.ErrNotFound) {
 			http.NotFound(w, r)
 			return
@@ -294,6 +300,11 @@ func (h *Handler) putTransfer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
 			return
 		}
+		if errors.Is(err, service.ErrToAmountRequired) {
+			http.Error(w, "Кошельки в разных валютах: укажите сумму зачисления",
+				http.StatusBadRequest)
+			return
+		}
 		if errors.Is(err, service.ErrNotFound) {
 			http.NotFound(w, r)
 			return
@@ -329,9 +340,9 @@ func parseOperationInput(r *http.Request) (model.OperationInput, error) {
 	if err != nil {
 		return model.OperationInput{}, fmt.Errorf("invalid category_id")
 	}
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil || amount <= 0 {
-		return model.OperationInput{}, fmt.Errorf("invalid amount")
+	amount, err := parsePositiveMoney(r.FormValue("amount"))
+	if err != nil {
+		return model.OperationInput{}, err
 	}
 	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
 	if err != nil {
@@ -356,9 +367,17 @@ func parseTransferInput(r *http.Request) (model.TransferInput, error) {
 	if err != nil {
 		return model.TransferInput{}, fmt.Errorf("invalid to_wallet_id")
 	}
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil || amount <= 0 {
-		return model.TransferInput{}, fmt.Errorf("invalid amount")
+	amount, err := parsePositiveMoney(r.FormValue("amount"))
+	if err != nil {
+		return model.TransferInput{}, err
+	}
+	// to_amount заполняется только при переводе между валютами
+	var toAmount model.Money
+	if raw := strings.TrimSpace(r.FormValue("to_amount")); raw != "" {
+		toAmount, err = parsePositiveMoney(raw)
+		if err != nil {
+			return model.TransferInput{}, fmt.Errorf("invalid to_amount")
+		}
 	}
 	operatedAt, err := parseDateTime(r.FormValue("operated_at"))
 	if err != nil {
@@ -368,9 +387,18 @@ func parseTransferInput(r *http.Request) (model.TransferInput, error) {
 		FromWalletID: fromID,
 		ToWalletID:   toID,
 		Amount:       amount,
+		ToAmount:     toAmount,
 		OperatedAt:   operatedAt,
 		Description:  r.FormValue("description"),
 	}, nil
+}
+
+func parsePositiveMoney(s string) (model.Money, error) {
+	amount, err := model.ParseMoney(s)
+	if err != nil || amount <= 0 {
+		return 0, fmt.Errorf("invalid amount")
+	}
+	return amount, nil
 }
 
 // parseDateTime парсит строку из datetime-local input формата "2006-01-02T15:04".

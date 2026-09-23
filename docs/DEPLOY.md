@@ -75,7 +75,8 @@ sudo chmod +x /usr/local/bin/goose
 
 Запусти миграции:
 ```bash
-export DB_URL="postgres://wimm:Adm25Bsd05T5%25@localhost:5432/wimm?sslmode=disable"
+# пароль взять из .env на сервере; спецсимволы в URL кодировать (% → %25)
+export DB_URL="postgres://wimm:ПАРОЛЬ@localhost:5432/wimm?sslmode=disable"
 goose -dir /home/deploy/wimm/migrations postgres "$DB_URL" up
 ```
 

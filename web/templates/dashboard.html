@@ -23,9 +23,11 @@
       {{if .WalletBalances}}
       <div class="text-right">
         <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none mb-1">Текущий баланс</p>
-        <p class="text-2xl font-bold tracking-tight {{if ge .TotalBalance 0.0}}text-success{{else}}text-error{{end}}">
-          {{money .TotalBalance}}
+        {{range .TotalBalances}}
+        <p class="text-2xl font-bold tracking-tight {{if ge .Amount 0}}text-success{{else}}text-error{{end}}">
+          {{money .Amount}} <span class="text-base font-medium opacity-50">{{.Currency}}</span>
         </p>
+        {{end}}
       </div>
       {{end}}
     </div>
@@ -93,7 +95,7 @@
           </span>
         </div>
       </div>
-      <div class="text-3xl font-bold tracking-tight {{if ge .Balance 0.0}}text-success{{else}}text-error{{end}}">
+      <div class="text-3xl font-bold tracking-tight {{if ge .Balance 0}}text-success{{else}}text-error{{end}}">
         {{money .Balance}} <span class="text-base font-medium opacity-50">{{.Currency}}</span>
       </div>
       <div class="flex gap-4 text-xs text-base-content/40 pt-1 border-t border-base-content/5">

@@ -52,7 +52,7 @@
   <div class="card bg-base-100">
     <div class="card-body p-5">
       <p class="text-xs font-medium text-base-content/40 uppercase tracking-wider leading-none">Итог</p>
-      <p class="text-2xl font-bold tracking-tight mt-1 {{if ge .Report.TotalNet 0.0}}text-success{{else}}text-error{{end}}">
+      <p class="text-2xl font-bold tracking-tight mt-1 {{if ge .Report.TotalNet 0}}text-success{{else}}text-error{{end}}">
         {{money .Report.TotalNet}}
       </p>
       <p class="text-xs text-base-content/30 mt-0.5">доходы минус расходы</p>
@@ -226,7 +226,7 @@
            aria-label="Кольцевая диаграмма долей категорий расходов"></div>
       <ul class="sr-only">
         {{range .Report.Expense.Categories}}
-        <li>{{.Name}}: {{money .Total}}, {{num .Share}}%</li>
+        <li>{{.Name}}: {{money .Total}}, {{percent .Share}}%</li>
         {{end}}
       </ul>
     </div>
@@ -241,7 +241,7 @@
            aria-label="Кольцевая диаграмма долей категорий доходов"></div>
       <ul class="sr-only">
         {{range .Report.Income.Categories}}
-        <li>{{.Name}}: {{money .Total}}, {{num .Share}}%</li>
+        <li>{{.Name}}: {{money .Total}}, {{percent .Share}}%</li>
         {{end}}
       </ul>
     </div>
@@ -306,7 +306,7 @@
             {{end}}
             {{if $both}}
             {{$net := index $.Report.Net $i}}
-            <td class="text-right tabular-nums font-medium {{if lt $net 0.0}}text-error{{else}}text-success{{end}}">
+            <td class="text-right tabular-nums font-medium {{if lt $net 0}}text-error{{else}}text-success{{end}}">
               {{money $net}}
             </td>
             {{end}}
@@ -329,7 +329,7 @@
             <td class="text-right tabular-nums font-medium text-success/80">{{money .Total}}</td>
             {{end}}
             {{if $both}}
-            <td class="text-right tabular-nums font-bold {{if lt .Report.TotalNet 0.0}}text-error{{else}}text-success{{end}}">
+            <td class="text-right tabular-nums font-bold {{if lt .Report.TotalNet 0}}text-error{{else}}text-success{{end}}">
               {{money .Report.TotalNet}}
             </td>
             {{end}}

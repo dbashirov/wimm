@@ -51,9 +51,9 @@ type Wallet struct {
 
 type WalletBalance struct {
 	Wallet
-	Income  float64
-	Expense float64
-	Balance float64
+	Income  Money
+	Expense Money
+	Balance Money
 }
 
 type Category struct {
@@ -70,7 +70,7 @@ type Operation struct {
 	WalletID           uuid.UUID
 	CategoryID         uuid.UUID // uuid.Nil for transfers
 	Type               OperationType
-	Amount             float64
+	Amount             Money
 	OperatedAt         time.Time
 	Description        string
 	CreatedAt          time.Time
@@ -116,7 +116,7 @@ type OperationInput struct {
 	WalletID    uuid.UUID
 	CategoryID  uuid.UUID
 	Type        OperationType
-	Amount      float64
+	Amount      Money
 	OperatedAt  time.Time
 	Description string
 }
@@ -125,36 +125,43 @@ type OperationInput struct {
 type TransferInput struct {
 	FromWalletID uuid.UUID
 	ToWalletID   uuid.UUID
-	Amount       float64
+	Amount       Money // списано с FromWalletID, в его валюте
+	ToAmount     Money // зачислено на ToWalletID, в его валюте
 	OperatedAt   time.Time
 	Description  string
 }
 
 type DashboardData struct {
 	WalletBalances  []WalletBalance
-	TotalBalance    float64
+	TotalBalances   []CurrencyAmount // по одной строке на валюту
 	MonthlyExpenses []MonthlyCategoryData
 	MonthlyIncomes  []MonthlyCategoryData
 	MonthlyTotals   []MonthlyTotal
 }
 
+// CurrencyAmount — сумма в конкретной валюте: складывать разные валюты нельзя.
+type CurrencyAmount struct {
+	Currency string
+	Amount   Money
+}
+
 type CategoryAmount struct {
 	Name   string
-	Amount float64
+	Amount Money
 }
 
 // MonthlyCategoryData — агрегат по категориям за один месяц.
 type MonthlyCategoryData struct {
-	Label string          // "Февраль", "Март", "Текущий месяц"
-	Total float64
+	Label string // "Февраль", "Март", "Текущий месяц"
+	Total Money
 	Items []CategoryAmount
 }
 
 type MonthlyTotal struct {
 	Month   string
-	Income  float64
-	Expense float64
-	Balance float64 // нарастающий итог на конец месяца
+	Income  Money
+	Expense Money
+	Balance Money // нарастающий итог на конец месяца
 }
 
 // Granularity — шаг временной шкалы отчёта, совпадает с полем date_trunc.
@@ -185,7 +192,7 @@ type ReportRow struct {
 	CategoryID uuid.UUID     `db:"category_id"`
 	Name       string        `db:"name"`
 	Type       OperationType `db:"type"`
-	Amount     float64       `db:"amount"`
+	Amount     Money         `db:"amount"`
 }
 
 // ReportBounds — фактические границы данных под фильтр.
@@ -199,14 +206,14 @@ type ReportBounds struct {
 type ReportCategory struct {
 	ID    uuid.UUID `json:"id"`
 	Name  string    `json:"name"`
-	Total float64   `json:"total"`
+	Total Money     `json:"total"`
 	Share float64   `json:"share"` // % от итога секции; 0 при нулевом итоге
 }
 
 // ReportBucket — один период на временной шкале, выровнен по Report.Labels.
 type ReportBucket struct {
-	Amounts []float64 `json:"amounts"` // выровнены по ReportSection.Categories
-	Total   float64   `json:"total"`
+	Amounts []Money `json:"amounts"` // выровнены по ReportSection.Categories
+	Total   Money   `json:"total"`
 }
 
 // ReportSection — отчёт по одному типу операций.
@@ -215,8 +222,8 @@ type ReportBucket struct {
 type ReportSection struct {
 	Categories []ReportCategory `json:"categories"`
 	Buckets    []ReportBucket   `json:"buckets"`
-	Total      float64          `json:"total"`
-	Average    float64          `json:"average"` // Total / len(Buckets)
+	Total      Money            `json:"total"`
+	Average    Money            `json:"average"` // Total / len(Buckets), с округлением
 }
 
 // Report — данные страницы отчёта.
@@ -225,8 +232,8 @@ type Report struct {
 	Labels      []string
 	Expense     *ReportSection
 	Income      *ReportSection
-	Net         []float64 // доход − расход по бакетам
-	TotalNet    float64
+	Net         []Money // доход − расход по бакетам
+	TotalNet    Money
 	Bounds      ReportBounds
 	Notice      string // «шаг укрупнён до месяцев»; пустая строка — сообщать нечего
 }
