@@ -21,7 +21,7 @@
           hx-post="/wallets"
           hx-target="#wallets-tbody"
           hx-swap="afterbegin"
-          hx-on::after-request="this.reset()">
+          hx-on::after-request="if(event.detail.successful)this.reset()">
       <div class="flex flex-wrap gap-3 items-end mb-4">
         <div class="form-control flex-1 min-w-40">
           <label for="wallet-name" class="form-label">Название</label>

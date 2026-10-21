@@ -51,7 +51,7 @@
             hx-post="/operations"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="if(event.detail.elt===this){var ws=this.querySelector('[name=wallet_id]');var wv=ws?ws.value:'';var mode=document.getElementById('op-type-hidden').value;this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});if(ws&&wv)ws.value=wv;updateOpForm(mode);}">
+            hx-on::after-request="if(event.detail.elt===this&&event.detail.successful){var ws=this.querySelector('[name=wallet_id]');var wv=ws?ws.value:'';var mode=document.getElementById('op-type-hidden').value;this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});if(ws&&wv)ws.value=wv;updateOpForm(mode);}">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           <input type="hidden" name="type" id="op-type-hidden" value="expense">
           <div class="form-control">
@@ -96,7 +96,7 @@
             hx-post="/transfers"
             hx-target="#operations-tbody"
             hx-swap="afterbegin"
-            hx-on::after-request="this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});syncTransferAmount(this)">
+            hx-on::after-request="if(event.detail.successful){this.reset();this.querySelectorAll('.fp-datetime').forEach(function(e){if(e._flatpickr)e._flatpickr.setDate(new Date(),true)});syncTransferAmount(this)}">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <div class="form-control">
             <label for="transfer-from" class="text-xs font-medium text-base-content/50 mb-1.5">Из кошелька</label>

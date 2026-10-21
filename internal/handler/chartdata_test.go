@@ -9,7 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// evilName - название категории, ломающее ручную сборку JS-литерала.
+// evilName - название категории, которое закрыло бы <script>, если данные
+// попадут в JS без экранирования.
 const evilName = `</script><script>alert(1)</script>"'`
 
 // TestChartDataUsesJSON - данные графиков dashboard и статистики кошелька

@@ -55,8 +55,8 @@ func validateCurrency(currency string) (string, error) {
 	return currency, nil
 }
 
-func validateType(t model.OperationType) error {
-	if t != model.TypeIncome && t != model.TypeExpense {
+func validateType(opType model.OperationType) error {
+	if opType != model.TypeIncome && opType != model.TypeExpense {
 		return &ValidationError{Msg: "Некорректный тип"}
 	}
 	return nil
