@@ -37,7 +37,7 @@ Replaced все `http.Error(500)` без логов.
 ## 🟠 Важно
 
 ### ✅ 7. Security headers
-CSP с whitelist'ом CDN (jsdelivr/unpkg/npmcdn/cdn.tailwindcss.com/fonts.googleapis.com),
+CSP с whitelist'ом CDN (jsdelivr/unpkg/npmcdn/fonts.googleapis.com; Tailwind CDN убран со сборкой CSS),
 `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
 `Referrer-Policy`, `Permissions-Policy`. HSTS опционально через `HSTS=true`.
 
@@ -159,7 +159,7 @@ Go's `html/template` делает контекстный экранинг для
 | low | Переполнение OFFSET при огромном `page` | ✅ см. пункт 21 |
 | low | Невалидный ввод (валюта, тип, пустое имя, пароль > 72 байт) давал 500, длины не ограничены | ✅ `service.ValidationError` -> 400 |
 | low | JOIN-ы и подзапросы операций искали кошелёк/категорию только по id | ✅ условие владельца + FK миграции 009 |
-| low | CDN-скрипты без точных версий и SRI | ✅ кроме Tailwind CDN и Google Fonts |
+| low | CDN-скрипты без точных версий и SRI | ✅ кроме Google Fonts; Tailwind CDN заменён собранным CSS |
 | low | Перечисление email на регистрации | ❌ принятый риск, см. пункт 17 |
 
 Попутно найдены и исправлены не связанные с безопасностью баги: пагинация
@@ -201,7 +201,9 @@ Go's `html/template` делает контекстный экранинг для
 - [ ] Backup-стратегия для PostgreSQL
 
 ### Что доделать после первого деплоя (по убыванию полезности):
-1. Сборка Tailwind CSS вместо `cdn.tailwindcss.com` (`TODO_TAILWIND_BUILD.md`):
-   уберёт последний скрипт без SRI и `'unsafe-eval'` из CSP
-2. **17** — account enumeration mitigation (опционально)
-3. Метрики Prometheus
+1. **17** — account enumeration mitigation (опционально)
+2. Метрики Prometheus
+
+Сборка Tailwind CSS вместо `cdn.tailwindcss.com` сделана: последний скрипт без
+SRI ушёл. `'unsafe-eval'` в CSP остаётся - он нужен обработчикам `hx-on` в htmx
+(проверено: без него `EvalError`).

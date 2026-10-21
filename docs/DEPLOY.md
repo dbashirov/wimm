@@ -114,6 +114,9 @@ cd /home/deploy/wimm
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+CSS (Tailwind + daisyui) собирается внутри образа на этапе `css` из `Dockerfile`:
+ставить node/npm на сервер не нужно, достаточно доступа Docker к npm registry.
+
 Проверь:
 ```bash
 curl http://localhost:8080/health   # 200 OK

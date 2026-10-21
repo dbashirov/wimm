@@ -11,3 +11,8 @@ wimm
 
 # OS
 .DS_Store
+
+# CSS собирается make css и в Docker-образе
+node_modules/
+web/static/daisyui.css
+web/static/tailwind.css

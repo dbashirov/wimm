@@ -8,6 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Сборка
 go build ./...
 
+# CSS (Tailwind + daisyui) - нужен перед go run, иначе страницы без стилей;
+# без локального npm идёт через Docker-образ node
+make css
+make css-watch   # пересборка при правке шаблонов
+
 # Запуск (нужны переменные окружения из .env.example)
 go run ./cmd/server
 
@@ -47,13 +52,15 @@ handler → session.Manager
 
 ## Frontend
 
-htmx 2.x + Chart.js + ECharts + DaisyUI (CDN). Шаблоны рендерятся сервером. Партиалы — именованные `{{define "name"}}` блоки, возвращаются на htmx-запросы (inline edit, удаление строк таблицы).
+htmx 2.x + Chart.js + ECharts (CDN) + Tailwind 3 / daisyui 4 (собранный CSS). Шаблоны рендерятся сервером. Партиалы — именованные `{{define "name"}}` блоки, возвращаются на htmx-запросы (inline edit, удаление строк таблицы).
 
 Данные для JS-графиков передаются хелпером шаблона `jsonData` (`{{jsonData .Report.Labels}}`): `json.Marshal` + `template.JS`. Ручную развёртку через `{{range}}` внутри JS-литерала не использовать. `template.JS` отключает контекстное экранирование, поэтому `jsonData` допустим только как значение внутри `<script>` — в атрибуте или `href` это XSS. `hasID .Filter.CategoryIDs .ID` — отметка выбранных чекбоксов в формах фильтров.
 
 Строки, которые JS вставляет как HTML (formatter подсказок ECharts, тосты), идут через `escapeHTML` из `base.html`, иначе название категории становится XSS. Формы создания сбрасываются в `hx-on::after-request` только при `event.detail.successful`: ошибка 400 не должна стирать ввод.
 
-Внешние скрипты и стили подключаются с точной версией и `integrity` + `crossorigin="anonymous"` (`TestExternalAssetsPinned`); хеш: `curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`. Исключения - `cdn.tailwindcss.com` и Google Fonts (динамический ответ).
+Внешние скрипты и стили подключаются с точной версией и `integrity` + `crossorigin="anonymous"` (`TestExternalAssetsPinned`); хеш: `curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`. Исключение - Google Fonts (динамический ответ).
+
+CSS собирается из шаблонов (`make css`, в Docker - отдельный этап `css` в `Dockerfile`) в два файла, которые не коммитятся: `static/daisyui.css` (темы light/dark и компоненты, конфиг `tailwind.daisyui.config.js`) и `static/tailwind.css` (утилиты, `tailwind.config.js`). Порядок в `base.html` - `daisyui.css` → `style.css` → `tailwind.css` - повторяет каскад времён Play CDN: `style.css` переопределяет компоненты daisyui, а утилиты перекрывают `style.css` (`TestStylesheetOrder`). Класс попадает в сборку, только если встречается в `web/templates/**` целиком: имя класса, склеенное в JS из частей, выкинется. `'unsafe-eval'` в CSP нужен не Tailwind, а обработчикам `hx-on`: без него htmx падает с `EvalError`.
 
 Расширение базового шаблона: страницы могут определять `{{define "head_extra"}}` (добавляется в `<head>`, для CSS/шрифтов) и `{{define "scripts"}}` (добавляется перед `</body>`, для page-specific JS-библиотек). Тяжёлые скрипты (Chart.js, ECharts, Flatpickr) подключаются только в тех шаблонах, где они нужны.
 

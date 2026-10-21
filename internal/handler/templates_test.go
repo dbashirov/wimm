@@ -200,11 +200,11 @@ func TestRenderCategoryEditRow(t *testing.T) {
 
 // TestExternalAssetsPinned - внешние скрипты и стили подключены с точной
 // версией и SRI: подменённый или обновившийся на CDN файл браузер не выполнит.
-// Tailwind CDN и Google Fonts отдают динамический ответ, SRI для них невозможен.
+// Google Fonts отдаёт динамический ответ, SRI для него невозможен.
 func TestExternalAssetsPinned(t *testing.T) {
 	tag := regexp.MustCompile(`<(?:script|link)\b[^>]*?(?:src|href)="(https://[^"]+)"[^>]*>`)
 	version := regexp.MustCompile(`@\d+\.\d+\.\d+/`)
-	exempt := []string{"https://cdn.tailwindcss.com", "https://fonts.googleapis.com/"}
+	exempt := []string{"https://fonts.googleapis.com/"}
 
 	files, err := fs.Glob(web.FS, "templates/*.html")
 	if err != nil {
@@ -235,5 +235,28 @@ func TestExternalAssetsPinned(t *testing.T) {
 	}
 	if checked == 0 {
 		t.Fatal("не найдено ни одного внешнего ресурса")
+	}
+}
+
+// TestStylesheetOrder - собранный CSS повторяет каскад времён Play CDN:
+// компоненты daisyui, затем style.css (переопределяет их), затем утилиты
+// Tailwind (перекрывают style.css). Перестановка меняет вёрстку.
+func TestStylesheetOrder(t *testing.T) {
+	data, err := fs.ReadFile(web.FS, "templates/base.html")
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	src := string(data)
+	if strings.Contains(src, "cdn.tailwindcss.com") {
+		t.Error("base.html снова грузит Tailwind Play CDN")
+	}
+	daisy := strings.Index(src, `href="/static/daisyui.css"`)
+	style := strings.Index(src, `href="/static/style.css"`)
+	tw := strings.Index(src, `href="/static/tailwind.css"`)
+	if daisy < 0 || style < 0 || tw < 0 {
+		t.Fatalf("нет подключения: daisyui.css=%d style.css=%d tailwind.css=%d", daisy, style, tw)
+	}
+	if !(daisy < style && style < tw) {
+		t.Errorf("порядок стилей: daisyui.css=%d style.css=%d tailwind.css=%d", daisy, style, tw)
 	}
 }

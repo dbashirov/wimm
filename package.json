@@ -1,0 +1,13 @@
+{
+  "name": "wimm-css",
+  "private": true,
+  "description": "Сборка CSS: Tailwind + daisyui (см. Makefile, target css)",
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.daisyui.config.js -i web/styles/input.css -o web/static/daisyui.css --minify && tailwindcss -c tailwind.config.js -i web/styles/input.css -o web/static/tailwind.css --minify",
+    "watch:css": "tailwindcss -c tailwind.daisyui.config.js -i web/styles/input.css -o web/static/daisyui.css --watch=always & tailwindcss -c tailwind.config.js -i web/styles/input.css -o web/static/tailwind.css --watch=always"
+  },
+  "devDependencies": {
+    "daisyui": "4.12.24",
+    "tailwindcss": "3.4.17"
+  }
+}
