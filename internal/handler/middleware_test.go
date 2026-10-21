@@ -150,9 +150,24 @@ func TestCrossOriginProtection(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
+		host    string
 		headers map[string]string
 		want    int
 	}{
+		{
+			// nginx терминирует HTTPS и передаёт публичный Host по HTTP
+			name:    "старый браузер за nginx: Origin совпадает с Host",
+			path:    "/nope",
+			host:    "wimm.example",
+			headers: map[string]string{"Origin": "https://wimm.example"},
+			want:    http.StatusNotFound,
+		},
+		{
+			name:    "Origin: null (sandbox iframe, data:)",
+			path:    "/login",
+			headers: map[string]string{"Origin": "null"},
+			want:    http.StatusForbidden,
+		},
 		{
 			name:    "login с чужого сайта",
 			path:    "/login",
@@ -193,6 +208,9 @@ func TestCrossOriginProtection(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, tc.path, nil)
+			if tc.host != "" {
+				req.Host = tc.host
+			}
 			for k, v := range tc.headers {
 				req.Header.Set(k, v)
 			}

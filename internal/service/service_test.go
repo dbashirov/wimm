@@ -422,11 +422,27 @@ func TestReorderWallets(t *testing.T) {
 				wallets.EXPECT().Reorder(ctx, uID1, tc.ids).Return(nil)
 			}
 			err := svc.ReorderWallets(ctx, uID1, tc.ids)
+			if !tc.wantErr {
+				if err != nil {
+					t.Errorf("err = %v, want nil", err)
+				}
+				return
+			}
 			var ve *service.ValidationError
-			if tc.wantErr != errors.As(err, &ve) {
-				t.Errorf("err = %v, wantErr %v", err, tc.wantErr)
+			if !errors.As(err, &ve) {
+				t.Errorf("err = %v, want ValidationError", err)
 			}
 		})
+	}
+}
+
+func TestReorderWallets_RepoError(t *testing.T) {
+	svc, _, wallets, _, _ := newSvc(t)
+	dbErr := errors.New("connection refused")
+	wallets.EXPECT().Reorder(ctx, uID1, []uuid.UUID{wID1}).Return(dbErr)
+
+	if err := svc.ReorderWallets(ctx, uID1, []uuid.UUID{wID1}); !errors.Is(err, dbErr) {
+		t.Errorf("err = %v, want ошибку репозитория", err)
 	}
 }
 

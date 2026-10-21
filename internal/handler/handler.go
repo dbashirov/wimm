@@ -225,8 +225,7 @@ func (h *Handler) Routes() http.Handler {
 	// Глобальный стек middleware:
 	// лог → recovery → headers → body limit → timeout → cross-origin → mux
 	var handler http.Handler = mux
-	// CSRF-токен привязан к сессии, а у /login и /register её ещё нет:
-	// без проверки Sec-Fetch-Site/Origin чужой сайт логинит жертву в свой аккаунт
+	// у /login и /register ещё нет сессии для CSRF-токена, их защищает проверка Origin
 	handler = http.NewCrossOriginProtection().Handler(handler)
 	handler = requestTimeout(15 * time.Second)(handler)
 	handler = limitBody(1 << 20)(handler) // 1 MB

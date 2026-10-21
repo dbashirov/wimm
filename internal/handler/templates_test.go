@@ -3,7 +3,6 @@ package handler
 import (
 	"io"
 	"io/fs"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -122,7 +121,6 @@ func TestRenderReportsTemplate(t *testing.T) {
 // название категории в formatter обязано идти через escapeHTML: иначе
 // категория "<img src=x onerror=...>" выполняет скрипт при наведении.
 func TestTooltipNamesEscaped(t *testing.T) {
-	rawName := regexp.MustCompile(`[^(]p\.name`)
 	files, err := fs.Glob(web.FS, "templates/*.html")
 	if err != nil {
 		t.Fatalf("Glob: %v", err)
@@ -138,11 +136,10 @@ func TestTooltipNamesEscaped(t *testing.T) {
 			continue
 		}
 		checked++
-		for _, m := range rawName.FindAllString(src, -1) {
-			t.Errorf("%s: p.name без escapeHTML: %q", name, m)
-		}
-		if !strings.Contains(src, "escapeHTML(p.name)") {
-			t.Errorf("%s: в formatter нет escapeHTML(p.name)", name)
+		total := strings.Count(src, "p.name")
+		escaped := strings.Count(src, "escapeHTML(p.name)")
+		if escaped == 0 || total != escaped {
+			t.Errorf("%s: p.name встречается %d раз, через escapeHTML - %d", name, total, escaped)
 		}
 	}
 	if checked == 0 {
@@ -160,6 +157,17 @@ func TestEscapeHTMLInBase(t *testing.T) {
 	src := string(data)
 	if !strings.Contains(src, "function escapeHTML(") {
 		t.Error("в base.html нет функции escapeHTML")
+	}
+	// JS-движка в тестах нет, поэтому проверяем таблицу замен целиком
+	for _, entity := range []string{
+		`'&': '&amp;'`, `'<': '&lt;'`, `'>': '&gt;'`, `'"': '&quot;'`, `"'": '&#39;'`,
+	} {
+		if !strings.Contains(src, entity) {
+			t.Errorf("escapeHTML не заменяет %s", entity)
+		}
+	}
+	if !strings.Contains(src, `.replace(/[&<>"']/g,`) {
+		t.Error("escapeHTML не ищет все пять спецсимволов")
 	}
 	if strings.Contains(src, "+ msg +") {
 		t.Error("тост вставляет текст ответа сервера в innerHTML без экранирования")
