@@ -26,6 +26,17 @@ var (
 	ErrToAmountRequired = errors.New("target amount required for cross-currency transfer")
 )
 
+// ValidationError - некорректный ввод пользователя; Msg показывается как есть.
+type ValidationError struct {
+	Msg string
+}
+
+func (e *ValidationError) Error() string { return e.Msg }
+
+// maxReorderIDs - столько кошельков у пользователя не бывает, а без лимита
+// тело в 1 MB разворачивается в десятки тысяч id одного запроса.
+const maxReorderIDs = 1000
+
 // normalizeEmail приводит email к каноническому виду (lowercase, trimmed).
 func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
@@ -195,6 +206,16 @@ func (s *Service) ReorderWallets(
 	userID uuid.UUID,
 	ids []uuid.UUID,
 ) error {
+	if len(ids) == 0 || len(ids) > maxReorderIDs {
+		return &ValidationError{Msg: "некорректный список кошельков"}
+	}
+	seen := make(map[uuid.UUID]struct{}, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			return &ValidationError{Msg: "кошелёк указан в списке дважды"}
+		}
+		seen[id] = struct{}{}
+	}
 	return s.wallets.Reorder(ctx, userID, ids)
 }
 

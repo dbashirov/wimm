@@ -2,10 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"slices"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/dbashirov/wimm/internal/service"
 	"github.com/google/uuid"
 )
 
@@ -151,11 +153,16 @@ func (h *Handler) postWalletsReorder(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		IDs []uuid.UUID `json:"ids"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || len(body.IDs) == 0 {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if err := h.svc.ReorderWallets(r.Context(), userID, body.IDs); err != nil {
+		var ve *service.ValidationError
+		if errors.As(err, &ve) {
+			http.Error(w, ve.Msg, http.StatusBadRequest)
+			return
+		}
 		h.serverError(w, r, "ReorderWallets", err)
 		return
 	}

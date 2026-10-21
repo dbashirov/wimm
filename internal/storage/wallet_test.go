@@ -2,10 +2,12 @@ package storage_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
+	"github.com/google/uuid"
 )
 
 func TestWalletStore_CreateAndGet(t *testing.T) {
@@ -127,5 +129,43 @@ func TestWalletStore_Delete_OtherUser(t *testing.T) {
 	err := s.Wallets.Delete(ctx, w.ID, other)
 	if err != storage.ErrNotFound {
 		t.Errorf("got %v, want ErrNotFound", err)
+	}
+}
+
+func TestWalletStore_Reorder(t *testing.T) {
+	cleanDB(t)
+	ctx := context.Background()
+	s := storage.NewFromPool(testPool)
+
+	owner := createUser(t, "reorder@test.com")
+	other := createUser(t, "reorder-other@test.com")
+	a, _ := s.Wallets.Create(ctx, owner, model.WalletInput{Name: "A", Currency: "RUB"})
+	b, _ := s.Wallets.Create(ctx, owner, model.WalletInput{Name: "B", Currency: "RUB"})
+	c, _ := s.Wallets.Create(ctx, owner, model.WalletInput{Name: "C", Currency: "RUB"})
+	foreign, _ := s.Wallets.Create(ctx, other, model.WalletInput{Name: "F", Currency: "RUB"})
+
+	ids := []uuid.UUID{c.ID, foreign.ID, a.ID, b.ID}
+	if err := s.Wallets.Reorder(ctx, owner, ids); err != nil {
+		t.Fatalf("Reorder: %v", err)
+	}
+
+	list, err := s.Wallets.ListByUser(ctx, owner)
+	if err != nil {
+		t.Fatalf("ListByUser: %v", err)
+	}
+	var names []string
+	for _, wallet := range list {
+		names = append(names, wallet.Name)
+	}
+	if got := strings.Join(names, ","); got != "C,A,B" {
+		t.Errorf("порядок = %s, want C,A,B", got)
+	}
+
+	got, err := s.Wallets.GetByID(ctx, foreign.ID, other)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.SortOrder != foreign.SortOrder {
+		t.Errorf("чужой кошелёк изменён: sort_order %d -> %d", foreign.SortOrder, got.SortOrder)
 	}
 }

@@ -218,25 +218,21 @@ func (s *WalletStore) SetDefault(
 	return &w, nil
 }
 
+// Reorder выставляет sort_order по позиции id в списке одним запросом.
+// Чужие и несуществующие id молча пропускаются условием по user_id.
 func (s *WalletStore) Reorder(
 	ctx context.Context,
 	userID uuid.UUID,
 	ids []uuid.UUID,
 ) error {
-	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	_, err := s.pool.Exec(ctx,
+		`UPDATE wallets w SET sort_order = v.ord - 1
+		 FROM unnest($2::uuid[]) WITH ORDINALITY AS v(id, ord)
+		 WHERE w.id = v.id AND w.user_id = $1`,
+		userID, ids,
+	)
 	if err != nil {
-		return fmt.Errorf("WalletStore.Reorder begin: %w", err)
+		return fmt.Errorf("WalletStore.Reorder: %w", err)
 	}
-	defer tx.Rollback(ctx)
-
-	for i, id := range ids {
-		if _, err := tx.Exec(ctx,
-			`UPDATE wallets SET sort_order=$1 WHERE id=$2 AND user_id=$3`,
-			i, id, userID,
-		); err != nil {
-			return fmt.Errorf("WalletStore.Reorder: %w", err)
-		}
-	}
-
-	return tx.Commit(ctx)
+	return nil
 }

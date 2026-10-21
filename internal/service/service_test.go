@@ -398,6 +398,38 @@ func TestCreateTransfer_SameWallet(t *testing.T) {
 	}
 }
 
+// ── Wallets reorder ───────────────────────────────────────────────────────────
+
+func TestReorderWallets(t *testing.T) {
+	tooMany := make([]uuid.UUID, 1001)
+	for i := range tooMany {
+		tooMany[i] = uuid.Must(uuid.NewV7())
+	}
+	tests := []struct {
+		name    string
+		ids     []uuid.UUID
+		wantErr bool
+	}{
+		{name: "корректный список", ids: []uuid.UUID{wID1, wID2}},
+		{name: "пустой список", ids: nil, wantErr: true},
+		{name: "повтор id", ids: []uuid.UUID{wID1, wID2, wID1}, wantErr: true},
+		{name: "больше лимита", ids: tooMany, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, _, wallets, _, _ := newSvc(t)
+			if !tc.wantErr {
+				wallets.EXPECT().Reorder(ctx, uID1, tc.ids).Return(nil)
+			}
+			err := svc.ReorderWallets(ctx, uID1, tc.ids)
+			var ve *service.ValidationError
+			if tc.wantErr != errors.As(err, &ve) {
+				t.Errorf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 func TestDashboardData_TotalsByCurrency(t *testing.T) {
