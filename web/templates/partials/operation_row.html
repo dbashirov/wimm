@@ -20,6 +20,10 @@
   </td>
   <td class="font-semibold whitespace-nowrap {{if eq .Type "income"}}text-success{{else}}text-error{{end}}">
     {{if eq .Type "income"}}+{{else}}-{{end}}{{money .Amount}} {{.Currency}}
+    {{if .Description}}
+    <div class="lg:hidden text-xs font-normal text-base-content/50 truncate max-w-[10rem]"
+         title="{{.Description}}">{{.Description}}</div>
+    {{end}}
   </td>
   <td class="hidden md:table-cell text-sm text-base-content/70">{{.WalletName}}</td>
   <td class="hidden md:table-cell text-sm text-base-content/70">
@@ -33,7 +37,8 @@
       {{.CategoryName}}
     {{end}}
   </td>
-  <td class="hidden lg:table-cell text-sm text-base-content/50 max-w-xs truncate">{{.Description}}</td>
+  <td class="hidden lg:table-cell text-sm text-base-content/50 max-w-xs truncate"
+      {{if .Description}}title="{{.Description}}"{{end}}>{{.Description}}</td>
   <td>
     <div class="flex gap-1 justify-end">
       {{if .TransferID}}

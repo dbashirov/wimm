@@ -83,3 +83,32 @@ func TestRenderOperationsPagination(t *testing.T) {
 		t.Error("на первой странице не должно быть ссылки «Назад»")
 	}
 }
+
+// TestRenderOperationRowDescription - описание видно и на узком экране,
+// а обрезанное - целиком в title.
+func TestRenderOperationRowDescription(t *testing.T) {
+	tmpls, err := parseTemplates(web.FS)
+	if err != nil {
+		t.Fatalf("parseTemplates: %v", err)
+	}
+	render := func(op *model.Operation) string {
+		var sb strings.Builder
+		if err := tmpls["operations"].ExecuteTemplate(&sb, "operation-row", op); err != nil {
+			t.Fatalf("ExecuteTemplate: %v", err)
+		}
+		return sb.String()
+	}
+
+	html := render(&model.Operation{Type: model.TypeExpense, Description: `кофе "у дома"`})
+	if got := strings.Count(html, `title="кофе &#34;у дома&#34;"`); got != 2 {
+		t.Errorf("title с описанием: %d вхождений, want 2", got)
+	}
+	if !strings.Contains(html, "lg:hidden") {
+		t.Error("нет описания для узкого экрана")
+	}
+
+	empty := render(&model.Operation{Type: model.TypeExpense})
+	if strings.Contains(empty, `title=""`) || strings.Contains(empty, "lg:hidden") {
+		t.Error("пустое описание: ни пустого title, ни строки для узкого экрана")
+	}
+}
