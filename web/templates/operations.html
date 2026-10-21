@@ -204,6 +204,8 @@ function syncTransferAmount(form) {
   });
 }
 
+var OP_CATEGORIES = {{jsonData .Categories}} || [];
+
 function updateOpForm(mode) {
   const opSection = document.getElementById('op-section');
   const transferSection = document.getElementById('transfer-section');
@@ -237,14 +239,13 @@ function updateOpForm(mode) {
     placeholder.disabled = true;
     placeholder.selected = true;
     categorySelect.appendChild(placeholder);
-    {{range .Categories}}
-    if ('{{.Type}}' === mode) {
+    OP_CATEGORIES.forEach(function(c) {
+      if (c.Type !== mode) return;
       const opt = document.createElement('option');
-      opt.value = '{{.ID}}';
-      opt.textContent = '{{.Name}}';
+      opt.value = c.ID;
+      opt.textContent = c.Name;
       categorySelect.appendChild(opt);
-    }
-    {{end}}
+    });
   }
 }
 </script>

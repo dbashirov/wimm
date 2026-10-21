@@ -184,25 +184,24 @@
     new ResizeObserver(function() { chart.resize(); }).observe(el);
   }
 
-  {{range $i, $m := .MonthlyExpenses}}
-  makeRoseChart('exp-{{$i}}',
-    [{{range $m.Items}}"{{.Name}}",{{end}}],
-    [{{range $m.Items}}{{num .Amount}},{{end}}]
-  );
-  {{end}}
-
-  {{range $i, $m := .MonthlyIncomes}}
-  makeRoseChart('inc-{{$i}}',
-    [{{range $m.Items}}"{{.Name}}",{{end}}],
-    [{{range $m.Items}}{{num .Amount}},{{end}}]
-  );
-  {{end}}
+  function makeMonthCharts(prefix, months) {
+    (months || []).forEach(function(m, i) {
+      var items = m.Items || [];
+      makeRoseChart(prefix + i,
+        items.map(function(it) { return it.Name; }),
+        items.map(function(it) { return it.Amount; })
+      );
+    });
+  }
+  makeMonthCharts('exp-', {{jsonData .MonthlyExpenses}});
+  makeMonthCharts('inc-', {{jsonData .MonthlyIncomes}});
 
   {{if .MonthlyTotals}}
-  var allLabels  = [{{range .MonthlyTotals}}"{{.Month}}",{{end}}];
-  var allIncome  = [{{range .MonthlyTotals}}{{num .Income}},{{end}}];
-  var allExpense = [{{range .MonthlyTotals}}{{num .Expense}},{{end}}];
-  var allBalance = [{{range .MonthlyTotals}}{{num .Balance}},{{end}}];
+  var TOTALS = {{jsonData .MonthlyTotals}};
+  var allLabels  = TOTALS.map(function(m) { return m.Month; });
+  var allIncome  = TOTALS.map(function(m) { return m.Income; });
+  var allExpense = TOTALS.map(function(m) { return m.Expense; });
+  var allBalance = TOTALS.map(function(m) { return m.Balance; });
 
   var wideQuery = window.matchMedia('(min-width: 768px)');
 
