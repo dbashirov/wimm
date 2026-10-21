@@ -39,7 +39,7 @@ handler → session.Manager
 ```
 
 - **`internal/storage/`** — pgx v5 репозитории. Каждый SQL-запрос обязательно содержит `WHERE user_id = $N` — это ключевая гарантия изоляции данных между пользователями.
-- **`internal/service/`** — бизнес-логика: хеширование паролей (bcrypt), валидация (тип категории должен совпадать с типом операции).
+- **`internal/service/`** — бизнес-логика: хеширование паролей (bcrypt), валидация (тип категории должен совпадать с типом операции). Ошибка ввода - `*service.ValidationError` с текстом для пользователя; хендлеры отдают её как 400 через `validationError(w, err)`.
 - **`internal/handler/`** — net/http хендлеры. Роутинг через Go 1.22+ ServeMux с method-префиксами (`GET /wallets/{id}`).
 - **`internal/session/`** — cookie-сессии (UUID в таблице `sessions`). Middleware `auth()` читает куку → ищет сессию в БД → кладёт `userID` в `context.Context`.
 - **`web/`** — embed.FS с шаблонами и статикой. Каждая страница парсится отдельно: `base.html + page.html + partials/*.html`. Новая страница добавляется в список `pages` в `handler.parseTemplates`; шаблон создавать **до** регистрации — отсутствующий файл валит `handler.New` → `os.Exit(1)`, сервер не поднимется целиком.
@@ -51,13 +51,17 @@ htmx 2.x + Chart.js + ECharts + DaisyUI (CDN). Шаблоны рендерятс
 
 Данные для JS-графиков передаются хелпером шаблона `jsonData` (`{{jsonData .Report.Labels}}`): `json.Marshal` + `template.JS`. Ручную развёртку через `{{range}}` внутри JS-литерала не использовать. `template.JS` отключает контекстное экранирование, поэтому `jsonData` допустим только как значение внутри `<script>` — в атрибуте или `href` это XSS. `hasID .Filter.CategoryIDs .ID` — отметка выбранных чекбоксов в формах фильтров.
 
+Строки, которые JS вставляет как HTML (formatter подсказок ECharts, тосты), идут через `escapeHTML` из `base.html`, иначе название категории становится XSS. Формы создания сбрасываются в `hx-on::after-request` только при `event.detail.successful`: ошибка 400 не должна стирать ввод.
+
+Внешние скрипты и стили подключаются с точной версией и `integrity` + `crossorigin="anonymous"` (`TestExternalAssetsPinned`); хеш: `curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`. Исключения - `cdn.tailwindcss.com` и Google Fonts (динамический ответ).
+
 Расширение базового шаблона: страницы могут определять `{{define "head_extra"}}` (добавляется в `<head>`, для CSS/шрифтов) и `{{define "scripts"}}` (добавляется перед `</body>`, для page-specific JS-библиотек). Тяжёлые скрипты (Chart.js, ECharts, Flatpickr) подключаются только в тех шаблонах, где они нужны.
 
 ## Тесты
 
 - **`internal/storage/`** — интеграционные на testcontainers (`postgres:16-alpine` + goose-миграции в `TestMain`), каждый тест начинается с `cleanDB(t)`.
 - **`internal/service/`** — gomock поверх интерфейсов из `internal/storage/iface.go`. Пакет теста выбирается по файлу целиком: `service_test.go` — внешний `package service_test`, `report_test.go` — внутренний `package service`, потому что там же лежат тесты неэкспортируемых хелперов (`truncate`, `bucketCount`, `reportGrid`) и дробить файл ради этого не стали.
-- **`internal/handler/`** — чистые функции (парсинг фильтров, пресеты) и рендер шаблонов через `parseTemplates(web.FS)`; `Handler` конструируется только для проверки стека middleware (`New(nil, nil, web.FS, Config{})` — до сервиса такие запросы не доходят).
+- **`internal/handler/`** — чистые функции (парсинг фильтров, пресеты) и рендер шаблонов через `parseTemplates(web.FS)`; `Handler` конструируется для проверки стека middleware (`New(nil, nil, web.FS, Config{})`, до сервиса такие запросы не доходят) и для маппинга ошибок сервиса в HTTP-статусы: `service.NewWithRepos` поверх моков, хендлер вызывается напрямую с `userIDKey` в контексте (`validation_test.go`).
 - `internal/storage/report_e2e_test.go` тестирует **service** поверх живой БД, но лежит в `package storage_test` — только там поднят PostgreSQL. Слои это не нарушает.
 
 ## База данных

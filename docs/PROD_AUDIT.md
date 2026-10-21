@@ -94,7 +94,7 @@ Middleware `requestTimeout(15s)` ставит общий дедлайн на з�
 не передаёт TZ, поэтому "12:00" воспринимается как 12:00 UTC. Для
 мультизоны нужен явный TZ от клиента.
 
-### ❌ 20. JS template injection (потенциально)
+### ✅ 20. JS template injection (потенциально)
 В `dashboard.html` и `wallet_stats.html` данные разворачиваются вручную:
 ```js
 [{{range .CategoryExpenses}}"{{.Name}}",{{end}}]
@@ -103,14 +103,16 @@ Go's `html/template` делает контекстный экранинг для
 дыры здесь нет, но конструкция хрупкая. Принятая в кодовой базе замена —
 хелпер шаблона `jsonData` (`json.Marshal` + `template.JS`, см. `reports.html`),
 а не `data-*` + `JSON.parse`, как предлагала первая редакция аудита.
-Осталось перевести `dashboard.html` и `wallet_stats.html`.
+`dashboard.html`, `wallet_stats.html` и категории формы в `operations.html`
+переведены на `jsonData`.
 
-### ❌ 21. Pagination upper bound
-`Page=999999` → `OFFSET 49999950` — медленный запрос. Ограничить ~10000.
+### ✅ 21. Pagination upper bound
+`parsePage` ограничивает номер страницы 10000: `page=MaxInt` переполнял
+расчёт OFFSET и давал 500. Заодно ссылки пагинации сохраняют фильтр.
 
-### ❌ 22. Редактирование типа категории
-`UpdateCategory` принимает только name/description. Не позволяет
-исправить ошибочный тип — только удалить и пересоздать.
+### ✅ 22. Редактирование типа категории
+Тип меняется в форме редактирования, пока по категории нет операций
+(иначе 409). Инвариант держит и SQL (`NOT EXISTS`), и FK из миграции 009.
 
 ### ✅ 23. Индексы по user_id
 Миграция 004: `wallets_user_id_idx`, `categories_user_id_idx`.
@@ -123,22 +125,48 @@ Go's `html/template` делает контекстный экранинг для
 `DB_URL`, `SERVER_ADDR`, `CSRF_SECRET`, `COOKIE_INSECURE`, `HSTS`,
 `LOG_LEVEL`, `LOG_FORMAT`.
 
-### ❌ 26. Описания operations в шаблонах
-Запрос делает JOIN по описанию, но в шаблонах `operation_row` оно
-не везде показывается. Нужна проверка/доработка отображения.
+### ✅ 26. Описания operations в шаблонах
+Обрезанное описание целиком в `title`, на узком экране выводится строкой
+под суммой с переносом.
 
 ---
 
 ## 🟢 Nice to have
 
 - ❌ Метрики Prometheus (`/metrics`)
-- ❌ Request ID middleware (для трейсинга)
+- ✅ Request ID middleware: `X-Request-ID` в ответе, `request_id` в логах
 - ❌ Audit log (кто что когда)
 - ❌ Password reset flow
 - ❌ Email-верификация при регистрации
 - ❌ 2FA
 - ❌ Backup-стратегия для PostgreSQL
-- ❌ CI с `go test -race`, `golangci-lint`, `gosec`
+- 🟡 CI: `go vet` и `go test -race` перед деплоем добавлены; `golangci-lint`,
+  `gosec`, `govulncheck` - нет (сначала прогнать на текущем коде, иначе
+  незнакомые находки заблокируют автодеплой)
+
+---
+
+## 🔐 Аудит безопасности 2026-10-21
+
+Независимый аудит (Claude + Codex), исправления в ветке `fix/overnight-audit`.
+
+| Серьёзность | Находка | Статус |
+|---|---|---|
+| high | Stored XSS: название категории попадало в HTML подсказок ECharts (dashboard, статистика кошелька, отчёт) | ✅ `escapeHTML` |
+| medium | Login/register CSRF: CSRF-токен привязан к сессии, у входа её нет | ✅ `http.CrossOriginProtection` |
+| medium | `/wallets/reorder`: UPDATE на каждый id без лимита (~26 тыс. запросов на 1 MB тела) | ✅ один UPDATE, лимит 1000, без повторов |
+| low | Тост вставлял текст ответа сервера через `innerHTML` | ✅ экранирование |
+| low | Выход при сбое БД оставлял cookie и делал вид, что всё прошло | ✅ cookie чистится всегда, ошибка 500 |
+| low | `/ready` отдавал текст ошибки драйвера БД | ✅ только в лог |
+| low | Переполнение OFFSET при огромном `page` | ✅ см. пункт 21 |
+| low | Невалидный ввод (валюта, тип, пустое имя, пароль > 72 байт) давал 500, длины не ограничены | ✅ `service.ValidationError` -> 400 |
+| low | JOIN-ы и подзапросы операций искали кошелёк/категорию только по id | ✅ условие владельца + FK миграции 009 |
+| low | CDN-скрипты без точных версий и SRI | ✅ кроме Tailwind CDN и Google Fonts |
+| low | Перечисление email на регистрации | ❌ принятый риск, см. пункт 17 |
+
+Попутно найдены и исправлены не связанные с безопасностью баги: пагинация
+сбрасывала фильтр, сохранение категории затирало описание, `putWallet`/
+`putCategory` отвечали 500 на чужой id, формы очищались при ошибке 400.
 
 ---
 
@@ -162,6 +190,8 @@ Go's `html/template` делает контекстный экранинг для
 Можно деплоить за reverse-proxy с HTTPS (Caddy/nginx).
 
 ### Чек-лист перед деплоем:
+- [ ] Миграция 009: сначала три проверочных запроса из её шапки (должны
+      вернуть 0), затем `goose up`. Код работает и без неё
 - [ ] Сгенерировать стабильный `CSRF_SECRET`: `openssl rand -base64 32`
 - [ ] `COOKIE_INSECURE=` (пусто = Secure)
 - [ ] `HSTS=true`
@@ -172,10 +202,8 @@ Go's `html/template` делает контекстный экранинг для
 - [ ] Backup-стратегия для PostgreSQL
 
 ### Что доделать после первого деплоя (по убыванию полезности):
-1. **20** — перевести `dashboard.html` / `wallet_stats.html` на `jsonData`
-2. **21** — pagination upper bound
-3. **17** — account enumeration mitigation (опционально)
-4. **22** — редактирование типа категории
-5. **26** — описания operations в шаблонах
-6. Метрики Prometheus + request_id для трейсинга
-7. CI с linters
+1. Сборка Tailwind CSS вместо `cdn.tailwindcss.com` (`TODO_TAILWIND_BUILD.md`):
+   уберёт последний скрипт без SRI и `'unsafe-eval'` из CSP
+2. **17** — account enumeration mitigation (опционально)
+3. Метрики Prometheus
+4. CI с linters (`golangci-lint`, `gosec`, `govulncheck`)
