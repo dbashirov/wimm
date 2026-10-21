@@ -44,10 +44,7 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 			filter.DateTo = parsed.AddDate(0, 0, 1) // начало следующего дня, фильтр в SQL: < DateTo
 		}
 	}
-	filter.Page, _ = strconv.Atoi(q.Get("page"))
-	if filter.Page < 1 {
-		filter.Page = 1
-	}
+	filter.Page = parsePage(q.Get("page"))
 
 	ops, err := h.svc.ListOperations(r.Context(), filter)
 	if err != nil {
@@ -329,6 +326,19 @@ func (h *Handler) deleteTransfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// maxOperationsPage - 500 тысяч операций при 50 на странице. Без границы
+// page=MaxInt переполняет расчёт OFFSET, и запрос падает с 500.
+const maxOperationsPage = 10000
+
+// parsePage разбирает номер страницы: мусор и значения < 1 - первая страница.
+func parsePage(s string) int {
+	page, err := strconv.Atoi(s)
+	if err != nil || page < 1 {
+		return 1
+	}
+	return min(page, maxOperationsPage)
 }
 
 func parseOperationInput(r *http.Request) (model.OperationInput, error) {
