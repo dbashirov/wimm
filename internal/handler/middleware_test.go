@@ -222,3 +222,25 @@ func TestCrossOriginProtection(t *testing.T) {
 		})
 	}
 }
+
+// TestRequestID - у каждого ответа свой X-Request-ID, и он же в контексте.
+func TestRequestID(t *testing.T) {
+	var inCtx string
+	h := withRequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		inCtx = requestIDFromCtx(r.Context())
+	}))
+
+	seen := map[string]bool{}
+	for range 3 {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+		id := rec.Header().Get("X-Request-ID")
+		if id == "" || id != inCtx {
+			t.Fatalf("X-Request-ID = %q, в контексте %q", id, inCtx)
+		}
+		if seen[id] {
+			t.Errorf("ID %s повторился", id)
+		}
+		seen[id] = true
+	}
+}

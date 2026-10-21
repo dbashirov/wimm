@@ -223,7 +223,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("DELETE /transfers/{transfer_id}", h.protected(h.deleteTransfer))
 
 	// Глобальный стек middleware:
-	// лог → recovery → headers → body limit → timeout → cross-origin → mux
+	// request ID → лог → recovery → headers → body limit → timeout → cross-origin → mux
 	var handler http.Handler = mux
 	// у /login и /register ещё нет сессии для CSRF-токена, их защищает проверка Origin
 	handler = http.NewCrossOriginProtection().Handler(handler)
@@ -232,12 +232,14 @@ func (h *Handler) Routes() http.Handler {
 	handler = securityHeaders(h.cfg.HSTS)(handler)
 	handler = recoverPanic(handler)
 	handler = logRequests(h.ips)(handler)
+	handler = withRequestID(handler)
 	return handler
 }
 
 // serverError логирует ошибку и возвращает клиенту 500.
 func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string, err error) {
 	slog.Error("handler",
+		"request_id", requestIDFromCtx(r.Context()),
 		"op", op, "method", r.Method, "path", r.URL.Path, "err", err)
 	http.Error(w, "internal error", http.StatusInternalServerError)
 }
@@ -264,6 +266,7 @@ func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
 		)
 	default:
 		slog.Error("handler",
+			"request_id", requestIDFromCtx(r.Context()),
 			"op", "delete", "method", r.Method, "path", r.URL.Path, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}

@@ -19,7 +19,8 @@ func (h *Handler) getReady(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := h.svc.Ping(ctx); err != nil {
 		// /ready публичный: текст ошибки драйвера (адрес, имя БД) только в лог
-		slog.Error("getReady Ping", "err", err)
+		slog.Error("getReady Ping",
+			"request_id", requestIDFromCtx(r.Context()), "err", err)
 		http.Error(w, "not ready", http.StatusServiceUnavailable)
 		return
 	}

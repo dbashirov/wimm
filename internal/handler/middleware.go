@@ -20,11 +20,30 @@ import (
 
 type contextKey string
 
-const userIDKey contextKey = "userID"
+const (
+	userIDKey    contextKey = "userID"
+	requestIDKey contextKey = "requestID"
+)
 
 func userIDFromCtx(ctx context.Context) uuid.UUID {
 	id, _ := ctx.Value(userIDKey).(uuid.UUID)
 	return id
+}
+
+func requestIDFromCtx(ctx context.Context) string {
+	id, _ := ctx.Value(requestIDKey).(string)
+	return id
+}
+
+// withRequestID присваивает запросу ID: он пишется во все логи запроса и
+// отдаётся клиенту в X-Request-ID, чтобы по жалобе найти строки в логах.
+func withRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := uuid.Must(uuid.NewV7()).String()
+		w.Header().Set("X-Request-ID", id)
+		ctx := context.WithValue(r.Context(), requestIDKey, id)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func (h *Handler) auth(next http.Handler) http.Handler {
@@ -36,6 +55,7 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 				return
 			}
 			slog.Error("auth",
+				"request_id", requestIDFromCtx(r.Context()),
 				"method", r.Method, "path", r.URL.Path, "err", err)
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
@@ -62,6 +82,7 @@ func recoverPanic(next http.Handler) http.Handler {
 		defer func() {
 			if v := recover(); v != nil {
 				slog.Error("PANIC",
+					"request_id", requestIDFromCtx(r.Context()),
 					"method", r.Method, "path", r.URL.Path,
 					"value", v, "stack", string(debug.Stack()))
 				http.Error(w, "internal error", http.StatusInternalServerError)
@@ -102,6 +123,7 @@ func logRequests(ips *ipResolver) func(http.Handler) http.Handler {
 			sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(sr, r)
 			slog.Info("http",
+				"request_id", requestIDFromCtx(r.Context()),
 				"ip", ips.clientIP(r),
 				"method", r.Method,
 				"path", r.URL.Path,
