@@ -216,3 +216,43 @@ func TestOperationStore_Delete_OtherUser(t *testing.T) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
 }
+
+// TestOperationStore_ForeignRefsHidden - если в БД окажется операция со
+// ссылкой на чужую категорию или кошелёк (сервис такого не пропускает),
+// чтение не раскрывает их названий.
+func TestOperationStore_ForeignRefsHidden(t *testing.T) {
+	cleanDB(t)
+	ctx := context.Background()
+	s := storage.NewFromPool(testPool)
+
+	owner, walletID, _ := opFixture(t, "owner-refs@test.com")
+	_, foreignWallet, foreignCat := opFixture(t, "foreign-refs@test.com")
+
+	op, err := s.Operations.Create(ctx, owner, model.OperationInput{
+		WalletID: walletID, CategoryID: foreignCat, Type: model.TypeExpense,
+		Amount: 100, OperatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if op.CategoryName != "" {
+		t.Errorf("Create вернул чужую категорию %q", op.CategoryName)
+	}
+	got, err := s.Operations.GetByID(ctx, op.ID, owner)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.CategoryName != "" {
+		t.Errorf("GetByID вернул чужую категорию %q", got.CategoryName)
+	}
+
+	// операция в чужом кошельке не показывается вовсе
+	_, err = testPool.Exec(ctx, `UPDATE operations SET wallet_id = $1 WHERE id = $2`,
+		foreignWallet, op.ID)
+	if err != nil {
+		t.Fatalf("UPDATE: %v", err)
+	}
+	if _, err := s.Operations.GetByID(ctx, op.ID, owner); err != storage.ErrNotFound {
+		t.Errorf("операция в чужом кошельке: err = %v, want ErrNotFound", err)
+	}
+}

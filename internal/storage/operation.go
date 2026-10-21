@@ -26,9 +26,9 @@ const operationSelect = `
 	       w.name, COALESCE(c.name, ''), w.currency,
 	       COALESCE(tw.name, '')
 	FROM operations o
-	JOIN  wallets w   ON w.id = o.wallet_id
-	LEFT JOIN categories c  ON c.id  = o.category_id
-	LEFT JOIN wallets    tw ON tw.id = o.transfer_wallet_id`
+	JOIN  wallets w   ON w.id = o.wallet_id AND w.user_id = o.user_id
+	LEFT JOIN categories c  ON c.id  = o.category_id AND c.user_id = o.user_id
+	LEFT JOIN wallets    tw ON tw.id = o.transfer_wallet_id AND tw.user_id = o.user_id`
 
 // scanOperation scans one row of operationSelect into *model.Operation.
 // category_id and transfer_id are nullable, so we scan via pgtype.UUID.
@@ -122,9 +122,9 @@ func (s *OperationStore) Create(
 		 VALUES($1, $2, $3, $4, $5, $6, $7)
 		 RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		           transfer_id,
-		           (SELECT name FROM wallets     WHERE id=$2),
-		           (SELECT name FROM categories  WHERE id=$3),
-		           (SELECT currency FROM wallets WHERE id=$2),
+		           COALESCE((SELECT name FROM wallets     WHERE id=$2 AND user_id=$1), ''),
+		           COALESCE((SELECT name FROM categories  WHERE id=$3 AND user_id=$1), ''),
+		           COALESCE((SELECT currency FROM wallets WHERE id=$2 AND user_id=$1), ''),
 		           ''`,
 		userID, inp.WalletID, inp.CategoryID, inp.Type, inp.Amount, inp.OperatedAt, inp.Description,
 	)
@@ -166,9 +166,9 @@ func (s *OperationStore) Update(
 		 WHERE id=$7 AND user_id=$8 AND transfer_id IS NULL
 		 RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		           transfer_id,
-		           (SELECT name FROM wallets     WHERE id=$1),
-		           (SELECT name FROM categories  WHERE id=$2),
-		           (SELECT currency FROM wallets WHERE id=$1),
+		           COALESCE((SELECT name FROM wallets     WHERE id=$1 AND user_id=$8), ''),
+		           COALESCE((SELECT name FROM categories  WHERE id=$2 AND user_id=$8), ''),
+		           COALESCE((SELECT currency FROM wallets WHERE id=$1 AND user_id=$8), ''),
 		           ''`,
 		inp.WalletID, inp.CategoryID, inp.Type, inp.Amount, inp.OperatedAt, inp.Description, id, userID,
 	)
@@ -212,10 +212,10 @@ func (s *OperationStore) CreateTransfer(
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, user_id, wallet_id, category_id, type, amount_minor, operated_at, description, created_at,
 		          transfer_id,
-		          (SELECT name FROM wallets WHERE id=$2),
+		          COALESCE((SELECT name FROM wallets WHERE id=$2 AND user_id=$1), ''),
 		          '',
-		          (SELECT currency FROM wallets WHERE id=$2),
-		          (SELECT name FROM wallets WHERE id=$8)`
+		          COALESCE((SELECT currency FROM wallets WHERE id=$2 AND user_id=$1), ''),
+		          COALESCE((SELECT name FROM wallets WHERE id=$8 AND user_id=$1), '')`
 
 	var expense model.Operation
 	if err := scanOperation(
@@ -283,10 +283,10 @@ const transferUpdateSQL = `
 	WHERE transfer_id=$6 AND user_id=$7 AND type=$8
 	RETURNING id, user_id, wallet_id, category_id, type, amount_minor,
 	          operated_at, description, created_at, transfer_id,
-	          (SELECT name FROM wallets WHERE id=$1),
+	          COALESCE((SELECT name FROM wallets WHERE id=$1 AND user_id=$7), ''),
 	          '',
-	          (SELECT currency FROM wallets WHERE id=$1),
-	          (SELECT name FROM wallets WHERE id=$2)`
+	          COALESCE((SELECT currency FROM wallets WHERE id=$1 AND user_id=$7), ''),
+	          COALESCE((SELECT name FROM wallets WHERE id=$2 AND user_id=$7), '')`
 
 func (s *OperationStore) UpdateTransfer(
 	ctx context.Context,
