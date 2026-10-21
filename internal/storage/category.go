@@ -97,20 +97,31 @@ func (s *CategoryStore) GetByID(
 	return &c, nil
 }
 
+// Update меняет название и тип категории; описание не трогает, в интерфейсе
+// его не редактируют. Тип меняется, только пока по категории нет операций:
+// иначе их тип разойдётся с типом категории.
 func (s *CategoryStore) Update(
 	ctx context.Context,
 	id uuid.UUID,
 	userID uuid.UUID,
-	name, description string,
+	name string,
+	catType model.OperationType,
 ) (*model.Category, error) {
 	var c model.Category
 	err := s.pool.QueryRow(ctx,
-		`UPDATE categories SET name=$1, description=$2 WHERE id=$3 AND user_id=$4
+		`UPDATE categories SET name=$1, type=$2
+		 WHERE id=$3 AND user_id=$4
+		   AND (type = $2 OR NOT EXISTS (
+		       SELECT 1 FROM operations WHERE category_id = $3 AND user_id = $4))
 		 RETURNING id, user_id, name, type, description`,
-		name, description, id, userID,
+		name, catType, id, userID,
 	).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.Description)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ErrNotFound
+		// пустой результат - либо нет категории, либо мешают операции
+		if _, err := s.GetByID(ctx, id, userID); err != nil {
+			return nil, err
+		}
+		return nil, ErrCategoryInUse
 	}
 	if err != nil {
 		return nil, fmt.Errorf("CategoryStore.Update: %w", err)

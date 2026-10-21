@@ -173,3 +173,26 @@ func TestEscapeHTMLInBase(t *testing.T) {
 		t.Error("тост вставляет текст ответа сервера в innerHTML без экранирования")
 	}
 }
+
+// TestRenderCategoryEditRow - в форме редактирования категории можно выбрать
+// тип, текущий отмечен.
+func TestRenderCategoryEditRow(t *testing.T) {
+	tmpls, err := parseTemplates(web.FS)
+	if err != nil {
+		t.Fatalf("parseTemplates: %v", err)
+	}
+	var sb strings.Builder
+	cat := model.Category{ID: uuid.Must(uuid.NewV7()), Name: "Еда", Type: model.TypeIncome}
+	if err := tmpls["categories"].ExecuteTemplate(&sb, "category-edit-row", cat); err != nil {
+		t.Fatalf("ExecuteTemplate: %v", err)
+	}
+	html := sb.String()
+	for _, want := range []string{`name="type"`, `<option value="income" selected>`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("нет %s", want)
+		}
+	}
+	if strings.Contains(html, `<option value="expense" selected>`) {
+		t.Error("отмечен не тот тип")
+	}
+}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
+	"github.com/dbashirov/wimm/internal/storage"
 	"go.uber.org/mock/gomock"
 )
 
@@ -107,8 +108,32 @@ func TestCreateCategory_Validation(t *testing.T) {
 
 func TestUpdateCategory_Validation(t *testing.T) {
 	svc, _, _, _, _ := newSvc(t)
-	if _, err := svc.UpdateCategory(ctx, cID1, uID1, " ", ""); !isValidation(err) {
-		t.Errorf("err = %v, want ValidationError", err)
+	if _, err := svc.UpdateCategory(ctx, cID1, uID1, " ", model.TypeExpense); !isValidation(err) {
+		t.Errorf("пустое название: err = %v, want ValidationError", err)
+	}
+	if _, err := svc.UpdateCategory(ctx, cID1, uID1, "A", ""); !isValidation(err) {
+		t.Errorf("пустой тип: err = %v, want ValidationError", err)
+	}
+}
+
+func TestUpdateCategory_RepoErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		repoErr error
+		want    error
+	}{
+		{"чужая категория", storage.ErrNotFound, service.ErrNotFound},
+		{"есть операции", storage.ErrCategoryInUse, service.ErrCategoryInUse},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, _, _, cats, _ := newSvc(t)
+			cats.EXPECT().Update(ctx, cID1, uID1, "Еда", model.TypeIncome).Return(nil, tc.repoErr)
+			_, err := svc.UpdateCategory(ctx, cID1, uID1, " Еда ", model.TypeIncome)
+			if !errors.Is(err, tc.want) {
+				t.Errorf("err = %v, want %v", err, tc.want)
+			}
+		})
 	}
 }
 

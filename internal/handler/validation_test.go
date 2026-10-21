@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/service"
 	"github.com/dbashirov/wimm/internal/storage"
 	"github.com/dbashirov/wimm/internal/storage/mocks"
@@ -15,6 +16,37 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
+
+// TestPutCategoryInUse - смена типа категории с операциями: 409 с пояснением.
+func TestPutCategoryInUse(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	cats := mocks.NewMockCategoryRepo(ctrl)
+	svc := service.NewWithRepos(
+		mocks.NewMockUserRepo(ctrl), mocks.NewMockWalletRepo(ctrl),
+		cats, mocks.NewMockOperationRepo(ctrl),
+	)
+	h, err := New(svc, nil, web.FS, Config{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	userID := uuid.Must(uuid.NewV7())
+	catID := uuid.Must(uuid.NewV7())
+	cats.EXPECT().Update(gomock.Any(), catID, userID, "Еда", model.TypeIncome).
+		Return(nil, storage.ErrCategoryInUse)
+
+	form := url.Values{"name": {"Еда"}, "type": {"income"}}
+	req := httptest.NewRequest(http.MethodPut, "/categories/"+catID.String(),
+		strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", catID.String())
+	req = req.WithContext(context.WithValue(req.Context(), userIDKey, userID))
+	rec := httptest.NewRecorder()
+	h.putCategory(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Errorf("status = %d, want 409", rec.Code)
+	}
+}
 
 // TestPutWalletErrors - ошибки ввода и чужой кошелёк больше не превращаются в 500.
 func TestPutWalletErrors(t *testing.T) {

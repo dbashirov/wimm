@@ -92,10 +92,17 @@ func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.FormValue("name")
-	description := r.FormValue("description")
-	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name, description)
+	catType := model.OperationType(r.FormValue("type"))
+	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name, catType)
 	if err != nil {
 		if validationError(w, err) {
+			return
+		}
+		if errors.Is(err, service.ErrCategoryInUse) {
+			http.Error(w,
+				"Нельзя сменить тип: по категории есть операции",
+				http.StatusConflict,
+			)
 			return
 		}
 		if errors.Is(err, service.ErrNotFound) {

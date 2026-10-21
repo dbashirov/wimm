@@ -22,6 +22,8 @@ var (
 	ErrWrongCategoryType  = errors.New("category type must match operation type")
 	ErrSameWallet         = errors.New("source and target wallet must differ")
 	ErrHasOperations      = errors.New("has linked operations")
+	// ErrCategoryInUse - смена типа категории, по которой есть операции.
+	ErrCategoryInUse = errors.New("category has operations")
 	// ErrToAmountRequired — перевод между валютами без суммы зачисления.
 	ErrToAmountRequired = errors.New("target amount required for cross-currency transfer")
 )
@@ -298,18 +300,22 @@ func (s *Service) UpdateCategory(
 	ctx context.Context,
 	id uuid.UUID,
 	userID uuid.UUID,
-	name, description string,
+	name string,
+	catType model.OperationType,
 ) (*model.Category, error) {
 	name, err := validateName(name)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateDescription(description); err != nil {
+	if err := validateType(catType); err != nil {
 		return nil, err
 	}
-	c, err := s.categories.Update(ctx, id, userID, name, description)
-	if errors.Is(err, storage.ErrNotFound) {
+	c, err := s.categories.Update(ctx, id, userID, name, catType)
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
 		return nil, ErrNotFound
+	case errors.Is(err, storage.ErrCategoryInUse):
+		return nil, ErrCategoryInUse
 	}
 	return c, err
 }

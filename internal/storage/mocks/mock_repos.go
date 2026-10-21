@@ -328,18 +328,18 @@ func (mr *MockCategoryRepoMockRecorder) ListByUser(ctx, userID any) *gomock.Call
 }
 
 // Update mocks base method.
-func (m *MockCategoryRepo) Update(ctx context.Context, id, userID uuid.UUID, name, description string) (*model.Category, error) {
+func (m *MockCategoryRepo) Update(ctx context.Context, id, userID uuid.UUID, name string, catType model.OperationType) (*model.Category, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, userID, name, description)
+	ret := m.ctrl.Call(m, "Update", ctx, id, userID, name, catType)
 	ret0, _ := ret[0].(*model.Category)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockCategoryRepoMockRecorder) Update(ctx, id, userID, name, description any) *gomock.Call {
+func (mr *MockCategoryRepoMockRecorder) Update(ctx, id, userID, name, catType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockCategoryRepo)(nil).Update), ctx, id, userID, name, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockCategoryRepo)(nil).Update), ctx, id, userID, name, catType)
 }
 
 // MockOperationRepo is a mock of OperationRepo interface.

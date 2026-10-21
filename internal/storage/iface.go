@@ -52,7 +52,8 @@ type CategoryRepo interface {
 		ctx context.Context,
 		id uuid.UUID,
 		userID uuid.UUID,
-		name, description string,
+		name string,
+		catType model.OperationType,
 	) (*model.Category, error)
 	Delete(ctx context.Context, id, userID uuid.UUID) error
 }

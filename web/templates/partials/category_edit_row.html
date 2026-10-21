@@ -16,11 +16,12 @@
         <input type="text" id="category-edit-name-{{.ID}}" name="name" value="{{.Name}}"
                class="input input-bordered input-form flex-1 min-w-32" required
                aria-label="Название категории">
-        {{if eq .Type "income"}}
-        <span class="badge badge-success badge-sm">↑ Доход</span>
-        {{else}}
-        <span class="badge badge-error badge-sm">↓ Расход</span>
-        {{end}}
+        <select id="category-edit-type-{{.ID}}" name="type"
+                class="select select-bordered input-form"
+                aria-label="Тип категории">
+          <option value="expense" {{if eq .Type "expense"}}selected{{end}}>Расход</option>
+          <option value="income" {{if eq .Type "income"}}selected{{end}}>Доход</option>
+        </select>
       </div>
     </form>
   </td>
