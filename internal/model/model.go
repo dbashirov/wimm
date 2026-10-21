@@ -81,6 +81,9 @@ type Operation struct {
 	Currency           string
 }
 
+// OperationsPageSize - размер страницы списка операций.
+const OperationsPageSize = 50
+
 type OperationFilter struct {
 	UserID     uuid.UUID
 	WalletID   uuid.UUID

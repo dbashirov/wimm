@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ type operationsData struct {
 	Filter     model.OperationFilter
 	HasFilter  bool
 	Page       int
+	PrevURL    string
+	NextURL    string
 	Error      string
 }
 
@@ -74,7 +77,31 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 		Filter:     filter,
 		HasFilter:  hasFilter,
 		Page:       filter.Page,
+		PrevURL:    pageURL(q, filter.Page-1),
+		NextURL:    nextPageURL(q, filter.Page, len(ops)),
 	})
+}
+
+// pageURL - ссылка на страницу с сохранением фильтра из query; "" если
+// страницы нет.
+func pageURL(q url.Values, page int) string {
+	if page < 1 || page > maxOperationsPage {
+		return ""
+	}
+	next := url.Values{}
+	for k, v := range q {
+		next[k] = v
+	}
+	next.Set("page", strconv.Itoa(page))
+	return "?" + next.Encode()
+}
+
+// nextPageURL - полная страница значит, что дальше могут быть операции.
+func nextPageURL(q url.Values, page, count int) string {
+	if count < model.OperationsPageSize {
+		return ""
+	}
+	return pageURL(q, page+1)
 }
 
 func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {

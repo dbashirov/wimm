@@ -332,13 +332,13 @@ function updateOpForm(mode) {
     </div>
     {{end}}
   </div>
-  {{if or (gt .Page 1) (eq (len .Operations) 50)}}
+  {{if or .PrevURL .NextURL}}
   <div class="flex justify-center gap-2 p-4 border-t border-base-content/5">
-    {{if gt .Page 1}}
-    <a href="?page={{add .Page -1}}" class="btn btn-ghost btn-sm text-base-content/50">← Назад</a>
+    {{if .PrevURL}}
+    <a href="{{.PrevURL}}" class="btn btn-ghost btn-sm text-base-content/50">← Назад</a>
     {{end}}
-    {{if eq (len .Operations) 50}}
-    <a href="?page={{add .Page 1}}" class="btn btn-ghost btn-sm text-base-content/50">Вперёд →</a>
+    {{if .NextURL}}
+    <a href="{{.NextURL}}" class="btn btn-ghost btn-sm text-base-content/50">Вперёд →</a>
     {{end}}
   </div>
   {{end}}

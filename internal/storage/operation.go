@@ -87,7 +87,7 @@ func (s *OperationStore) List(ctx context.Context, f model.OperationFilter) ([]m
 		n++
 	}
 
-	pageSize := 50
+	pageSize := model.OperationsPageSize
 	offset := 0
 	if f.Page > 1 {
 		offset = (f.Page - 1) * pageSize
