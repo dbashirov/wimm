@@ -53,22 +53,24 @@ func (m *Manager) Get(ctx context.Context, r *http.Request) (*model.Session, err
 	return sess, err
 }
 
+// Delete удаляет сессию. Cookie очищается до обращения к БД: при сбое
+// удаления браузер всё равно выходит, а ошибка возвращается вызывающему.
 func (m *Manager) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		return nil
 	}
-	if err := m.store.Delete(ctx, cookie.Value); err != nil {
-		return err
-	}
 	http.SetCookie(w, &http.Cookie{
-		Name:    cookieName,
-		Value:   "",
-		Path:    "/",
-		MaxAge:  -1,
-		Expires: time.Unix(0, 0),
+		Name:     cookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   m.secure,
 	})
-	return nil
+	return m.store.Delete(ctx, cookie.Value)
 }
 
 func (m *Manager) CleanExpired(ctx context.Context) error {

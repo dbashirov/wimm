@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/service"
@@ -79,7 +78,9 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) postLogout(w http.ResponseWriter, r *http.Request) {
 	if err := h.sessions.Delete(r.Context(), w, r); err != nil {
-		slog.Error("postLogout sessions.Delete", "err", err)
+		// cookie уже очищена, но сессия в БД жива: не делаем вид, что выход удался
+		h.serverError(w, r, "sessions.Delete", err)
+		return
 	}
 	redirectToLogin(w, r)
 }
