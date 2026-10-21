@@ -25,6 +25,12 @@
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <script>
+    // escapeHTML - для строк, которые попадают в innerHTML (подсказки ECharts)
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>"']/g, function(c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+      });
+    }
     document.addEventListener('htmx:configRequest', function(evt) {
       var m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
       if (m) evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(m[1]);
@@ -180,7 +186,7 @@
     toast.className = 'wimm-toast ' + typeClass + ' pointer-events-auto';
     toast.innerHTML =
       icon +
-      '<div class="wimm-toast-body">' + msg + '</div>' +
+      '<div class="wimm-toast-body">' + escapeHTML(msg) + '</div>' +
       '<button class="wimm-toast-close" aria-label="Закрыть">' +
         '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>' +
       '</button>' +

@@ -2,6 +2,9 @@ package handler
 
 import (
 	"io"
+	"io/fs"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,5 +115,53 @@ func TestRenderReportsTemplate(t *testing.T) {
 				t.Fatalf("ExecuteTemplate: %v", err)
 			}
 		})
+	}
+}
+
+// TestTooltipNamesEscaped - подсказки ECharts вставляются как HTML, поэтому
+// название категории в formatter обязано идти через escapeHTML: иначе
+// категория "<img src=x onerror=...>" выполняет скрипт при наведении.
+func TestTooltipNamesEscaped(t *testing.T) {
+	rawName := regexp.MustCompile(`[^(]p\.name`)
+	files, err := fs.Glob(web.FS, "templates/*.html")
+	if err != nil {
+		t.Fatalf("Glob: %v", err)
+	}
+	checked := 0
+	for _, name := range files {
+		data, err := fs.ReadFile(web.FS, name)
+		if err != nil {
+			t.Fatalf("ReadFile %s: %v", name, err)
+		}
+		src := string(data)
+		if !strings.Contains(src, "formatter:") {
+			continue
+		}
+		checked++
+		for _, m := range rawName.FindAllString(src, -1) {
+			t.Errorf("%s: p.name без escapeHTML: %q", name, m)
+		}
+		if !strings.Contains(src, "escapeHTML(p.name)") {
+			t.Errorf("%s: в formatter нет escapeHTML(p.name)", name)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("не найдено ни одного шаблона с formatter")
+	}
+}
+
+// TestEscapeHTMLInBase - escapeHTML объявлен в base.html, его используют
+// подсказки графиков и тосты с текстом ответа сервера.
+func TestEscapeHTMLInBase(t *testing.T) {
+	data, err := fs.ReadFile(web.FS, "templates/base.html")
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	src := string(data)
+	if !strings.Contains(src, "function escapeHTML(") {
+		t.Error("в base.html нет функции escapeHTML")
+	}
+	if strings.Contains(src, "+ msg +") {
+		t.Error("тост вставляет текст ответа сервера в innerHTML без экранирования")
 	}
 }
