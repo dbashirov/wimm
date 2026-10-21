@@ -140,9 +140,7 @@ Go's `html/template` делает контекстный экранинг для
 - ❌ Email-верификация при регистрации
 - ❌ 2FA
 - ❌ Backup-стратегия для PostgreSQL
-- 🟡 CI: `go vet` и `go test -race` перед деплоем добавлены; `golangci-lint`,
-  `gosec`, `govulncheck` - нет (сначала прогнать на текущем коде, иначе
-  незнакомые находки заблокируют автодеплой)
+- ✅ CI: `go vet` и `go test -race` перед деплоем
 
 ---
 
@@ -207,4 +205,3 @@ Go's `html/template` делает контекстный экранинг для
    уберёт последний скрипт без SRI и `'unsafe-eval'` из CSP
 2. **17** — account enumeration mitigation (опционально)
 3. Метрики Prometheus
-4. CI с linters (`golangci-lint`, `gosec`, `govulncheck`)
