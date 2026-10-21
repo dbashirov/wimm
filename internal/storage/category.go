@@ -8,6 +8,7 @@ import (
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -121,6 +122,11 @@ func (s *CategoryStore) Update(
 		if _, err := s.GetByID(ctx, id, userID); err != nil {
 			return nil, err
 		}
+		return nil, ErrCategoryInUse
+	}
+	// операция успела появиться после NOT EXISTS: тип защищён FK из миграции 009
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" {
 		return nil, ErrCategoryInUse
 	}
 	if err != nil {

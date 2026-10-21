@@ -3,6 +3,7 @@ package storage_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -76,6 +77,71 @@ func TestMigration008_AmountToMinor(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("amount_minor[%d] = %d, want %d", i, got[i], want[i])
 		}
+	}
+}
+
+// TestMigration009_OwnerFK - на корректных данных (обычные операции и
+// переводы с NULL в category_id/transfer_wallet_id) миграция проходит, а при
+// расхождении типа операции и категории падает, ничего не применив.
+func TestMigration009_OwnerFK(t *testing.T) {
+	const seed = `
+		WITH u AS (
+			INSERT INTO users(email, password_hash) VALUES('m009@test.com', 'x')
+			RETURNING id
+		), w AS (
+			INSERT INTO wallets(user_id, name)
+			SELECT id, n FROM u, (VALUES ('A'), ('B')) AS v(n)
+			RETURNING id, user_id, name
+		), c AS (
+			INSERT INTO categories(user_id, name, type)
+			SELECT id, 'Еда', 'expense'::operation_type FROM u RETURNING id, user_id
+		)
+		INSERT INTO operations(user_id, wallet_id, category_id, transfer_id,
+		                       transfer_wallet_id, type, amount_minor, operated_at)
+		SELECT a.user_id, a.id, c.id, NULL::uuid, NULL::uuid, '%s'::operation_type, 100, now()
+		FROM w a, c WHERE a.name = 'A'
+		UNION ALL
+		SELECT a.user_id, a.id, NULL, gen_random_uuid(), b.id, 'expense'::operation_type, 50, now()
+		FROM w a, w b WHERE a.name = 'A' AND b.name = 'B'`
+
+	tests := []struct {
+		name    string
+		opType  string
+		wantErr bool
+	}{
+		{"корректные данные", "expense", false},
+		{"тип операции не совпадает с категорией", "income", true},
+	}
+	for i, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			sqlDB := openFreshDatabase(t, fmt.Sprintf("wimm_migration_009_%d", i))
+			provider, err := goose.NewProvider(goose.DialectPostgres, sqlDB, migrations.FS)
+			if err != nil {
+				t.Fatalf("goose.NewProvider: %v", err)
+			}
+			if _, err := provider.UpTo(ctx, 8); err != nil {
+				t.Fatalf("goose UpTo 8: %v", err)
+			}
+			if _, err := sqlDB.ExecContext(ctx, fmt.Sprintf(seed, tc.opType)); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+			_, err = provider.Up(ctx)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("goose Up: err = %v, wantErr %v", err, tc.wantErr)
+			}
+			version, err := provider.GetDBVersion(ctx)
+			if err != nil {
+				t.Fatalf("GetDBVersion: %v", err)
+			}
+			want := int64(9)
+			if tc.wantErr {
+				want = 8
+			}
+			if version != want {
+				t.Errorf("версия схемы = %d, want %d", version, want)
+			}
+		})
 	}
 }
 

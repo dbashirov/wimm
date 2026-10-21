@@ -2,12 +2,14 @@ package storage_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/dbashirov/wimm/internal/model"
 	"github.com/dbashirov/wimm/internal/storage"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // opFixture создаёт пользователя, кошелёк и категорию, возвращает их ID.
@@ -217,9 +219,38 @@ func TestOperationStore_Delete_OtherUser(t *testing.T) {
 	}
 }
 
-// TestOperationStore_ForeignRefsHidden - если в БД окажется операция со
-// ссылкой на чужую категорию или кошелёк (сервис такого не пропускает),
-// чтение не раскрывает их названий.
+// insertBypassingFK вставляет операцию в обход FK (session_replication_role
+// отключает их триггеры): после миграции 009 иначе такую строку не создать.
+func insertBypassingFK(
+	t *testing.T,
+	userID, walletID, categoryID uuid.UUID,
+) uuid.UUID {
+	t.Helper()
+	ctx := context.Background()
+	conn, err := testPool.Acquire(ctx)
+	if err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, `SET session_replication_role = replica`); err != nil {
+		t.Fatalf("SET replica: %v", err)
+	}
+	defer conn.Exec(ctx, `SET session_replication_role = DEFAULT`) //nolint:errcheck
+
+	var id uuid.UUID
+	err = conn.QueryRow(ctx,
+		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount_minor, operated_at)
+		 VALUES($1, $2, $3, 'expense', 100, now()) RETURNING id`,
+		userID, walletID, categoryID,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	return id
+}
+
+// TestOperationStore_ForeignRefsHidden - если в БД всё же окажется операция
+// со ссылкой на чужие кошелёк или категорию, чтение не раскрывает их названий.
 func TestOperationStore_ForeignRefsHidden(t *testing.T) {
 	cleanDB(t)
 	ctx := context.Background()
@@ -228,17 +259,8 @@ func TestOperationStore_ForeignRefsHidden(t *testing.T) {
 	owner, walletID, _ := opFixture(t, "owner-refs@test.com")
 	_, foreignWallet, foreignCat := opFixture(t, "foreign-refs@test.com")
 
-	op, err := s.Operations.Create(ctx, owner, model.OperationInput{
-		WalletID: walletID, CategoryID: foreignCat, Type: model.TypeExpense,
-		Amount: 100, OperatedAt: time.Now(),
-	})
-	if err != nil {
-		t.Fatalf("Create: %v", err)
-	}
-	if op.CategoryName != "" {
-		t.Errorf("Create вернул чужую категорию %q", op.CategoryName)
-	}
-	got, err := s.Operations.GetByID(ctx, op.ID, owner)
+	opID := insertBypassingFK(t, owner, walletID, foreignCat)
+	got, err := s.Operations.GetByID(ctx, opID, owner)
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}
@@ -247,12 +269,63 @@ func TestOperationStore_ForeignRefsHidden(t *testing.T) {
 	}
 
 	// операция в чужом кошельке не показывается вовсе
-	_, err = testPool.Exec(ctx, `UPDATE operations SET wallet_id = $1 WHERE id = $2`,
-		foreignWallet, op.ID)
-	if err != nil {
-		t.Fatalf("UPDATE: %v", err)
-	}
-	if _, err := s.Operations.GetByID(ctx, op.ID, owner); err != storage.ErrNotFound {
+	opID = insertBypassingFK(t, owner, foreignWallet, foreignCat)
+	if _, err := s.Operations.GetByID(ctx, opID, owner); err != storage.ErrNotFound {
 		t.Errorf("операция в чужом кошельке: err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestOwnerForeignKeys - миграция 009: БД сама не даёт сослаться на чужие
+// кошелёк и категорию и разойтись типу операции с типом категории.
+func TestOwnerForeignKeys(t *testing.T) {
+	cleanDB(t)
+	ctx := context.Background()
+	s := storage.NewFromPool(testPool)
+
+	owner, walletID, catID := opFixture(t, "fk-owner@test.com")
+	_, foreignWallet, foreignCat := opFixture(t, "fk-foreign@test.com")
+	income := createCategory(t, owner, "Зарплата", model.TypeIncome)
+
+	isFKViolation := func(err error) bool {
+		var pgErr *pgconn.PgError
+		return errors.As(err, &pgErr) && pgErr.Code == "23503"
+	}
+	create := func(wallet, category uuid.UUID) error {
+		_, err := s.Operations.Create(ctx, owner, model.OperationInput{
+			WalletID: wallet, CategoryID: category, Type: model.TypeExpense,
+			Amount: 100, OperatedAt: time.Now(),
+		})
+		return err
+	}
+
+	if err := create(walletID, foreignCat); !isFKViolation(err) {
+		t.Errorf("чужая категория: err = %v, want FK violation", err)
+	}
+	if err := create(foreignWallet, catID); !isFKViolation(err) {
+		t.Errorf("чужой кошелёк: err = %v, want FK violation", err)
+	}
+	if err := create(walletID, income); !isFKViolation(err) {
+		t.Errorf("расход в категории дохода: err = %v, want FK violation", err)
+	}
+	_, _, err := s.Operations.CreateTransfer(ctx, owner, model.TransferInput{
+		FromWalletID: walletID, ToWalletID: foreignWallet,
+		Amount: 100, ToAmount: 100, OperatedAt: time.Now(),
+	})
+	if !isFKViolation(err) {
+		t.Errorf("перевод в чужой кошелёк: err = %v, want FK violation", err)
+	}
+
+	// смена типа категории с операциями в обход проверки NOT EXISTS
+	if err := create(walletID, catID); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	_, err = testPool.Exec(ctx, `UPDATE categories SET type = 'income' WHERE id = $1`, catID)
+	if !isFKViolation(err) {
+		t.Errorf("смена типа категории с операциями: err = %v, want FK violation", err)
+	}
+
+	// составные FK не мешают каскадному удалению пользователя
+	if _, err := testPool.Exec(ctx, `DELETE FROM users WHERE id = $1`, owner); err != nil {
+		t.Errorf("DELETE user: %v", err)
 	}
 }
