@@ -222,8 +222,12 @@ func (h *Handler) Routes() http.Handler {
 	mux.Handle("PUT /transfers/{transfer_id}", h.protected(h.putTransfer))
 	mux.Handle("DELETE /transfers/{transfer_id}", h.protected(h.deleteTransfer))
 
-	// Глобальный стек middleware: лог → recovery → headers → body limit → timeout → mux
+	// Глобальный стек middleware:
+	// лог → recovery → headers → body limit → timeout → cross-origin → mux
 	var handler http.Handler = mux
+	// CSRF-токен привязан к сессии, а у /login и /register её ещё нет:
+	// без проверки Sec-Fetch-Site/Origin чужой сайт логинит жертву в свой аккаунт
+	handler = http.NewCrossOriginProtection().Handler(handler)
 	handler = requestTimeout(15 * time.Second)(handler)
 	handler = limitBody(1 << 20)(handler) // 1 MB
 	handler = securityHeaders(h.cfg.HSTS)(handler)

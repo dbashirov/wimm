@@ -137,3 +137,70 @@ func TestStaticGetsSecurityHeaders(t *testing.T) {
 		}
 	}
 }
+
+// TestCrossOriginProtection - мутирующие запросы с чужого сайта отклоняются
+// до хендлера, включая /login и /register, где CSRF-токена ещё нет.
+func TestCrossOriginProtection(t *testing.T) {
+	h, err := New(nil, nil, web.FS, Config{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	routes := h.Routes()
+
+	tests := []struct {
+		name    string
+		path    string
+		headers map[string]string
+		want    int
+	}{
+		{
+			name:    "login с чужого сайта",
+			path:    "/login",
+			headers: map[string]string{"Sec-Fetch-Site": "cross-site"},
+			want:    http.StatusForbidden,
+		},
+		{
+			name:    "register с чужого сайта",
+			path:    "/register",
+			headers: map[string]string{"Sec-Fetch-Site": "cross-site"},
+			want:    http.StatusForbidden,
+		},
+		{
+			name:    "защищённый маршрут с чужого сайта",
+			path:    "/wallets",
+			headers: map[string]string{"Sec-Fetch-Site": "same-site"},
+			want:    http.StatusForbidden,
+		},
+		{
+			name:    "старый браузер: Origin не совпадает с Host",
+			path:    "/login",
+			headers: map[string]string{"Origin": "https://evil.example"},
+			want:    http.StatusForbidden,
+		},
+		{
+			// несуществующий маршрут: 404 значит, что запрос прошёл проверку
+			name:    "тот же origin пропускается",
+			path:    "/nope",
+			headers: map[string]string{"Sec-Fetch-Site": "same-origin"},
+			want:    http.StatusNotFound,
+		},
+		{
+			name: "без заголовков браузера (curl) пропускается",
+			path: "/nope",
+			want: http.StatusNotFound,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, tc.path, nil)
+			for k, v := range tc.headers {
+				req.Header.Set(k, v)
+			}
+			rec := httptest.NewRecorder()
+			routes.ServeHTTP(rec, req)
+			if rec.Code != tc.want {
+				t.Errorf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
+	}
+}
