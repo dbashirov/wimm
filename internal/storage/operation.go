@@ -129,6 +129,9 @@ func (s *OperationStore) Create(
 		userID, inp.WalletID, inp.CategoryID, inp.Type, inp.Amount, inp.OperatedAt, inp.Description,
 	)
 	if err := scanOperation(row, &o); err != nil {
+		if isFKViolation(err, categoryOwnerFK) {
+			return nil, ErrCategoryTypeMismatch
+		}
 		return nil, fmt.Errorf("OperationStore.Create: %w", err)
 	}
 	return &o, nil
@@ -175,6 +178,9 @@ func (s *OperationStore) Update(
 	err := scanOperation(row, &o)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
+	}
+	if isFKViolation(err, categoryOwnerFK) {
+		return nil, ErrCategoryTypeMismatch
 	}
 	if err != nil {
 		return nil, fmt.Errorf("OperationStore.Update: %w", err)

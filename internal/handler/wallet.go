@@ -41,7 +41,7 @@ func (h *Handler) getWallets(w http.ResponseWriter, r *http.Request) {
 		}
 		return 1
 	})
-	h.render(w, "wallets", walletsData{Wallets: wallets})
+	h.render(w, r, "wallets", walletsData{Wallets: wallets})
 }
 
 func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "CreateWallet", err)
 		return
 	}
-	h.renderPartial(w, "wallets", "wallet-row", wallet)
+	h.renderPartial(w, r, "wallets", "wallet-row", wallet)
 }
 
 func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +74,7 @@ func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "wallets", "wallet-row", wallet)
+	h.renderPartial(w, r, "wallets", "wallet-row", wallet)
 }
 
 func (h *Handler) getWalletEdit(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +89,7 @@ func (h *Handler) getWalletEdit(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "wallets", "wallet-edit-row", wallet)
+	h.renderPartial(w, r, "wallets", "wallet-edit-row", wallet)
 }
 
 func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +116,7 @@ func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "UpdateWallet", err)
 		return
 	}
-	h.renderPartial(w, "wallets", "wallet-row", wallet)
+	h.renderPartial(w, r, "wallets", "wallet-row", wallet)
 }
 
 func (h *Handler) deleteWallet(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +150,7 @@ func (h *Handler) getWalletStats(w http.ResponseWriter, r *http.Request) {
 		backURL = "/dashboard"
 	}
 	wallet := data.WalletBalances[0].Wallet
-	h.render(w, "wallet_stats", walletStatsData{
+	h.render(w, r, "wallet_stats", walletStatsData{
 		DashboardData:  data,
 		WalletName:     wallet.Name,
 		WalletCurrency: wallet.Currency,
@@ -204,7 +204,7 @@ func (h *Handler) postWalletSetDefault(w http.ResponseWriter, r *http.Request) {
 	})
 	w.Header().Set("Content-Type", "text/html")
 	for _, wallet := range wallets {
-		h.renderPartial(w, "wallets", "wallet-row", wallet)
+		h.renderPartial(w, r, "wallets", "wallet-row", wallet)
 	}
 }
 
@@ -220,5 +220,5 @@ func (h *Handler) postWalletToggleHidden(w http.ResponseWriter, r *http.Request)
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "wallets", "wallet-row", wallet)
+	h.renderPartial(w, r, "wallets", "wallet-row", wallet)
 }

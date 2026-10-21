@@ -272,16 +272,24 @@ func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func (h *Handler) render(w http.ResponseWriter, page string, data any) {
+func (h *Handler) render(w http.ResponseWriter, r *http.Request, page string, data any) {
 	if err := h.tmpls[page].ExecuteTemplate(w, "base", data); err != nil {
-		slog.Error("render", "page", page, "err", err)
+		slog.Error("render",
+			"request_id", requestIDFromCtx(r.Context()), "page", page, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 
-func (h *Handler) renderPartial(w http.ResponseWriter, page, name string, data any) {
+func (h *Handler) renderPartial(
+	w http.ResponseWriter,
+	r *http.Request,
+	page, name string,
+	data any,
+) {
 	if err := h.tmpls[page].ExecuteTemplate(w, name, data); err != nil {
-		slog.Error("renderPartial", "page", page, "name", name, "err", err)
+		slog.Error("renderPartial",
+			"request_id", requestIDFromCtx(r.Context()),
+			"page", page, "name", name, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }

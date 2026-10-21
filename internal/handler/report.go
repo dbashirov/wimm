@@ -57,7 +57,7 @@ func (h *Handler) getReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dateFrom, dateTo := reportFormDates(filter)
-	h.render(w, "reports", reportData{
+	h.render(w, r, "reports", reportData{
 		Report:      report,
 		Wallets:     visible,
 		Categories:  cats,

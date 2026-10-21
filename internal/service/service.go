@@ -355,7 +355,11 @@ func (s *Service) CreateOperation(
 	if cat.Type != inp.Type {
 		return nil, ErrWrongCategoryType
 	}
-	return s.operations.Create(ctx, userID, inp)
+	o, err := s.operations.Create(ctx, userID, inp)
+	if errors.Is(err, storage.ErrCategoryTypeMismatch) {
+		return nil, ErrWrongCategoryType
+	}
+	return o, err
 }
 
 func (s *Service) GetOperation(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.Operation, error) {
@@ -392,8 +396,11 @@ func (s *Service) UpdateOperation(
 		return nil, ErrWrongCategoryType
 	}
 	o, err := s.operations.Update(ctx, id, userID, inp)
-	if errors.Is(err, storage.ErrNotFound) {
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
 		return nil, ErrNotFound
+	case errors.Is(err, storage.ErrCategoryTypeMismatch):
+		return nil, ErrWrongCategoryType
 	}
 	return o, err
 }

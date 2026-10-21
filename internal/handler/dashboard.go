@@ -18,5 +18,5 @@ func (h *Handler) getDashboard(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "DashboardData", err)
 		return
 	}
-	h.render(w, "dashboard", dashboardPageData{DashboardData: data})
+	h.render(w, r, "dashboard", dashboardPageData{DashboardData: data})
 }

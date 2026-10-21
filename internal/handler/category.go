@@ -33,7 +33,7 @@ func (h *Handler) getCategories(w http.ResponseWriter, r *http.Request) {
 			data.Expense = append(data.Expense, c)
 		}
 	}
-	h.render(w, "categories", data)
+	h.render(w, r, "categories", data)
 }
 
 func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +51,7 @@ func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "CreateCategory", err)
 		return
 	}
-	h.renderPartial(w, "categories", "category-row", cat)
+	h.renderPartial(w, r, "categories", "category-row", cat)
 }
 
 func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "categories", "category-row", cat)
+	h.renderPartial(w, r, "categories", "category-row", cat)
 }
 
 func (h *Handler) getCategoryEdit(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (h *Handler) getCategoryEdit(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "categories", "category-edit-row", cat)
+	h.renderPartial(w, r, "categories", "category-edit-row", cat)
 }
 
 func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,7 @@ func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "UpdateCategory", err)
 		return
 	}
-	h.renderPartial(w, "categories", "category-row", cat)
+	h.renderPartial(w, r, "categories", "category-row", cat)
 }
 
 func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {

@@ -14,6 +14,13 @@
 --
 -- MATCH SIMPLE (по умолчанию): у переводов category_id NULL, у обычных
 -- операций NULL transfer_wallet_id, такие ссылки не проверяются.
+--
+-- UNIQUE берёт ACCESS EXCLUSIVE на wallets и categories, FK проверяет все
+-- operations под блокировкой записи, и всё держится до конца транзакции:
+-- накатывать в тихое время. lock_timeout - чтобы не встать в очередь за
+-- долгим запросом и не заблокировать приложение; при отказе просто повторить.
+
+SET LOCAL lock_timeout = '5s';
 
 ALTER TABLE wallets ADD CONSTRAINT wallets_id_user_id_key UNIQUE (id, user_id);
 ALTER TABLE categories ADD CONSTRAINT categories_id_user_id_type_key UNIQUE (id, user_id, type);

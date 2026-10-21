@@ -73,7 +73,7 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 		!filter.DateFrom.IsZero() ||
 		!filter.DateTo.IsZero()
 
-	h.render(w, "operations", operationsData{
+	h.render(w, r, "operations", operationsData{
 		Operations: ops,
 		Wallets:    wallets,
 		Categories: cats,
@@ -138,7 +138,7 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "GetOperation", err)
 		return
 	}
-	h.renderPartial(w, "operations", "operation-row", full)
+	h.renderPartial(w, r, "operations", "operation-row", full)
 }
 
 func (h *Handler) getOperationRow(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +153,7 @@ func (h *Handler) getOperationRow(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.renderPartial(w, "operations", "operation-row", op)
+	h.renderPartial(w, r, "operations", "operation-row", op)
 }
 
 func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (h *Handler) getOperationEdit(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "ListCategories", err)
 		return
 	}
-	h.renderPartial(w, "operations", "operation-edit-row", map[string]any{
+	h.renderPartial(w, r, "operations", "operation-edit-row", map[string]any{
 		"Op":         op,
 		"Wallets":    wallets,
 		"Categories": cats,
@@ -224,7 +224,7 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "GetOperation", err)
 		return
 	}
-	h.renderPartial(w, "operations", "operation-row", full)
+	h.renderPartial(w, r, "operations", "operation-row", full)
 }
 
 func (h *Handler) deleteOperation(w http.ResponseWriter, r *http.Request) {
@@ -273,8 +273,8 @@ func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	h.renderPartial(w, "operations", "operation-row", expense)
-	h.renderPartial(w, "operations", "operation-row", income)
+	h.renderPartial(w, r, "operations", "operation-row", expense)
+	h.renderPartial(w, r, "operations", "operation-row", income)
 }
 
 func (h *Handler) getTransferRows(w http.ResponseWriter, r *http.Request) {
@@ -290,8 +290,8 @@ func (h *Handler) getTransferRows(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	h.renderPartial(w, "operations", "operation-row", expense)
-	h.renderPartial(w, "operations", "operation-row", income)
+	h.renderPartial(w, r, "operations", "operation-row", expense)
+	h.renderPartial(w, r, "operations", "operation-row", income)
 }
 
 func (h *Handler) getTransferEdit(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +311,7 @@ func (h *Handler) getTransferEdit(w http.ResponseWriter, r *http.Request) {
 		h.serverError(w, r, "ListWallets", err)
 		return
 	}
-	h.renderPartial(w, "operations", "transfer-edit-row", map[string]any{
+	h.renderPartial(w, r, "operations", "transfer-edit-row", map[string]any{
 		"Expense": expense,
 		"Income":  income,
 		"Wallets": wallets,
@@ -352,8 +352,8 @@ func (h *Handler) putTransfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
-	h.renderPartial(w, "operations", "operation-row", expense)
-	h.renderPartial(w, "operations", "operation-row", income)
+	h.renderPartial(w, r, "operations", "operation-row", expense)
+	h.renderPartial(w, r, "operations", "operation-row", income)
 }
 
 func (h *Handler) deleteTransfer(w http.ResponseWriter, r *http.Request) {

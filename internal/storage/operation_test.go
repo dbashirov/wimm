@@ -221,30 +221,32 @@ func TestOperationStore_Delete_OtherUser(t *testing.T) {
 
 // insertBypassingFK вставляет операцию в обход FK (session_replication_role
 // отключает их триггеры): после миграции 009 иначе такую строку не создать.
+// SET LOCAL живёт до конца транзакции и не уходит в пул с соединением.
 func insertBypassingFK(
 	t *testing.T,
 	userID, walletID, categoryID uuid.UUID,
 ) uuid.UUID {
 	t.Helper()
 	ctx := context.Background()
-	conn, err := testPool.Acquire(ctx)
+	tx, err := testPool.Begin(ctx)
 	if err != nil {
-		t.Fatalf("Acquire: %v", err)
+		t.Fatalf("Begin: %v", err)
 	}
-	defer conn.Release()
-	if _, err := conn.Exec(ctx, `SET session_replication_role = replica`); err != nil {
-		t.Fatalf("SET replica: %v", err)
+	defer tx.Rollback(ctx) //nolint:errcheck
+	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+		t.Fatalf("SET LOCAL replica: %v", err)
 	}
-	defer conn.Exec(ctx, `SET session_replication_role = DEFAULT`) //nolint:errcheck
-
 	var id uuid.UUID
-	err = conn.QueryRow(ctx,
+	err = tx.QueryRow(ctx,
 		`INSERT INTO operations(user_id, wallet_id, category_id, type, amount_minor, operated_at)
 		 VALUES($1, $2, $3, 'expense', 100, now()) RETURNING id`,
 		userID, walletID, categoryID,
 	).Scan(&id)
 	if err != nil {
 		t.Fatalf("insert: %v", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("Commit: %v", err)
 	}
 	return id
 }
@@ -298,14 +300,14 @@ func TestOwnerForeignKeys(t *testing.T) {
 		return err
 	}
 
-	if err := create(walletID, foreignCat); !isFKViolation(err) {
-		t.Errorf("чужая категория: err = %v, want FK violation", err)
+	if err := create(walletID, foreignCat); !errors.Is(err, storage.ErrCategoryTypeMismatch) {
+		t.Errorf("чужая категория: err = %v, want ErrCategoryTypeMismatch", err)
 	}
 	if err := create(foreignWallet, catID); !isFKViolation(err) {
 		t.Errorf("чужой кошелёк: err = %v, want FK violation", err)
 	}
-	if err := create(walletID, income); !isFKViolation(err) {
-		t.Errorf("расход в категории дохода: err = %v, want FK violation", err)
+	if err := create(walletID, income); !errors.Is(err, storage.ErrCategoryTypeMismatch) {
+		t.Errorf("расход в категории дохода: err = %v, want ErrCategoryTypeMismatch", err)
 	}
 	_, _, err := s.Operations.CreateTransfer(ctx, owner, model.TransferInput{
 		FromWalletID: walletID, ToWalletID: foreignWallet,
@@ -326,6 +328,97 @@ func TestOwnerForeignKeys(t *testing.T) {
 
 	// составные FK не мешают каскадному удалению пользователя
 	if _, err := testPool.Exec(ctx, `DELETE FROM users WHERE id = $1`, owner); err != nil {
-		t.Errorf("DELETE user: %v", err)
+		t.Fatalf("DELETE user: %v", err)
 	}
+	var left int
+	err = testPool.QueryRow(ctx,
+		`SELECT (SELECT count(*) FROM operations WHERE user_id = $1)
+		      + (SELECT count(*) FROM wallets WHERE user_id = $1)
+		      + (SELECT count(*) FROM categories WHERE user_id = $1)
+		      + (SELECT count(*) FROM sessions WHERE user_id = $1)`,
+		owner,
+	).Scan(&left)
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if left != 0 {
+		t.Errorf("после удаления пользователя осталось %d строк", left)
+	}
+}
+
+// TestCategoryTypeRace - обе последовательности гонки смены типа категории
+// и записи операции дают типизированную ошибку, а не 500.
+func TestCategoryTypeRace(t *testing.T) {
+	cleanDB(t)
+	ctx := context.Background()
+	s := storage.NewFromPool(testPool)
+
+	owner, walletID, catID := opFixture(t, "race@test.com")
+
+	t.Run("тип сменили после проверки в сервисе", func(t *testing.T) {
+		// сервис видел expense, а к INSERT категория уже income
+		if _, err := s.Categories.Update(ctx, catID, owner, "Food", model.TypeIncome); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+		_, err := s.Operations.Create(ctx, owner, model.OperationInput{
+			WalletID: walletID, CategoryID: catID, Type: model.TypeExpense,
+			Amount: 100, OperatedAt: time.Now(),
+		})
+		if !errors.Is(err, storage.ErrCategoryTypeMismatch) {
+			t.Errorf("Create: err = %v, want ErrCategoryTypeMismatch", err)
+		}
+		if _, err := s.Categories.Update(ctx, catID, owner, "Food", model.TypeExpense); err != nil {
+			t.Fatalf("вернуть тип: %v", err)
+		}
+	})
+
+	t.Run("перенос операции в категорию другого типа", func(t *testing.T) {
+		op, err := s.Operations.Create(ctx, owner, model.OperationInput{
+			WalletID: walletID, CategoryID: catID, Type: model.TypeExpense,
+			Amount: 100, OperatedAt: time.Now(),
+		})
+		if err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		income := createCategory(t, owner, "Зарплата", model.TypeIncome)
+		_, err = s.Operations.Update(ctx, op.ID, owner, model.OperationInput{
+			WalletID: walletID, CategoryID: income, Type: model.TypeExpense,
+			Amount: 100, OperatedAt: time.Now(),
+		})
+		if !errors.Is(err, storage.ErrCategoryTypeMismatch) {
+			t.Errorf("Update: err = %v, want ErrCategoryTypeMismatch", err)
+		}
+	})
+
+	t.Run("операция появилась во время смены типа", func(t *testing.T) {
+		empty := createCategory(t, owner, "Пустая", model.TypeExpense)
+		tx, err := testPool.Begin(ctx)
+		if err != nil {
+			t.Fatalf("Begin: %v", err)
+		}
+		defer tx.Rollback(ctx) //nolint:errcheck
+		_, err = tx.Exec(ctx,
+			`INSERT INTO operations(user_id, wallet_id, category_id, type, amount_minor, operated_at)
+			 VALUES($1, $2, $3, 'expense', 100, now())`,
+			owner, walletID, empty,
+		)
+		if err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+
+		// смена типа ждёт блокировку строки категории, которую держит INSERT;
+		// какую ветку она пройдёт, зависит от момента коммита, итог один
+		done := make(chan error, 1)
+		go func() {
+			_, err := s.Categories.Update(ctx, empty, owner, "Пустая", model.TypeIncome)
+			done <- err
+		}()
+		time.Sleep(200 * time.Millisecond)
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatalf("Commit: %v", err)
+		}
+		if err := <-done; !errors.Is(err, storage.ErrCategoryInUse) {
+			t.Errorf("Update: err = %v, want ErrCategoryInUse", err)
+		}
+	})
 }

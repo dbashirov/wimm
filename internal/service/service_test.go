@@ -436,6 +436,23 @@ func TestReorderWallets(t *testing.T) {
 	}
 }
 
+// TestCreateOperation_CategoryTypeRace - FK отклонил запись: тип категории
+// сменили между проверкой и INSERT. Для пользователя это та же ошибка типа.
+func TestCreateOperation_CategoryTypeRace(t *testing.T) {
+	svc, _, wallets, cats, ops := newSvc(t)
+	inp := model.OperationInput{
+		WalletID: wID1, CategoryID: cID1, Type: model.TypeExpense, Amount: 100,
+	}
+	wallets.EXPECT().GetByID(ctx, wID1, uID1).Return(&model.Wallet{ID: wID1}, nil)
+	cats.EXPECT().GetByID(ctx, cID1, uID1).
+		Return(&model.Category{ID: cID1, Type: model.TypeExpense}, nil)
+	ops.EXPECT().Create(ctx, uID1, inp).Return(nil, storage.ErrCategoryTypeMismatch)
+
+	if _, err := svc.CreateOperation(ctx, uID1, inp); !errors.Is(err, service.ErrWrongCategoryType) {
+		t.Errorf("err = %v, want ErrWrongCategoryType", err)
+	}
+}
+
 func TestReorderWallets_RepoError(t *testing.T) {
 	svc, _, wallets, _, _ := newSvc(t)
 	dbErr := errors.New("connection refused")

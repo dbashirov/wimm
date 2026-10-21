@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"bytes"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/dbashirov/wimm/web"
@@ -220,6 +224,26 @@ func TestCrossOriginProtection(t *testing.T) {
 				t.Errorf("status = %d, want %d", rec.Code, tc.want)
 			}
 		})
+	}
+}
+
+// TestRequestIDInErrorLog - по X-Request-ID из ответа находится строка
+// ошибки в логе.
+func TestRequestIDInErrorLog(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h := &Handler{}
+	rec := httptest.NewRecorder()
+	withRequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.serverError(w, r, "op", errors.New("boom"))
+	})).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	id := rec.Header().Get("X-Request-ID")
+	if id == "" || !strings.Contains(buf.String(), "request_id="+id) {
+		t.Errorf("в логе нет request_id=%s: %s", id, buf.String())
 	}
 }
 

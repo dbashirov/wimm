@@ -18,7 +18,7 @@ type registerData struct {
 }
 
 func (h *Handler) getLogin(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "login", loginData{NoNav: true})
+	h.render(w, r, "login", loginData{NoNav: true})
 }
 
 func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,7 @@ func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := h.svc.Login(r.Context(), email, password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
-			h.render(w, "login", loginData{NoNav: true, Error: "Неверный email или пароль"})
+			h.render(w, r, "login", loginData{NoNav: true, Error: "Неверный email или пароль"})
 			return
 		}
 		h.serverError(w, r, "Login", err)
@@ -43,7 +43,7 @@ func (h *Handler) postLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getRegister(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "register", registerData{NoNav: true})
+	h.render(w, r, "register", registerData{NoNav: true})
 }
 
 func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
@@ -53,16 +53,16 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 	user, err := h.svc.Register(r.Context(), email, password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidEmail) {
-			h.render(w, "register", registerData{NoNav: true, Error: "Некорректный email"})
+			h.render(w, r, "register", registerData{NoNav: true, Error: "Некорректный email"})
 			return
 		}
 		var ve *service.ValidationError
 		if errors.As(err, &ve) {
-			h.render(w, "register", registerData{NoNav: true, Error: ve.Msg})
+			h.render(w, r, "register", registerData{NoNav: true, Error: ve.Msg})
 			return
 		}
 		if errors.Is(err, service.ErrEmailTaken) {
-			h.render(w, "register", registerData{NoNav: true, Error: "Email уже зарегистрирован"})
+			h.render(w, r, "register", registerData{NoNav: true, Error: "Email уже зарегистрирован"})
 			return
 		}
 		h.serverError(w, r, "Register", err)
