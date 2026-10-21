@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/dbashirov/wimm/internal/model"
+	"github.com/dbashirov/wimm/internal/service"
 	"github.com/google/uuid"
 )
 
@@ -43,6 +45,9 @@ func (h *Handler) postCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	cat, err := h.svc.CreateCategory(r.Context(), userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		h.serverError(w, r, "CreateCategory", err)
 		return
 	}
@@ -90,6 +95,13 @@ func (h *Handler) putCategory(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 	cat, err := h.svc.UpdateCategory(r.Context(), id, userID, name, description)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
 		h.serverError(w, r, "UpdateCategory", err)
 		return
 	}
@@ -119,6 +131,9 @@ func (h *Handler) getCategoryOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	cats, err := h.svc.ListCategoriesByType(r.Context(), userID, catType)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		h.serverError(w, r, "ListCategoriesByType", err)
 		return
 	}

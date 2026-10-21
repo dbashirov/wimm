@@ -125,8 +125,14 @@ func newUserSeed() model.UserSeed {
 
 func (s *Service) Register(ctx context.Context, email, password string) (*model.User, error) {
 	email = normalizeEmail(email)
+	if len(email) > maxEmailLen {
+		return nil, ErrInvalidEmail
+	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return nil, ErrInvalidEmail
+	}
+	if err := validatePassword(password); err != nil {
+		return nil, err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
@@ -172,6 +178,10 @@ func (s *Service) ListWalletsWithBalance(ctx context.Context, userID uuid.UUID) 
 }
 
 func (s *Service) CreateWallet(ctx context.Context, userID uuid.UUID, inp model.WalletInput) (*model.Wallet, error) {
+	inp, err := validateWallet(inp)
+	if err != nil {
+		return nil, err
+	}
 	return s.wallets.Create(ctx, userID, inp)
 }
 
@@ -189,6 +199,10 @@ func (s *Service) UpdateWallet(
 	userID uuid.UUID,
 	inp model.WalletInput,
 ) (*model.Wallet, error) {
+	inp, err := validateWallet(inp)
+	if err != nil {
+		return nil, err
+	}
 	w, err := s.wallets.Update(ctx, id, userID, inp)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -254,6 +268,9 @@ func (s *Service) ListCategoriesByType(
 	userID uuid.UUID,
 	catType model.OperationType,
 ) ([]model.Category, error) {
+	if err := validateType(catType); err != nil {
+		return nil, err
+	}
 	return s.categories.ListByType(ctx, userID, catType)
 }
 
@@ -262,6 +279,10 @@ func (s *Service) CreateCategory(
 	userID uuid.UUID,
 	inp model.CategoryInput,
 ) (*model.Category, error) {
+	inp, err := validateCategory(inp)
+	if err != nil {
+		return nil, err
+	}
 	return s.categories.Create(ctx, userID, inp)
 }
 
@@ -279,6 +300,13 @@ func (s *Service) UpdateCategory(
 	userID uuid.UUID,
 	name, description string,
 ) (*model.Category, error) {
+	name, err := validateName(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateDescription(description); err != nil {
+		return nil, err
+	}
 	c, err := s.categories.Update(ctx, id, userID, name, description)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrNotFound
@@ -302,6 +330,9 @@ func (s *Service) CreateOperation(
 	userID uuid.UUID,
 	inp model.OperationInput,
 ) (*model.Operation, error) {
+	if err := validateDescription(inp.Description); err != nil {
+		return nil, err
+	}
 	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
@@ -335,6 +366,9 @@ func (s *Service) UpdateOperation(
 	userID uuid.UUID,
 	inp model.OperationInput,
 ) (*model.Operation, error) {
+	if err := validateDescription(inp.Description); err != nil {
+		return nil, err
+	}
 	if _, err := s.wallets.GetByID(ctx, inp.WalletID, userID); err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil, ErrNotFound
@@ -383,6 +417,9 @@ func (s *Service) prepareTransfer(
 ) (model.TransferInput, error) {
 	if inp.FromWalletID == inp.ToWalletID {
 		return inp, ErrSameWallet
+	}
+	if err := validateDescription(inp.Description); err != nil {
+		return inp, err
 	}
 	from, err := s.wallets.GetByID(ctx, inp.FromWalletID, userID)
 	if err != nil {

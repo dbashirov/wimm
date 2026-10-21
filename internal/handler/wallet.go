@@ -53,6 +53,9 @@ func (h *Handler) postWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	wallet, err := h.svc.CreateWallet(r.Context(), userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		h.serverError(w, r, "CreateWallet", err)
 		return
 	}
@@ -103,6 +106,13 @@ func (h *Handler) putWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	wallet, err := h.svc.UpdateWallet(r.Context(), id, userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
+		if errors.Is(err, service.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
 		h.serverError(w, r, "UpdateWallet", err)
 		return
 	}
@@ -158,9 +168,7 @@ func (h *Handler) postWalletsReorder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.ReorderWallets(r.Context(), userID, body.IDs); err != nil {
-		var ve *service.ValidationError
-		if errors.As(err, &ve) {
-			http.Error(w, ve.Msg, http.StatusBadRequest)
+		if validationError(w, err) {
 			return
 		}
 		h.serverError(w, r, "ReorderWallets", err)

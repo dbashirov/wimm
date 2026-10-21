@@ -50,15 +50,15 @@ func (h *Handler) postRegister(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	if len(password) < 8 {
-		h.render(w, "register", registerData{NoNav: true, Error: "Пароль должен быть не менее 8 символов"})
-		return
-	}
-
 	user, err := h.svc.Register(r.Context(), email, password)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidEmail) {
 			h.render(w, "register", registerData{NoNav: true, Error: "Некорректный email"})
+			return
+		}
+		var ve *service.ValidationError
+		if errors.As(err, &ve) {
+			h.render(w, "register", registerData{NoNav: true, Error: ve.Msg})
 			return
 		}
 		if errors.Is(err, service.ErrEmailTaken) {

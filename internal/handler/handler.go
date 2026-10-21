@@ -243,6 +243,17 @@ func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string,
 	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
+// validationError отвечает 400 с текстом ошибки валидации сервиса;
+// false - ошибка другого вида, её обрабатывает вызывающий.
+func validationError(w http.ResponseWriter, err error) bool {
+	var ve *service.ValidationError
+	if !errors.As(err, &ve) {
+		return false
+	}
+	http.Error(w, ve.Msg, http.StatusBadRequest)
+	return true
+}
+
 func handleDeleteError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, service.ErrNotFound):

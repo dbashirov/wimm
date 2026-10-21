@@ -38,7 +38,10 @@ func (h *Handler) getOperations(w http.ResponseWriter, r *http.Request) {
 	if id, err := uuid.Parse(q.Get("category_id")); err == nil {
 		filter.CategoryID = id
 	}
-	filter.Type = model.OperationType(q.Get("type"))
+	switch opType := model.OperationType(q.Get("type")); opType {
+	case model.TypeIncome, model.TypeExpense:
+		filter.Type = opType
+	}
 	if s := q.Get("date_from"); s != "" {
 		filter.DateFrom, _ = time.Parse(dateLayout, s)
 	}
@@ -115,6 +118,9 @@ func (h *Handler) postOperation(w http.ResponseWriter, r *http.Request) {
 
 	op, err := h.svc.CreateOperation(r.Context(), userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
 			return
@@ -198,6 +204,9 @@ func (h *Handler) putOperation(w http.ResponseWriter, r *http.Request) {
 
 	op, err := h.svc.UpdateOperation(r.Context(), id, userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		if errors.Is(err, service.ErrWrongCategoryType) {
 			http.Error(w, "Тип категории не совпадает с типом операции", http.StatusBadRequest)
 			return
@@ -243,6 +252,9 @@ func (h *Handler) postTransfer(w http.ResponseWriter, r *http.Request) {
 
 	expense, income, err := h.svc.CreateTransfer(r.Context(), userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		if errors.Is(err, service.ErrSameWallet) {
 			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
 			return
@@ -320,6 +332,9 @@ func (h *Handler) putTransfer(w http.ResponseWriter, r *http.Request) {
 	}
 	expense, income, err := h.svc.UpdateTransfer(r.Context(), transferID, userID, inp)
 	if err != nil {
+		if validationError(w, err) {
+			return
+		}
 		if errors.Is(err, service.ErrSameWallet) {
 			http.Error(w, "Нельзя переводить на тот же кошелёк", http.StatusBadRequest)
 			return
