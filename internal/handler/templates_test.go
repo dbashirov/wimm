@@ -3,6 +3,7 @@ package handler
 import (
 	"io"
 	"io/fs"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -194,5 +195,45 @@ func TestRenderCategoryEditRow(t *testing.T) {
 	}
 	if strings.Contains(html, `<option value="expense" selected>`) {
 		t.Error("отмечен не тот тип")
+	}
+}
+
+// TestExternalAssetsPinned - внешние скрипты и стили подключены с точной
+// версией и SRI: подменённый или обновившийся на CDN файл браузер не выполнит.
+// Tailwind CDN и Google Fonts отдают динамический ответ, SRI для них невозможен.
+func TestExternalAssetsPinned(t *testing.T) {
+	tag := regexp.MustCompile(`<(?:script|link)\b[^>]*?(?:src|href)="(https://[^"]+)"[^>]*>`)
+	version := regexp.MustCompile(`@\d+\.\d+\.\d+/`)
+	exempt := []string{"https://cdn.tailwindcss.com", "https://fonts.googleapis.com/"}
+
+	files, err := fs.Glob(web.FS, "templates/*.html")
+	if err != nil {
+		t.Fatalf("Glob: %v", err)
+	}
+	checked := 0
+	for _, name := range files {
+		data, err := fs.ReadFile(web.FS, name)
+		if err != nil {
+			t.Fatalf("ReadFile %s: %v", name, err)
+		}
+	tags:
+		for _, m := range tag.FindAllStringSubmatch(string(data), -1) {
+			for _, prefix := range exempt {
+				if strings.HasPrefix(m[1], prefix) {
+					continue tags
+				}
+			}
+			checked++
+			if !version.MatchString(m[1]) {
+				t.Errorf("%s: %s без точной версии", name, m[1])
+			}
+			if !strings.Contains(m[0], `integrity="sha384-`) ||
+				!strings.Contains(m[0], `crossorigin="anonymous"`) {
+				t.Errorf("%s: %s без integrity/crossorigin", name, m[1])
+			}
+		}
+	}
+	if checked == 0 {
+		t.Fatal("не найдено ни одного внешнего ресурса")
 	}
 }
