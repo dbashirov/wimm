@@ -358,7 +358,6 @@ function updateOpForm(mode) {
     altFormat: 'd.m.Y H:i',
     time_24hr: true,
     locale: 'ru',
-    defaultDate: new Date(),
     onReady: function(_, __, instance) {
       instance.altInput.className =
         instance.input.className.replace('fp-datetime', '').trim();
@@ -375,9 +374,20 @@ function updateOpForm(mode) {
         instance.input.className.replace('fp-date', '').trim();
     },
   };
+  // flatpickr перекрывает value инпута своим defaultDate, поэтому дату
+  // редактируемой операции подставляем явно: пустое поле формы добавления
+  // получает текущее время, заполненное — свою дату из value
+  function initialDate(el) {
+    if (!el.value) return new Date();
+    var parsed = new Date(el.value); // "2026-03-14T09:26" — локальное время
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  }
+
   function initFlatpickr() {
     document.querySelectorAll('.fp-datetime:not(.flatpickr-input)').forEach(
-      function(el) { flatpickr(el, fpConfig); }
+      function(el) {
+        flatpickr(el, Object.assign({}, fpConfig, { defaultDate: initialDate(el) }));
+      }
     );
     document.querySelectorAll('.fp-date:not(.flatpickr-input)').forEach(
       function(el) { flatpickr(el, fpDateConfig); }

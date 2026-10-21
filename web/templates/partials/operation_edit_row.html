@@ -19,7 +19,7 @@
           <label for="op-edit-date-{{$op.ID}}" class="form-label">Дата и время</label>
           <input type="text" id="op-edit-date-{{$op.ID}}" name="operated_at"
                  class="input input-bordered input-form fp-datetime"
-                 value="{{$op.OperatedAt.Format "2006-01-02T15:04"}}" required>
+                 value="{{$op.OperatedAt.UTC.Format "2006-01-02T15:04"}}" required>
         </div>
         <div class="form-control">
           <label for="op-edit-type-{{$op.ID}}" class="form-label">Тип</label>

@@ -1,8 +1,8 @@
 {{define "operation-row"}}
 <tr id="op-{{.ID}}" {{if .TransferID}}data-transfer-id="{{.TransferID}}"{{end}} class="hover">
   <td class="whitespace-nowrap text-sm">
-    <div>{{.OperatedAt.Format "02.01.2006"}}</div>
-    <div class="text-xs text-base-content/50">{{.OperatedAt.Format "15:04"}}</div>
+    <div>{{.OperatedAt.UTC.Format "02.01.2006"}}</div>
+    <div class="text-xs text-base-content/50">{{.OperatedAt.UTC.Format "15:04"}}</div>
   </td>
   <td>
     {{if .TransferID}}
